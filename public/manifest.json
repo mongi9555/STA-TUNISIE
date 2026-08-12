@@ -1,0 +1,16 @@
+{
+  "short_name": "Chery STA",
+  "name": "CHERY Tunisie STA — Application Commerciale",
+  "icons": [
+    {
+      "src": "/chery-logo.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#dc2626",
+  "display": "standalone",
+  "orientation": "any"
+}

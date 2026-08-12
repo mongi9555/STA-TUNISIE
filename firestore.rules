@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write to all collections including cars, reservations, test_drives, commercials, settings, accessories, and quotes
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+

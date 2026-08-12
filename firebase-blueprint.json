@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "cars": {
+      "title": "CarModel",
+      "description": "Car models catalog, photos, and technical specs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "priceTND": { "type": "number" },
+        "engine": { "type": "string" },
+        "transmission": { "type": "string" },
+        "energy": { "type": "string" },
+        "guarantee": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "colors": { "type": "array" },
+        "interiorColors": { "type": "array" }
+      },
+      "required": ["id", "name", "priceTND"]
+    },
+    "reservations": {
+      "title": "Reservation",
+      "description": "Vehicle reservations created by commercials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "carId": { "type": "string" },
+        "carName": { "type": "string" },
+        "colorId": { "type": "string" },
+        "colorName": { "type": "string" },
+        "intColorId": { "type": "string" },
+        "intColorName": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "clientCin": { "type": "string" },
+        "commercialId": { "type": "string" },
+        "commercialName": { "type": "string" },
+        "agency": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "carId", "clientName", "commercialId"]
+    },
+    "commercials": {
+      "title": "CommercialUser",
+      "description": "Users and administration accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "agency": { "type": "string" },
+        "role": { "type": "string" }
+      },
+      "required": ["id", "name", "role"]
+    }
+  }
+}
