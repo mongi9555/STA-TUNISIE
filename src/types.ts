@@ -39,20 +39,10 @@ export interface SiteSettings {
   announcementBanner?: AnnouncementBannerSettings;
   dsiContact?: DsiContactSettings;
   accentColor?: string;
-  // Page d'accueil (Choix rôle / Login) - Fond d'écran Image ou Vidéo
-  homeBackgroundType?: 'image' | 'video' | 'default';
+  // Page d'accueil - Fond d'écran & Personnalisation Automobile
   homeBackgroundImageUrl?: string;
-  homeBackgroundVideoUrl?: string;
   homeBackgroundOverlayOpacity?: number; // 0.1 to 0.95
   homeBackgroundBlur?: boolean;
-
-  // Espace connecté (Global Site Workspace) - Fond d'écran Image ou Vidéo
-  siteBackgroundType?: 'image' | 'video' | 'none';
-  siteBackgroundImageUrl?: string;
-  siteBackgroundVideoUrl?: string;
-  siteBackgroundOverlayOpacity?: number; // 0.1 to 0.95
-  siteBackgroundBlur?: boolean;
-
   defaultThemeMode?: ThemeMode;
 }
 

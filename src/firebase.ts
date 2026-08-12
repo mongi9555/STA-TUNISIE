@@ -20,32 +20,6 @@ export const quotesCollection = collection(db, 'quotes');
 export const stockRequestsCollection = collection(db, 'stock_requests');
 
 /**
- * Helper to recursively sanitize objects before saving to Firestore.
- * Strips or truncates large base64 data URLs (>100KB) to ensure payloads NEVER exceed Firestore's 1MB limit.
- */
-export function sanitizeForFirestore<T>(data: T): T {
-  if (data === null || data === undefined) return data;
-  if (typeof data === 'string') {
-    if (data.startsWith('data:') && data.length > 100000) {
-      console.warn('[Firestore Sanitize] Truncated large base64 string to prevent payload limit error.');
-      return '' as unknown as T;
-    }
-    return data;
-  }
-  if (Array.isArray(data)) {
-    return data.map(sanitizeForFirestore) as unknown as T;
-  }
-  if (typeof data === 'object') {
-    const sanitized: Record<string, any> = {};
-    for (const [key, val] of Object.entries(data)) {
-      sanitized[key] = sanitizeForFirestore(val);
-    }
-    return sanitized as T;
-  }
-  return data;
-}
-
-/**
  * Seed initial data to Firestore if collections are empty.
  */
 export async function seedInitialDataIfEmpty() {
@@ -56,7 +30,7 @@ export async function seedInitialDataIfEmpty() {
       const batch = writeBatch(db);
       INITIAL_CARS.forEach((car) => {
         const docRef = doc(db, 'cars', car.id);
-        batch.set(docRef, sanitizeForFirestore(car));
+        batch.set(docRef, car);
       });
       await batch.commit();
     }
@@ -75,7 +49,7 @@ export async function seedInitialDataIfEmpty() {
       const batch = writeBatch(db);
       INITIAL_COMMERCIALS.forEach((comm) => {
         const docRef = doc(db, 'commercials', comm.id);
-        batch.set(docRef, sanitizeForFirestore(comm));
+        batch.set(docRef, comm);
       });
       await batch.commit();
     }
@@ -83,7 +57,7 @@ export async function seedInitialDataIfEmpty() {
     const siteSettingsDoc = await getDoc(doc(db, 'settings', 'site_settings'));
     if (!siteSettingsDoc.exists()) {
       console.log('Seeding initial site settings to Firestore...');
-      await setDoc(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(DEFAULT_SITE_SETTINGS));
+      await setDoc(doc(db, 'settings', 'site_settings'), DEFAULT_SITE_SETTINGS);
     }
   } catch (error) {
     console.error('Error seeding initial Firestore data:', error);
@@ -95,8 +69,7 @@ export async function seedInitialDataIfEmpty() {
  */
 export async function saveSiteSettingsToFirestore(settings: SiteSettings) {
   try {
-    const sanitized = sanitizeForFirestore(settings);
-    await setDoc(doc(db, 'settings', 'site_settings'), sanitized);
+    await setDoc(doc(db, 'settings', 'site_settings'), settings);
   } catch (e) {
     console.error('Error saving site settings to Firestore:', e);
   }
@@ -107,7 +80,7 @@ export async function saveSiteSettingsToFirestore(settings: SiteSettings) {
  */
 export async function saveAccessoryToFirestore(accessory: CarAccessory) {
   try {
-    await setDoc(doc(db, 'accessories', accessory.id), sanitizeForFirestore(accessory));
+    await setDoc(doc(db, 'accessories', accessory.id), accessory);
   } catch (e) {
     console.error('Error saving accessory to Firestore:', e);
   }
@@ -129,7 +102,7 @@ export async function deleteAccessoryFromFirestore(accId: string) {
  */
 export async function saveQuoteToFirestore(quote: CustomQuote) {
   try {
-    await setDoc(doc(db, 'quotes', quote.id), sanitizeForFirestore(quote));
+    await setDoc(doc(db, 'quotes', quote.id), quote);
   } catch (e) {
     console.error('Error saving quote to Firestore:', e);
   }
@@ -151,7 +124,7 @@ export async function deleteQuoteFromFirestore(quoteId: string) {
  */
 export async function saveCarToFirestore(car: CarModel) {
   try {
-    await setDoc(doc(db, 'cars', car.id), sanitizeForFirestore(car));
+    await setDoc(doc(db, 'cars', car.id), car);
   } catch (e) {
     console.error('Error saving car to Firestore:', e);
   }
@@ -175,7 +148,7 @@ export async function saveCarsToFirestore(cars: CarModel[]) {
   try {
     const batch = writeBatch(db);
     cars.forEach((car) => {
-      batch.set(doc(db, 'cars', car.id), sanitizeForFirestore(car));
+      batch.set(doc(db, 'cars', car.id), car);
     });
     await batch.commit();
   } catch (e) {
@@ -188,7 +161,7 @@ export async function saveCarsToFirestore(cars: CarModel[]) {
  */
 export async function saveReservationToFirestore(res: Reservation) {
   try {
-    await setDoc(doc(db, 'reservations', res.id), sanitizeForFirestore(res));
+    await setDoc(doc(db, 'reservations', res.id), res);
   } catch (e) {
     console.error('Error saving reservation to Firestore:', e);
   }

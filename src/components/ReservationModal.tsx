@@ -12,7 +12,6 @@ import {
   StockRequest,
 } from '../types';
 import { getFixedDepositForCar, getRegistrationFeeForCar, getFullCarPrice } from '../data/cheryData';
-import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
   X,
   Car,
@@ -167,12 +166,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const rawDataUrl = reader.result as string;
-        const compressedDataUrl = file.type.startsWith('image/')
-          ? await compressImageDataUrl(rawDataUrl, 1200, 1200, 0.8)
-          : rawDataUrl;
-
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
         const sizeFormatted = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
         const newDoc: UploadedDocument = {
@@ -180,7 +175,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           name: file.name,
           category: docCategory,
           fileType: file.type,
-          dataUrl: compressedDataUrl,
+          dataUrl: dataUrl,
           sizeFormatted: sizeFormatted,
           uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
         };

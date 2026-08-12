@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest } from '../types';
 import { TechSpecModal } from './TechSpecModal';
-import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -54,9 +53,6 @@ import {
   Crown,
   Monitor,
   Layout,
-  Video,
-  Film,
-  Play,
 } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
@@ -144,55 +140,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [dsiHours, setDsiHours] = useState(siteSettings?.dsiContact?.supportHours || 'Lun - Ven: 08:00 - 17:30');
   const [dsiAddress, setDsiAddress] = useState(siteSettings?.dsiContact?.address || 'Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis');
 
-  // Background Media Customization State (Home & Global Site)
-  const [homeBgType, setHomeBgType] = useState<'image' | 'video'>(
-    siteSettings?.homeBackgroundType === 'video' ? 'video' : 'image'
-  );
+  // Background Image & Themes State
   const [homeBgInput, setHomeBgInput] = useState(siteSettings?.homeBackgroundImageUrl || 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1920&auto=format&fit=crop&q=80');
-  const [homeVideoInput, setHomeVideoInput] = useState(siteSettings?.homeBackgroundVideoUrl || '');
   const [homeBgOpacity, setHomeBgOpacity] = useState(siteSettings?.homeBackgroundOverlayOpacity ?? 0.75);
-  const [homeBgBlur, setHomeBgBlur] = useState(siteSettings?.homeBackgroundBlur ?? false);
-
-  const [siteBgType, setSiteBgType] = useState<'image' | 'video' | 'none'>(siteSettings?.siteBackgroundType || 'image');
-  const [siteBgInput, setSiteBgInput] = useState(siteSettings?.siteBackgroundImageUrl || '/chery_icar03_offroad.jpg');
-  const [siteVideoInput, setSiteVideoInput] = useState(siteSettings?.siteBackgroundVideoUrl || '');
-  const [siteBgOpacity, setSiteBgOpacity] = useState(siteSettings?.siteBackgroundOverlayOpacity ?? 0.85);
-  const [siteBgBlur, setSiteBgBlur] = useState(siteSettings?.siteBackgroundBlur ?? false);
-
+  const [homeBgBlur, setHomeBgBlur] = useState(siteSettings?.homeBackgroundBlur ?? true);
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>(siteSettings?.defaultThemeMode || 'dark');
 
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
   const [selectedSpecCarAdmin, setSelectedSpecCarAdmin] = useState<CarModel | null>(null);
 
-  // Helper to upload files to /api/upload and receive a clean relative URL
-  const uploadMediaFile = async (file: File, defaultDataUrl: string): Promise<string> => {
-    try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, fileData: defaultDataUrl }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.url) {
-          return data.url;
-        }
-      }
-    } catch (e) {
-      console.warn('[AdminPanel Upload] Impossible de contacter /api/upload, utilisation du fallback.', e);
-    }
-    return defaultDataUrl;
-  };
-
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (ev) => {
+    reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      const compressed = await compressImageDataUrl(dataUrl, 600, 600, 0.85);
-      const uploadedUrl = await uploadMediaFile(file, compressed);
-      setLogoInput(uploadedUrl);
+      setLogoInput(dataUrl);
     };
     reader.readAsDataURL(file);
   };
@@ -201,48 +164,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (ev) => {
+    reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      const compressed = await compressImageDataUrl(dataUrl, 1920, 1080, 0.8);
-      const uploadedUrl = await uploadMediaFile(file, compressed);
-      setHomeBgInput(uploadedUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleHomeVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const uploadedUrl = await uploadMediaFile(file, dataUrl);
-      setHomeVideoInput(uploadedUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSiteBgFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const compressed = await compressImageDataUrl(dataUrl, 1920, 1080, 0.8);
-      const uploadedUrl = await uploadMediaFile(file, compressed);
-      setSiteBgInput(uploadedUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSiteVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const uploadedUrl = await uploadMediaFile(file, dataUrl);
-      setSiteVideoInput(uploadedUrl);
+      setHomeBgInput(dataUrl);
     };
     reader.readAsDataURL(file);
   };
@@ -267,20 +191,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         supportHours: dsiHours.trim(),
         address: dsiAddress.trim(),
       },
-      // Page d'accueil (Choix rôle)
-      homeBackgroundType: homeBgType,
       homeBackgroundImageUrl: homeBgInput.trim(),
-      homeBackgroundVideoUrl: homeVideoInput.trim(),
       homeBackgroundOverlayOpacity: homeBgOpacity,
       homeBackgroundBlur: homeBgBlur,
-
-      // Espace connecté (Global site workspace)
-      siteBackgroundType: siteBgType,
-      siteBackgroundImageUrl: siteBgInput.trim(),
-      siteBackgroundVideoUrl: siteVideoInput.trim(),
-      siteBackgroundOverlayOpacity: siteBgOpacity,
-      siteBackgroundBlur: siteBgBlur,
-
       defaultThemeMode: selectedThemeMode,
     };
 
@@ -332,16 +245,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
-      const uploadedUrl = await uploadMediaFile(file, dataUrl);
       if (isEditing && editingCarModel) {
         setEditingCarModel({
           ...editingCarModel,
-          ficheTechniqueUrl: uploadedUrl,
+          ficheTechniqueUrl: dataUrl,
         });
       } else {
-        setNewCarFicheUrl(uploadedUrl);
+        setNewCarFicheUrl(dataUrl);
       }
     };
     reader.readAsDataURL(file);
@@ -1698,178 +1610,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 5: ARRIÈRE-PLAN DE LA PAGE D'ACCUEIL (Choix du Rôle / Login) */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-6 lg:col-span-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                    <Layout className="w-5 h-5" />
-                  </div>
+            {/* PANEL 5: FOND D'ÉCRAN DE LA PAGE D'ACCUEIL */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 lg:col-span-2">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Layout className="w-5 h-5 text-amber-400" />
                   <div>
-                    <h4 className="font-extrabold text-white text-base">5. Arrière-Plan de la Page d'Accueil (Choix du Rôle & Connexion)</h4>
-                    <p className="text-xs text-slate-400">Choisissez d'afficher la Vidéo HD de l'Événement Chery Tunisie ou une Image personnalisée.</p>
+                    <h4 className="font-extrabold text-white text-base">5. Image de Fond de la Page d'Accueil (Arrière-Plan Automobile)</h4>
+                    <p className="text-xs text-slate-400">Téléversez une image personnalisée ou sélectionnez un fond d'écran automobile haute définition parmi nos modèles Chery STA.</p>
                   </div>
                 </div>
+                {homeBgInput && (
+                  <button
+                    type="button"
+                    onClick={() => setHomeBgInput('')}
+                    className="px-2.5 py-1 bg-red-950/80 border border-red-800 hover:bg-red-900 text-red-300 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Effacer Fond</span>
+                  </button>
+                )}
+              </div>
 
-                {/* Mode Selector (Vidéo / Image) */}
-                <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setHomeBgType('video')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      homeBgType === 'video'
-                        ? 'bg-red-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" /> Vidéo HD
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHomeBgType('image')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      homeBgType === 'image'
-                        ? 'bg-amber-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" /> Image
-                  </button>
+              {/* Upload & Direct URL Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Upload Local File */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">Téléverser une Image de Fond (Fichier local JPG, PNG, WebP) :</label>
+                  <label className="flex bg-slate-950 border border-dashed border-amber-500/40 hover:border-amber-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-amber-950/20 text-xs text-amber-300 font-bold">
+                    <Upload className="w-4 h-4 text-amber-400" />
+                    <span>Choisir une Image pour la Page d'Accueil...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleHomeBgFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Direct URL Input */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">Ou saisir l'URL directe d'une Image d'Arrière-Plan :</label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={homeBgInput}
+                    onChange={(e) => setHomeBgInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
                 </div>
               </div>
 
-              {/* MODE IMAGE */}
-              {homeBgType === 'image' && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Upload Local Image */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Téléverser une Image de Fond (Fichier local JPG, PNG, WebP) :</label>
-                      <label className="flex bg-slate-950 border border-dashed border-amber-500/40 hover:border-amber-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-amber-950/20 text-xs text-amber-300 font-bold">
-                        <Upload className="w-4 h-4 text-amber-400" />
-                        <span>Choisir une Image pour la Page d'Accueil...</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleHomeBgFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Direct URL Input */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Ou saisir l'URL directe d'une Image d'Arrière-Plan :</label>
-                      <input
-                        type="text"
-                        placeholder="https://images.unsplash.com/photo-..."
-                        value={homeBgInput}
-                        onChange={(e) => setHomeBgInput(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Preset Automotive Wallpapers */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-extrabold text-white flex items-center gap-1.5 uppercase tracking-wider">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      Galerie de Fonds d'Écran Automobile Haute Définition (1-Click) :
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                      {PRESET_AUTOMOTIVE_WALLPAPERS.map((wall) => {
-                        const isSelected = homeBgInput === wall.url;
-                        return (
-                          <button
-                            type="button"
-                            key={wall.id}
-                            onClick={() => setHomeBgInput(wall.url)}
-                            className={`group relative rounded-xl overflow-hidden border-2 text-left transition-all cursor-pointer ${
-                              isSelected
-                                ? 'border-amber-500 ring-2 ring-amber-500/50 scale-[1.02]'
-                                : 'border-slate-800 hover:border-slate-600 opacity-80 hover:opacity-100'
-                            }`}
-                          >
-                            <img
-                              src={wall.previewUrl}
-                              alt={wall.title}
-                              className="w-full h-20 object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent p-1.5 flex flex-col justify-end">
-                              <span className="text-[9px] font-bold text-amber-300 uppercase tracking-tight truncate">{wall.category}</span>
-                              <span className="text-[10px] font-extrabold text-white truncate">{wall.title}</span>
-                            </div>
-                            {isSelected && (
-                              <div className="absolute top-1 right-1 bg-amber-500 text-slate-950 p-0.5 rounded-full shadow">
-                                <Check className="w-3 h-3 stroke-[3]" />
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MODE VIDÉO */}
-              {homeBgType === 'video' && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-3 flex items-center gap-3 text-xs text-red-200">
-                    <Film className="w-5 h-5 text-red-400 shrink-0" />
-                    <div>
-                      <p className="font-extrabold text-white">Prise en charge Vidéo YouTube & MP4 Direct</p>
-                      <p className="text-[11px] text-red-300">Saisissez un lien YouTube (ex: Chery iCAR 03) ou téléversez un fichier vidéo MP4/WebM local.</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Upload Local Video */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Téléverser un Fichier Vidéo (MP4, WebM) :</label>
-                      <label className="flex bg-slate-950 border border-dashed border-red-500/40 hover:border-red-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-red-950/20 text-xs text-red-300 font-bold">
-                        <Upload className="w-4 h-4 text-red-400" />
-                        <span>Choisir un Fichier Vidéo MP4...</span>
-                        <input
-                          type="file"
-                          accept="video/mp4,video/webm"
-                          onChange={handleHomeVideoFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Direct Video / YouTube URL Input */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Ou Lien Web / Vidéo YouTube (ex: https://youtu.be/DdNliUon_Cs) :</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="https://youtu.be/DdNliUon_Cs"
-                          value={homeVideoInput}
-                          onChange={(e) => setHomeVideoInput(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-red-500 pr-32"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setHomeVideoInput('https://youtu.be/DdNliUon_Cs')}
-                          className="absolute right-1.5 top-1.5 px-2.5 py-1 bg-red-600/80 hover:bg-red-600 text-white text-[10px] font-bold rounded-lg transition-colors"
-                        >
-                          Vidéo Officielle
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Réglages Opacité & Flou */}
+              {/* Opacity Slider & Blur Toggle */}
               <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <label className="font-semibold text-slate-300 flex items-center gap-1.5">
                       <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                      Assombrissement du Fond (Lisibilité du Texte) :
+                      Assombrissement de l'Arrière-Plan (Lisibilité) :
                     </label>
                     <span className="font-mono font-bold text-amber-400">{Math.round(homeBgOpacity * 100)}%</span>
                   </div>
@@ -1882,13 +1681,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onChange={(e) => setHomeBgOpacity(parseFloat(e.target.value))}
                     className="w-full accent-amber-500 cursor-pointer"
                   />
-                  <p className="text-[10px] text-slate-500">Ajuste le filtre d'obscurité pour garantir la lisibilité optimale des cartes et formulaires.</p>
+                  <p className="text-[10px] text-slate-500">Ajuste l'opacité du voile sombre pour garantir la lisibilité parfaite des cartes.</p>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
                   <div className="space-y-0.5">
                     <span className="text-xs font-bold text-white block">Effet Flou Artistique (Backdrop Blur)</span>
-                    <span className="text-[10px] text-slate-400 block">Floute légèrement l'arrière-plan</span>
+                    <span className="text-[10px] text-slate-400 block">Floute légèrement l'arrière-plan pour mettre en valeur les véhicules</span>
                   </div>
                   <input
                     type="checkbox"
@@ -1898,171 +1697,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   />
                 </div>
               </div>
-            </div>
 
-            {/* PANEL 6: ARRIÈRE-PLAN GLOBAL DU SITE (Espace Connecté / Dashboard Workspace) */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-6 lg:col-span-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
-                    <Monitor className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-white text-base">6. Arrière-Plan Global de l'Espace de Travail (Après Connexion)</h4>
-                    <p className="text-xs text-slate-400">Appliquez un fond d'écran (Image ou Vidéo) sur l'ensemble de l'application commercial & administration.</p>
-                  </div>
-                </div>
-
-                {/* Mode Selector (None / Image / Video) */}
-                <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSiteBgType('none')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      siteBgType === 'none'
-                        ? 'bg-purple-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Palette className="w-3.5 h-3.5" /> Couleur / Thème
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSiteBgType('image')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      siteBgType === 'image'
-                        ? 'bg-purple-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" /> Image
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSiteBgType('video')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                      siteBgType === 'video'
-                        ? 'bg-red-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" /> Vidéo HD
-                  </button>
+              {/* Preset Automotive Wallpapers Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Galerie de Fonds d'Écran Automobile Haute Définition (1-Click) :
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {PRESET_AUTOMOTIVE_WALLPAPERS.map((wall) => {
+                    const isSelected = homeBgInput === wall.url;
+                    return (
+                      <button
+                        type="button"
+                        key={wall.id}
+                        onClick={() => setHomeBgInput(wall.url)}
+                        className={`group relative rounded-xl overflow-hidden border-2 text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-amber-500 ring-2 ring-amber-500/50 scale-[1.02]'
+                            : 'border-slate-800 hover:border-slate-600 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={wall.previewUrl}
+                          alt={wall.title}
+                          className="w-full h-20 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent p-1.5 flex flex-col justify-end">
+                          <span className="text-[9px] font-bold text-amber-300 uppercase tracking-tight truncate">{wall.category}</span>
+                          <span className="text-[10px] font-extrabold text-white truncate">{wall.title}</span>
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 bg-amber-500 text-slate-950 p-0.5 rounded-full shadow">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* MODE IMAGE GLOBAL SITE */}
-              {siteBgType === 'image' && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Upload Local Image */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Téléverser une Image pour l'Espace de Travail :</label>
-                      <label className="flex bg-slate-950 border border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-purple-950/20 text-xs text-purple-300 font-bold">
-                        <Upload className="w-4 h-4 text-purple-400" />
-                        <span>Choisir une Image pour l'Espace Connecté...</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleSiteBgFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Direct URL Input */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Saisir l'URL directe d'une Image d'Arrière-Plan :</label>
-                      <input
-                        type="text"
-                        placeholder="https://images.unsplash.com/photo-..."
-                        value={siteBgInput}
-                        onChange={(e) => setSiteBgInput(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MODE VIDÉO GLOBAL SITE */}
-              {siteBgType === 'video' && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Upload Local Video */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Téléverser une Vidéo pour l'Espace de Travail (MP4, WebM) :</label>
-                      <label className="flex bg-slate-950 border border-dashed border-red-500/40 hover:border-red-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-red-950/20 text-xs text-red-300 font-bold">
-                        <Upload className="w-4 h-4 text-red-400" />
-                        <span>Choisir une Vidéo MP4...</span>
-                        <input
-                          type="file"
-                          accept="video/mp4,video/webm"
-                          onChange={handleSiteVideoFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Direct Video / YouTube URL Input */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-300 block">Lien YouTube ou URL Vidéo Directe :</label>
-                      <input
-                        type="text"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        value={siteVideoInput}
-                        onChange={(e) => setSiteVideoInput(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-red-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MODE COULEUR / THÈME */}
-              {siteBgType === 'none' && (
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-3">
-                  <Palette className="w-6 h-6 text-purple-400 shrink-0" />
-                  <div>
-                    <span className="font-extrabold text-white block text-sm">Fond Standard & Thème de Couleur Sélectionné</span>
-                    <span>L'espace de travail utilise le thème de couleur actif (Thème Chery Dark, Titanium, Cyan ou Gold) sans image ni vidéo en arrière-plan.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Réglages Opacité & Flou Site Global */}
-              {siteBgType !== 'none' && (
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="font-semibold text-slate-300 flex items-center gap-1.5">
-                        <Sliders className="w-3.5 h-3.5 text-purple-400" />
-                        Assombrissement du Fond Site (Lisibilité) :
-                      </label>
-                      <span className="font-mono font-bold text-purple-400">{Math.round(siteBgOpacity * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="0.95"
-                      step="0.05"
-                      value={siteBgOpacity}
-                      onChange={(e) => setSiteBgOpacity(parseFloat(e.target.value))}
-                      className="w-full accent-purple-500 cursor-pointer"
+              {/* Live Background Wallpaper Preview Box */}
+              {homeBgInput && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">Aperçu du Rendu de la Page d'Accueil :</label>
+                  <div className="relative h-36 rounded-2xl overflow-hidden border border-slate-700 shadow-xl flex items-center justify-center p-4">
+                    {/* Background Image Layer */}
+                    <div
+                      className={`absolute inset-0 bg-cover bg-center ${homeBgBlur ? 'backdrop-blur-sm' : ''}`}
+                      style={{ backgroundImage: `url(${homeBgInput})` }}
                     />
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 bg-slate-900 rounded-lg border border-slate-800">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold text-white block">Effet Flou Artistique (Backdrop Blur)</span>
-                      <span className="text-[10px] text-slate-400 block">Floute légèrement le fond du site</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={siteBgBlur}
-                      onChange={(e) => setSiteBgBlur(e.target.checked)}
-                      className="w-4 h-4 accent-purple-500 cursor-pointer"
+                    {/* Dark Overlay Layer */}
+                    <div
+                      className="absolute inset-0 bg-slate-950"
+                      style={{ opacity: homeBgOpacity }}
                     />
+                    {/* Sample Card Layer */}
+                    <div className="relative z-10 bg-slate-900/90 border border-slate-700/80 backdrop-blur-md rounded-xl p-3 max-w-sm w-full shadow-2xl flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0">
+                        <Car className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Aperçu Carte Stock</span>
+                        <h5 className="font-extrabold text-white text-xs">Chery Tiggo 8 Pro Max</h5>
+                        <p className="text-[10px] text-slate-300">Test de contraste visuel sur le fond choisi</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2169,9 +1870,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block">Nouveau Mot de Passe :</label>
               <input
-                type="password"
-                autoComplete="new-password"
-                data-lpignore="true"
+                type="text"
                 value={inputNewPassword}
                 onChange={(e) => setInputNewPassword(e.target.value)}
                 placeholder="Entrez le nouveau mot de passe"
@@ -2294,10 +1993,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 text-xs block">Mot de Passe d'Accès *</label>
                 <input
-                  type="password"
+                  type="text"
                   required
-                  autoComplete="new-password"
-                  data-lpignore="true"
                   placeholder="Entrez le mot de passe"
                   value={newUserPassword}
                   onChange={(e) => setNewUserPassword(e.target.value)}
@@ -3128,10 +2825,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 block">Mot de Passe d'Accès *</label>
                 <input
-                  type="password"
+                  type="text"
                   required
-                  autoComplete="new-password"
-                  data-lpignore="true"
                   value={editingUserSession.password || ''}
                   onChange={(e) => setEditingUserSession({ ...editingUserSession, password: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-mono font-bold"

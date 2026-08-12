@@ -587,7 +587,6 @@ export const Header: React.FC<HeaderProps> = ({
               exit={{ opacity: 0, scale: 0.9, y: 15 }}
               transition={{ duration: 0.2 }}
               onSubmit={handleVerifyAndSwitch}
-              autoComplete="off"
               className={`border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 ${
                 theme === 'light'
                   ? 'bg-white text-slate-900 border-slate-200'
@@ -601,7 +600,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setPendingUserToSwitch(null); setInputPassword(''); }}
+                  onClick={() => setPendingUserToSwitch(null)}
                   className="p-1 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -637,9 +636,7 @@ export const Header: React.FC<HeaderProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     autoFocus
                     required
-                    autoComplete="off"
-                    data-lpignore="true"
-                    placeholder="Saisissez votre mot de passe..."
+                    placeholder="Mot de passe..."
                     value={inputPassword}
                     onChange={(e) => setInputPassword(e.target.value)}
                     className={`w-full border rounded-xl pl-3 pr-10 py-2.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
@@ -650,17 +647,22 @@ export const Header: React.FC<HeaderProps> = ({
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-                    title={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-400 flex justify-between items-center pt-1">
+                  <span>Mot de passe test :</span>
+                  <span className="font-mono text-amber-500 font-bold px-1.5 py-0.5 rounded border border-amber-500/30">
+                    {pendingUserToSwitch.password || (pendingUserToSwitch.role === 'admin' ? 'admin' : '123')}
+                  </span>
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-700/60">
                 <button
                   type="button"
-                  onClick={() => { setPendingUserToSwitch(null); setInputPassword(''); }}
+                  onClick={() => setPendingUserToSwitch(null)}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Annuler

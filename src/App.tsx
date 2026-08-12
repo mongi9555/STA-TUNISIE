@@ -74,7 +74,6 @@ import { ReservationVoucher } from './components/ReservationVoucher';
 import { DocumentViewerModal } from './components/DocumentViewerModal';
 import { AdminPanel } from './components/AdminPanel';
 import { LoginScreen } from './components/LoginScreen';
-import { BackgroundMediaRender } from './components/BackgroundMediaRender';
 import { KnowledgeBaseManager } from './components/KnowledgeBaseManager';
 import { DocumentQuoteCustomizer } from './components/DocumentQuoteCustomizer';
 import { TestDriveList } from './components/TestDriveList';
@@ -106,8 +105,8 @@ export default function App() {
 
   const [isDbSynced, setIsDbSynced] = useState<boolean>(false);
 
-  // Active user session state (defaults to null when opening the site to show Home / Role selection)
-  const [currentUser, setCurrentUser] = useState<CommercialUser | null>(null);
+  // Active user session state (default to Lamine Abbasi or first user; null when logged out)
+  const [currentUser, setCurrentUser] = useState<CommercialUser | null>(() => commercials[0]);
 
   // Main Tab Navigation State
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
@@ -784,14 +783,21 @@ export default function App() {
   return (
     <div className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}>
 
-      {/* Global Site Workspace Background (Image / Vidéo / Thème) */}
-      <BackgroundMediaRender
-        type={siteSettings?.siteBackgroundType || 'none'}
-        imageUrl={siteSettings?.siteBackgroundImageUrl}
-        videoUrl={siteSettings?.siteBackgroundVideoUrl}
-        overlayOpacity={siteSettings?.siteBackgroundOverlayOpacity ?? 0.85}
-        blur={siteSettings?.siteBackgroundBlur ?? false}
-      />
+      {/* Home Page Custom Automotive Background Wallpaper */}
+      {siteSettings?.homeBackgroundImageUrl && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div
+            className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${
+              siteSettings.homeBackgroundBlur ? 'backdrop-blur-sm' : ''
+            }`}
+            style={{ backgroundImage: `url(${siteSettings.homeBackgroundImageUrl})` }}
+          />
+          <div
+            className="absolute inset-0 bg-slate-950"
+            style={{ opacity: siteSettings.homeBackgroundOverlayOpacity ?? 0.75 }}
+          />
+        </div>
+      )}
 
       {/* Main Relative Container Wrapper */}
       <div className="relative z-10 flex flex-col min-h-screen w-full">

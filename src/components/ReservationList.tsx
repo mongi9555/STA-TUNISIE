@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Reservation, CommercialUser, UploadedDocument } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
-import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
   Search,
   Filter,
@@ -265,19 +264,15 @@ export const ReservationList: React.FC<ReservationListProps> = ({
 
     const file = files[0];
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      const rawDataUrl = reader.result as string;
-      const compressedDataUrl = file.type.startsWith('image/')
-        ? await compressImageDataUrl(rawDataUrl, 1200, 1200, 0.8)
-        : rawDataUrl;
-
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
       const sizeFormatted = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
       const newDoc: UploadedDocument = {
         id: 'doc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         name: file.name,
         category: 'bon_commande',
         fileType: file.type,
-        dataUrl: compressedDataUrl,
+        dataUrl: dataUrl,
         sizeFormatted: sizeFormatted,
         uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       };
