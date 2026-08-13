@@ -7,11 +7,97 @@ import { GoogleGenAI } from "@google/genai";
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// Express body-parser error handler for entity too large
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    console.warn('[Express Warning] Requête trop volumineuse reçue (413).');
+    return res.status(413).json({
+      error: "Taille de la requête trop volumineuse.",
+      details: "Veuillez réduire la taille des fichiers ou images téléchargés."
+    });
+  }
+  next(err);
+});
+
+// Serve public directory for static uploads (/uploads/*)
+app.use(express.static(path.join(process.cwd(), "public")));
+
+// Endpoint pour uploader des fichiers (images, vidéos, PDF) et obtenir une URL d'accès
+app.post("/api/upload", (req, res) => {
+  try {
+    const { fileName, fileData } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ error: "Aucun fichier fourni." });
+    }
+
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const matches = typeof fileData === 'string' ? fileData.match(/^data:(.+);base64,(.+)$/) : null;
+    let buffer: Buffer;
+    let extension = "bin";
+
+    if (matches) {
+      const mime = matches[1];
+      const base64Data = matches[2];
+      buffer = Buffer.from(base64Data, "base64");
+      if (mime.includes("pdf")) extension = "pdf";
+      else if (mime.includes("jpeg") || mime.includes("jpg")) extension = "jpg";
+      else if (mime.includes("png")) extension = "png";
+      else if (mime.includes("webp")) extension = "webp";
+      else if (mime.includes("mp4")) extension = "mp4";
+      else if (mime.includes("webm")) extension = "webm";
+    } else {
+      buffer = Buffer.from(fileData, "base64");
+    }
+
+    const cleanBaseName = (fileName || "upload").replace(/[^a-zA-Z0-9_\.-]/g, "_");
+    const uniqueFileName = `${Date.now()}_${cleanBaseName.includes('.') ? cleanBaseName : cleanBaseName + '.' + extension}`;
+    const filePath = path.join(uploadsDir, uniqueFileName);
+
+    fs.writeFileSync(filePath, buffer);
+    const publicUrl = `/uploads/${uniqueFileName}`;
+
+    console.log(`[Upload API] Fichier enregistré : ${publicUrl} (${(buffer.length / 1024).toFixed(1)} KB)`);
+    return res.json({ success: true, url: publicUrl });
+  } catch (error: any) {
+    console.error("Erreur durant upload API:", error);
+    return res.status(500).json({ error: "Erreur lors de l'enregistrement du fichier." });
+  }
+});
+
+// --- BASE DE DONNÉES CLOUD SQL (PostgreSQL avec Drizzle ORM) ---
+import { db } from "./src/db/index.ts";
+import { carModels, reservations, stockRequests, siteSettings, users } from "./src/db/schema.ts";
+
+app.get("/api/sql/status", async (req, res) => {
+  try {
+    const carList = await db.select().from(carModels);
+    return res.json({
+      connected: true,
+      message: "Connexion Cloud SQL PostgreSQL active.",
+      carsCount: carList.length,
+    });
+  } catch (error: any) {
+    console.error("Erreur statut Cloud SQL:", error);
+    return res.status(500).json({
+      connected: false,
+      error: "Impossible de contacter la base Cloud SQL.",
+      details: error.message,
+    });
+  }
+});
 
 // --- BASE DE DONNÉES LOCALE (data/db.json dans le dossier du projet) ---
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE_PATH = path.join(DATA_DIR, "db.json");
+const DB_BAK_PATH = path.join(DATA_DIR, "db.json.bak");
+const DB_TMP_PATH = path.join(DATA_DIR, "db.json.tmp");
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -19,24 +105,61 @@ function ensureDataDir() {
   }
 }
 
-// Endpoint pour lire la base de données locale du dossier projet
+function safeParseJSON(str: string) {
+  try {
+    return JSON.parse(str);
+  } catch (err) {
+    return null;
+  }
+}
+
+// Endpoint pour lire la base de données locale du dossier projet (avec auto-réparation)
 app.get("/api/db", (req, res) => {
   try {
     ensureDataDir();
     if (fs.existsSync(DB_FILE_PATH)) {
       const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
-      const data = JSON.parse(fileContent);
-      return res.json({ exists: true, ...data });
-    } else {
-      return res.json({ exists: false, message: "Aucun fichier db.json encore créé." });
+      let data = safeParseJSON(fileContent);
+
+      // Si db.json est corrompu, tenter de restaurer depuis la sauvegarde db.json.bak
+      if (!data && fs.existsSync(DB_BAK_PATH)) {
+        console.warn("[Chery DB Warning] db.json est corrompu. Restauration automatique depuis db.json.bak...");
+        const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
+        data = safeParseJSON(bakContent);
+        if (data) {
+          try {
+            fs.writeFileSync(DB_FILE_PATH, bakContent, "utf-8");
+            console.log("[Chery DB Success] Fichier db.json restauré avec succès à partir du backup.");
+          } catch (_) {}
+        }
+      }
+
+      if (data) {
+        return res.json({ exists: true, ...data });
+      } else {
+        console.error("[Chery DB Error] Fichier db.json corrompu et aucun backup valide disponible.");
+        return res.json({
+          exists: false,
+          corrupted: true,
+          message: "Structure db.json non lisible. Mode réinitialisation propre actif."
+        });
+      }
+    } else if (fs.existsSync(DB_BAK_PATH)) {
+      const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
+      const data = safeParseJSON(bakContent);
+      if (data) {
+        try { fs.writeFileSync(DB_FILE_PATH, bakContent, "utf-8"); } catch (_) {}
+        return res.json({ exists: true, ...data });
+      }
     }
+    return res.json({ exists: false, message: "Aucun fichier db.json encore créé." });
   } catch (error: any) {
     console.error("Erreur lecture db.json:", error);
-    return res.status(500).json({ error: "Erreur lors de la lecture de la base locale." });
+    return res.json({ exists: false, error: "Erreur lors de la lecture de la base locale." });
   }
 });
 
-// Endpoint pour enregistrer / synchroniser la base de données dans data/db.json
+// Endpoint pour enregistrer / synchroniser la base de données dans data/db.json (écriture atomique)
 app.post("/api/db/save", (req, res) => {
   try {
     ensureDataDir();
@@ -52,8 +175,29 @@ app.post("/api/db/save", (req, res) => {
       quotes: quotes || [],
     };
 
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(dbPayload, null, 2), "utf-8");
-    console.log(`[Chery DB] Base de données enregistrée dans : ${DB_FILE_PATH}`);
+    const jsonString = JSON.stringify(dbPayload, null, 2);
+
+    // Write to temporary file first
+    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+
+    // Validate integer JSON content in temp file before replacing live database
+    const verifyContent = fs.readFileSync(DB_TMP_PATH, "utf-8");
+    if (!safeParseJSON(verifyContent)) {
+      throw new Error("Erreur d'intégrité JSON détectée lors de l'écriture temporaire.");
+    }
+
+    // Keep safety backup of previous valid db.json
+    if (fs.existsSync(DB_FILE_PATH)) {
+      try {
+        fs.copyFileSync(DB_FILE_PATH, DB_BAK_PATH);
+      } catch (e) {
+        console.warn("[Chery DB Warning] Échec de la création de la sauvegarde .bak:", e);
+      }
+    }
+
+    // Atomic rename
+    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    console.log(`[Chery DB] Base de données enregistrée en mode atomique dans : ${DB_FILE_PATH}`);
 
     return res.json({
       success: true,
@@ -69,6 +213,9 @@ app.post("/api/db/save", (req, res) => {
     });
   } catch (error: any) {
     console.error("Erreur écriture db.json:", error);
+    if (fs.existsSync(DB_TMP_PATH)) {
+      try { fs.unlinkSync(DB_TMP_PATH); } catch (_) {}
+    }
     return res.status(500).json({ error: "Erreur lors de la sauvegarde dans le dossier du projet." });
   }
 });
@@ -180,6 +327,18 @@ Directives de réponse :
     console.error("Erreur backend Chery AI Chat:", error);
     res.status(500).json({ error: error.message || "Impossible de contacter l'assistant IA." });
   }
+});
+
+// Global Express Error Handling Middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  console.error("[Express Error Handler]", err.stack || err.message || err);
+  res.status(err.status || 500).json({
+    error: "Erreur serveur.",
+    message: err.message || "Une erreur interne s'est produite."
+  });
 });
 
 async function startServer() {

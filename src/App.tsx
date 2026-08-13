@@ -40,6 +40,7 @@ import {
   saveStoredStockRequests,
   INITIAL_COMMERCIALS,
   INITIAL_CARS,
+  DEFAULT_SITE_SETTINGS,
 } from './data/cheryData';
 import {
   db,
@@ -49,6 +50,8 @@ import {
   commercialsCollection,
   settingsCollection,
   stockRequestsCollection,
+  accessoriesCollection,
+  quotesCollection,
   seedInitialDataIfEmpty,
   saveCarToFirestore,
   deleteCarFromFirestore,
@@ -62,6 +65,10 @@ import {
   saveCommercialToFirestore,
   deleteCommercialFromFirestore,
   saveSiteSettingsToFirestore,
+  saveAccessoryToFirestore,
+  deleteAccessoryFromFirestore,
+  saveQuoteToFirestore,
+  deleteQuoteFromFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -74,6 +81,7 @@ import { ReservationVoucher } from './components/ReservationVoucher';
 import { DocumentViewerModal } from './components/DocumentViewerModal';
 import { AdminPanel } from './components/AdminPanel';
 import { LoginScreen } from './components/LoginScreen';
+import { BackgroundMediaRender } from './components/BackgroundMediaRender';
 import { KnowledgeBaseManager } from './components/KnowledgeBaseManager';
 import { DocumentQuoteCustomizer } from './components/DocumentQuoteCustomizer';
 import { TestDriveList } from './components/TestDriveList';
@@ -105,8 +113,8 @@ export default function App() {
 
   const [isDbSynced, setIsDbSynced] = useState<boolean>(false);
 
-  // Active user session state (default to Lamine Abbasi or first user; null when logged out)
-  const [currentUser, setCurrentUser] = useState<CommercialUser | null>(() => commercials[0]);
+  // Active user session state (defaults to null when opening the site to show Home / Role selection)
+  const [currentUser, setCurrentUser] = useState<CommercialUser | null>(null);
 
   // Main Tab Navigation State
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
@@ -183,20 +191,23 @@ export default function App() {
   const handleSaveAccessories = (newAccessories: CarAccessory[]) => {
     setAccessories(newAccessories);
     saveStoredAccessories(newAccessories);
-    showToast('Catalogue des accessoires mis à jour !');
+    newAccessories.forEach((acc) => saveAccessoryToFirestore(acc));
+    showToast('Catalogue des accessoires mis à jour et synchronisé dans le cloud !');
   };
 
   const handleSaveQuote = (newQuote: CustomQuote) => {
     const updated = [newQuote, ...quotes.filter((q) => q.id !== newQuote.id)];
     setQuotes(updated);
     saveStoredQuotes(updated);
-    showToast(`Devis ${newQuote.quoteNumber} créé et enregistré avec succès !`);
+    saveQuoteToFirestore(newQuote);
+    showToast(`Devis ${newQuote.quoteNumber} créé et enregistré dans la base cloud !`);
   };
 
   const handleDeleteQuote = (quoteId: string) => {
     const updated = quotes.filter((q) => q.id !== quoteId);
     setQuotes(updated);
     saveStoredQuotes(updated);
+    deleteQuoteFromFirestore(quoteId);
     showToast('Devis supprimé de l\'historique');
   };
 
@@ -287,6 +298,20 @@ export default function App() {
       }
     }, (err) => console.warn('Settings snapshot listener warning:', err));
 
+    const unsubscribeAccessories = onSnapshot(accessoriesCollection, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map((doc) => doc.data() as CarAccessory);
+        setAccessories(fetched);
+      }
+    }, (err) => console.warn('Accessories snapshot listener warning:', err));
+
+    const unsubscribeQuotes = onSnapshot(quotesCollection, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map((doc) => doc.data() as CustomQuote);
+        setQuotes(fetched);
+      }
+    }, (err) => console.warn('Quotes snapshot listener warning:', err));
+
     return () => {
       isMounted = false;
       unsubscribeCars();
@@ -295,6 +320,8 @@ export default function App() {
       unsubscribeStockRequests();
       unsubscribeCommercials();
       unsubscribeSettings();
+      unsubscribeAccessories();
+      unsubscribeQuotes();
     };
   }, []);
 
@@ -325,31 +352,42 @@ export default function App() {
 
   const isDbLoadedRef = useRef(false);
 
-  // Load state from local project folder (data/db.json) on initial mount
+  // Fallback: Load state from local project folder (data/db.json) ONLY if Firestore hasn't populated state
   useEffect(() => {
     fetch('/api/db')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data && data.exists) {
-          if (Array.isArray(data.cars) && data.cars.length > 0) setCars(data.cars);
-          if (Array.isArray(data.reservations)) setReservations(data.reservations);
+          if (Array.isArray(data.cars) && data.cars.length > 0) {
+            setCars((prev) => (prev.length === 0 ? data.cars : prev));
+          }
+          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
+            setReservations((prev) => (prev.length === 0 ? data.reservations : prev));
+          }
           if (Array.isArray(data.commercials) && data.commercials.length > 0) {
-            const mergedComm = [...data.commercials];
-            INITIAL_COMMERCIALS.forEach((initUser) => {
-              if (!mergedComm.some((u) => u.id === initUser.id)) {
-                mergedComm.unshift(initUser);
+            setCommercials((prev) => {
+              if (prev.length === 0) {
+                const mergedComm = [...data.commercials];
+                INITIAL_COMMERCIALS.forEach((initUser) => {
+                  if (!mergedComm.some((u) => u.id === initUser.id)) {
+                    mergedComm.unshift(initUser);
+                  }
+                });
+                return mergedComm;
               }
+              return prev;
             });
-            setCommercials(mergedComm);
           }
           if (data.siteSettings) {
-            setSiteSettings(data.siteSettings);
-            saveStoredSiteSettings(data.siteSettings);
+            setSiteSettings((prev) => (prev ? prev : data.siteSettings));
           }
-          console.log('[Chery Local DB] Données restaurées depuis data/db.json dans le dossier du projet');
+          console.log('[Chery Local DB] Synchronisation locale prête');
         }
       })
-      .catch((err) => console.log('[Chery Local DB] Synchronisation locale active via browser/firebase.', err))
+      .catch((err) => console.log('[Chery Local DB] Synchronisation active via Cloud Firebase.', err))
       .finally(() => {
         isDbLoadedRef.current = true;
       });
@@ -574,6 +612,74 @@ export default function App() {
     showToast(`Session de ${userToDelete?.name || 'l\'utilisateur'} supprimée`);
   };
 
+  const handleImportDatabase = async (importedData: any) => {
+    if (!importedData || typeof importedData !== 'object') return;
+
+    if (Array.isArray(importedData.cars) && importedData.cars.length > 0) {
+      setCars(importedData.cars);
+      saveStoredCars(importedData.cars);
+      importedData.cars.forEach((car: CarModel) => saveCarToFirestore(car));
+    }
+    if (Array.isArray(importedData.reservations)) {
+      setReservations(importedData.reservations);
+      saveStoredReservations(importedData.reservations);
+      importedData.reservations.forEach((res: Reservation) => saveReservationToFirestore(res));
+    }
+    if (Array.isArray(importedData.commercials) && importedData.commercials.length > 0) {
+      setCommercials(importedData.commercials);
+      saveStoredCommercials(importedData.commercials);
+      importedData.commercials.forEach((comm: CommercialUser) => saveCommercialToFirestore(comm));
+    }
+    if (importedData.siteSettings) {
+      setSiteSettings(importedData.siteSettings);
+      saveStoredSiteSettings(importedData.siteSettings);
+      saveSiteSettingsToFirestore(importedData.siteSettings);
+    }
+    if (Array.isArray(importedData.accessories)) {
+      setAccessories(importedData.accessories);
+      saveStoredAccessories(importedData.accessories);
+      importedData.accessories.forEach((acc: CarAccessory) => saveAccessoryToFirestore(acc));
+    }
+    if (Array.isArray(importedData.quotes)) {
+      setQuotes(importedData.quotes);
+      saveStoredQuotes(importedData.quotes);
+      importedData.quotes.forEach((q: CustomQuote) => saveQuoteToFirestore(q));
+    }
+
+    try {
+      await fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cars: importedData.cars || cars,
+          reservations: importedData.reservations || reservations,
+          commercials: importedData.commercials || commercials,
+          siteSettings: importedData.siteSettings || siteSettings,
+          accessories: importedData.accessories || accessories,
+          quotes: importedData.quotes || quotes,
+        }),
+      });
+    } catch (_) {}
+
+    showToast('Base de données réimportée et synchronisée avec succès dans le Cloud & local !');
+  };
+
+  const handleResetToFactoryDefaults = async () => {
+    setCars(INITIAL_CARS);
+    saveStoredCars(INITIAL_CARS);
+    INITIAL_CARS.forEach((car) => saveCarToFirestore(car));
+
+    setCommercials(INITIAL_COMMERCIALS);
+    saveStoredCommercials(INITIAL_COMMERCIALS);
+    INITIAL_COMMERCIALS.forEach((comm) => saveCommercialToFirestore(comm));
+
+    setSiteSettings(DEFAULT_SITE_SETTINGS);
+    saveStoredSiteSettings(DEFAULT_SITE_SETTINGS);
+    saveSiteSettingsToFirestore(DEFAULT_SITE_SETTINGS);
+
+    showToast('Base de données réinitialisée aux modèles et paramètres d\'origine !');
+  };
+
   // Test Drive Handlers
   const handleScheduleTestDrive = (data: Omit<TestDriveAppointment, 'id' | 'createdAt' | 'status'>) => {
     const newTd: TestDriveAppointment = {
@@ -783,21 +889,14 @@ export default function App() {
   return (
     <div className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}>
 
-      {/* Home Page Custom Automotive Background Wallpaper */}
-      {siteSettings?.homeBackgroundImageUrl && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-          <div
-            className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${
-              siteSettings.homeBackgroundBlur ? 'backdrop-blur-sm' : ''
-            }`}
-            style={{ backgroundImage: `url(${siteSettings.homeBackgroundImageUrl})` }}
-          />
-          <div
-            className="absolute inset-0 bg-slate-950"
-            style={{ opacity: siteSettings.homeBackgroundOverlayOpacity ?? 0.75 }}
-          />
-        </div>
-      )}
+      {/* Global Site Workspace Background (Image / Vidéo / Thème) */}
+      <BackgroundMediaRender
+        type={siteSettings?.siteBackgroundType || 'none'}
+        imageUrl={siteSettings?.siteBackgroundImageUrl}
+        videoUrl={siteSettings?.siteBackgroundVideoUrl}
+        overlayOpacity={siteSettings?.siteBackgroundOverlayOpacity ?? 0.85}
+        blur={siteSettings?.siteBackgroundBlur ?? false}
+      />
 
       {/* Main Relative Container Wrapper */}
       <div className="relative z-10 flex flex-col min-h-screen w-full">
@@ -956,6 +1055,10 @@ export default function App() {
                 stockRequests={stockRequests}
                 onProcessStockRequest={handleProcessStockRequest}
                 onDeleteStockRequest={handleDeleteStockRequest}
+                accessories={accessories}
+                quotes={quotes}
+                onImportDatabase={handleImportDatabase}
+                onResetToFactoryDefaults={handleResetToFactoryDefaults}
               />
             )}
           </motion.div>

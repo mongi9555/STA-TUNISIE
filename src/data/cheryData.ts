@@ -22,6 +22,13 @@ export interface AutomotiveWallpaperPreset {
 
 export const PRESET_AUTOMOTIVE_WALLPAPERS: AutomotiveWallpaperPreset[] = [
   {
+    id: 'wall-icar03-offroad',
+    title: 'Chery iCAR 03 Off-Road Noir',
+    category: 'Off-Road & Aventure',
+    url: '/chery_icar03_offroad.jpg',
+    previewUrl: '/chery_icar03_offroad.jpg',
+  },
+  {
     id: 'wall-showroom',
     title: 'Showroom Chery STA Luxe',
     category: 'Showroom',
@@ -182,9 +189,18 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     address: 'Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis',
   },
   accentColor: '#DC2626',
+  homeBackgroundType: 'video',
   homeBackgroundImageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1920&auto=format&fit=crop&q=80',
-  homeBackgroundOverlayOpacity: 0.75,
-  homeBackgroundBlur: true,
+  homeBackgroundVideoUrl: 'https://youtu.be/DdNliUon_Cs',
+  homeBackgroundOverlayOpacity: 0.65,
+  homeBackgroundBlur: false,
+
+  siteBackgroundType: 'image',
+  siteBackgroundImageUrl: '/chery_icar03_offroad.jpg',
+  siteBackgroundVideoUrl: '',
+  siteBackgroundOverlayOpacity: 0.85,
+  siteBackgroundBlur: false,
+
   defaultThemeMode: 'dark',
 };
 
@@ -923,6 +939,48 @@ export const INITIAL_CARS: CarModel[] = [
 
 export const INITIAL_RESERVATIONS: Reservation[] = [];
 
+// Helper function to safely write to localStorage with quota-exceeded fallback
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e: any) {
+    if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.number === -2147024882) {
+      console.warn(`[LocalStorage QuotaExceeded] Impossible de sauvegarder la clé "${key}" en local storage direct. Tentative de sauvegarde allégée sans images base64 lourdes.`);
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object') {
+          // Strips huge Base64 data URLs (>100KB) from localStorage cache to preserve non-image state
+          const stripHugeStrings = (obj: any): any => {
+            if (!obj) return obj;
+            if (typeof obj === 'string') {
+              if (obj.startsWith('data:') && obj.length > 100000) {
+                return ''; // strip heavy base64 string from local browser cache
+              }
+              return obj;
+            }
+            if (Array.isArray(obj)) return obj.map(stripHugeStrings);
+            if (typeof obj === 'object') {
+              const res: any = {};
+              for (const k in obj) {
+                res[k] = stripHugeStrings(obj[k]);
+              }
+              return res;
+            }
+            return obj;
+          };
+          const lightweight = stripHugeStrings(parsed);
+          localStorage.setItem(key, JSON.stringify(lightweight));
+          console.log(`[LocalStorage QuotaExceeded] Clé "${key}" enregistrée avec succès en version allégée.`);
+        }
+      } catch (innerErr) {
+        console.error(`[LocalStorage QuotaExceeded] Échec ultime pour ${key}`, innerErr);
+      }
+    } else {
+      console.error(`Error saving ${key} to storage`, e);
+    }
+  }
+}
+
 // Helper functions for LocalStorage persistence
 const STORAGE_KEYS = {
   CARS: 'chery_tn_cars_v1',
@@ -946,11 +1004,7 @@ export function getStoredKnowledgeBase(): KnowledgeBaseItem[] {
 }
 
 export function saveStoredKnowledgeBase(items: KnowledgeBaseItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.KNOWLEDGE_BASE, JSON.stringify(items));
-  } catch (e) {
-    console.error('Error saving knowledge base to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.KNOWLEDGE_BASE, JSON.stringify(items));
 }
 
 export function getStoredDocumentTemplate(): DocumentTemplateConfig {
@@ -964,11 +1018,7 @@ export function getStoredDocumentTemplate(): DocumentTemplateConfig {
 }
 
 export function saveStoredDocumentTemplate(config: DocumentTemplateConfig): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.DOC_TEMPLATE, JSON.stringify(config));
-  } catch (e) {
-    console.error('Error saving document template to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.DOC_TEMPLATE, JSON.stringify(config));
 }
 
 export function getStoredAccessories(): CarAccessory[] {
@@ -982,11 +1032,7 @@ export function getStoredAccessories(): CarAccessory[] {
 }
 
 export function saveStoredAccessories(accessories: CarAccessory[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.ACCESSORIES, JSON.stringify(accessories));
-  } catch (e) {
-    console.error('Error saving accessories to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.ACCESSORIES, JSON.stringify(accessories));
 }
 
 export function getStoredQuotes(): CustomQuote[] {
@@ -1000,11 +1046,7 @@ export function getStoredQuotes(): CustomQuote[] {
 }
 
 export function saveStoredQuotes(quotes: CustomQuote[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
-  } catch (e) {
-    console.error('Error saving quotes to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
 }
 
 
@@ -1021,11 +1063,7 @@ export function getStoredSiteSettings(): SiteSettings {
 }
 
 export function saveStoredSiteSettings(settings: SiteSettings): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.SITE_SETTINGS, JSON.stringify(settings));
-  } catch (e) {
-    console.error('Error saving site settings to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.SITE_SETTINGS, JSON.stringify(settings));
 }
 
 export function getStoredCars(): CarModel[] {
@@ -1039,11 +1077,7 @@ export function getStoredCars(): CarModel[] {
 }
 
 export function saveStoredCars(cars: CarModel[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.CARS, JSON.stringify(cars));
-  } catch (e) {
-    console.error('Error saving cars to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.CARS, JSON.stringify(cars));
 }
 
 export function getStoredReservations(): Reservation[] {
@@ -1057,11 +1091,7 @@ export function getStoredReservations(): Reservation[] {
 }
 
 export function saveStoredReservations(reservations: Reservation[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
-  } catch (e) {
-    console.error('Error saving reservations to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
 }
 
 export function getStoredCommercials(): CommercialUser[] {
@@ -1084,11 +1114,7 @@ export function getStoredCommercials(): CommercialUser[] {
 }
 
 export function saveStoredCommercials(commercials: CommercialUser[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.COMMERCIALS, JSON.stringify(commercials));
-  } catch (e) {
-    console.error('Error saving commercials to storage', e);
-  }
+  safeLocalStorageSet(STORAGE_KEYS.COMMERCIALS, JSON.stringify(commercials));
 }
 
 export function getStoredTestDrives(): TestDriveAppointment[] {
@@ -1102,11 +1128,7 @@ export function getStoredTestDrives(): TestDriveAppointment[] {
 }
 
 export function saveStoredTestDrives(testDrives: TestDriveAppointment[]): void {
-  try {
-    localStorage.setItem('chery_tn_test_drives_v1', JSON.stringify(testDrives));
-  } catch (e) {
-    console.error('Error saving test drives to storage', e);
-  }
+  safeLocalStorageSet('chery_tn_test_drives_v1', JSON.stringify(testDrives));
 }
 
 export function getStoredStockRequests(): StockRequest[] {
@@ -1120,9 +1142,5 @@ export function getStoredStockRequests(): StockRequest[] {
 }
 
 export function saveStoredStockRequests(requests: StockRequest[]): void {
-  try {
-    localStorage.setItem('chery_tn_stock_requests_v1', JSON.stringify(requests));
-  } catch (e) {
-    console.error('Error saving stock requests to storage', e);
-  }
+  safeLocalStorageSet('chery_tn_stock_requests_v1', JSON.stringify(requests));
 }

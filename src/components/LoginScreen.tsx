@@ -4,6 +4,7 @@ import { INITIAL_COMMERCIALS } from '../data/cheryData';
 import { Shield, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles, Key, Car, Building2, Briefcase, ArrowLeft, ChevronRight, ShieldCheck, Cpu, Server, ShieldAlert, Phone, Mail } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import cheryHeadquarters from '../assets/images/chery_headquarters_1785419893098.jpg';
+import { BackgroundMediaRender } from './BackgroundMediaRender';
 
 interface LoginScreenProps {
   users: CommercialUser[];
@@ -41,8 +42,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
     const firstRoleUser = allUsers.find((u) => u.role === role);
     if (firstRoleUser) {
       setSelectedUserId(firstRoleUser.id);
-      setPassword(firstRoleUser.password || (firstRoleUser.role === 'super_admin' ? '1234' : firstRoleUser.role === 'admin' ? 'admin' : '123'));
     }
+    setPassword('');
     setError(null);
   };
 
@@ -61,7 +62,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
 
   const handleQuickSelectUser = (u: CommercialUser) => {
     setSelectedUserId(u.id);
-    setPassword(u.password || (u.role === 'super_admin' ? '1234' : u.role === 'admin' ? 'admin' : '123'));
+    setPassword('');
     setError(null);
   };
 
@@ -83,15 +84,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-between p-4 sm:p-8 relative overflow-hidden font-sans selection:bg-red-500 selection:text-white">
-      {/* Background HQ Image with Dark Overlay */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src={cheryHeadquarters}
-          alt="Siège Chery Tunisie"
-          className="w-full h-full object-cover object-center scale-105 filter brightness-50 contrast-125"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-slate-950/70" />
-      </div>
+      {/* Background Media (Image / Vidéo) */}
+      <BackgroundMediaRender
+        type={siteSettings?.homeBackgroundType || 'video'}
+        imageUrl={siteSettings?.homeBackgroundImageUrl}
+        videoUrl={siteSettings?.homeBackgroundVideoUrl || 'https://youtu.be/DdNliUon_Cs'}
+        overlayOpacity={siteSettings?.homeBackgroundOverlayOpacity ?? 0.65}
+        blur={siteSettings?.homeBackgroundBlur ?? false}
+        defaultFallbackImage={cheryHeadquarters}
+      />
 
       {/* Decorative Light Glow Blobs */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-red-600/15 rounded-full blur-3xl pointer-events-none z-0" />
@@ -327,7 +328,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                 </div>
               )}
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
                 {/* User Dropdown */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-300 block">
@@ -379,6 +380,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="off"
+                      data-lpignore="true"
                       placeholder="Saisissez votre mot de passe..."
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
