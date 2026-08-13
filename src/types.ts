@@ -86,6 +86,7 @@ export interface CarColor {
   hexCode: string;
   stock: number;
   reserved: number;
+  interiorColor?: string; // Couleur intérieure disponible / associée (ex: Noir Cuir, Cuir Marron Cognac, Rouge Sport)
 }
 
 export interface CarModel {

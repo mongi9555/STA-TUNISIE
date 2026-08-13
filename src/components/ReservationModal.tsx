@@ -585,6 +585,9 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                             <p className="text-[10px] font-mono text-slate-400">
                               {color.hexCode} • {isOutOfStock ? 'Épuisé' : `${color.stock} dispo`}
                             </p>
+                            <p className="text-[9px] text-amber-300 font-medium truncate">
+                              Intérieur: {color.interiorColor || 'Noir Cuir'}
+                            </p>
                           </div>
                         </button>
                       );

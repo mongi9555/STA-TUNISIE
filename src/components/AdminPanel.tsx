@@ -309,12 +309,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#1E3A8A');
   const [newColorStock, setNewColorStock] = useState<number>(5);
+  const [newColorInterior, setNewColorInterior] = useState('Noir Cuir');
 
   // Edit Color Modal State
   const [editingColorItem, setEditingColorItem] = useState<{ carId: string; color: CarColor } | null>(null);
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
   const [editColorStock, setEditColorStock] = useState<number>(0);
+  const [editColorInterior, setEditColorInterior] = useState('');
 
   // Car Model Edit/Create Modal State
   const [editingCarModel, setEditingCarModel] = useState<CarModel | null>(null);
@@ -402,6 +404,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       hexCode: newColorHex,
       stock: newColorStock,
       reserved: 0,
+      interiorColor: newColorInterior.trim() || 'Noir Cuir',
     };
 
     onAddColorToCar(carId, newColor);
@@ -409,6 +412,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewColorName('');
     setNewColorHex('#1E3A8A');
     setNewColorStock(5);
+    setNewColorInterior('Noir Cuir');
   };
 
   const handleOpenEditColor = (carId: string, color: CarColor) => {
@@ -416,6 +420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditColorName(color.name);
     setEditColorHex(color.hexCode);
     setEditColorStock(color.stock);
+    setEditColorInterior(color.interiorColor || 'Noir Cuir');
   };
 
   const handleSaveEditColor = (e: React.FormEvent) => {
@@ -425,6 +430,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       name: editColorName,
       hexCode: editColorHex,
       stock: editColorStock,
+      interiorColor: editColorInterior.trim() || 'Noir Cuir',
     });
     setEditingColorItem(null);
   };
@@ -793,35 +799,57 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     {/* Add New Color Form if open */}
                     {isAddingColor && (
-                      <div className="p-3 bg-slate-950 border border-amber-500/40 rounded-xl space-y-3">
-                        <h4 className="text-xs font-bold text-amber-300">Nouvelle déclinaison couleur :</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <input
-                            type="text"
-                            placeholder="Nom (ex: Rouge Rubis)"
-                            value={newColorName}
-                            onChange={(e) => setNewColorName(e.target.value)}
-                            className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                          />
-                          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1">
+                      <div className="p-3.5 bg-slate-950 border border-amber-500/40 rounded-xl space-y-3">
+                        <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <Plus className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Nouvelle déclinaison couleur extérieure & intérieure :</span>
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                          <div>
+                            <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">Teinte Extérieure :</label>
                             <input
-                              type="color"
-                              value={newColorHex}
-                              onChange={(e) => setNewColorHex(e.target.value)}
-                              className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
+                              type="text"
+                              placeholder="ex: Noir Fantôme"
+                              value={newColorName}
+                              onChange={(e) => setNewColorName(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
                             />
-                            <span className="text-xs font-mono text-slate-300">{newColorHex}</span>
                           </div>
-                          <input
-                            type="number"
-                            min={0}
-                            placeholder="Stock initial"
-                            value={newColorStock}
-                            onChange={(e) => setNewColorStock(Number(e.target.value))}
-                            className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                          />
+                          <div>
+                            <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">Code Hex / Swatch :</label>
+                            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1">
+                              <input
+                                type="color"
+                                value={newColorHex}
+                                onChange={(e) => setNewColorHex(e.target.value)}
+                                className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
+                              />
+                              <span className="text-xs font-mono text-slate-300">{newColorHex}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-amber-400 block font-semibold mb-0.5">Couleur Intérieur possible :</label>
+                            <input
+                              type="text"
+                              placeholder="ex: Noir Cuir, Cuir Marron Cognac"
+                              value={newColorInterior}
+                              onChange={(e) => setNewColorInterior(e.target.value)}
+                              className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 font-semibold focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">Stock initial :</label>
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="Unités"
+                              value={newColorStock}
+                              onChange={(e) => setNewColorStock(Number(e.target.value))}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                            />
+                          </div>
                         </div>
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 pt-1">
                           <button
                             onClick={() => setAddingColorCarId(null)}
                             className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs"
@@ -830,7 +858,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </button>
                           <button
                             onClick={() => handleAddColorSubmit(car.id)}
-                            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold"
+                            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
                           >
                             Enregistrer Couleur
                           </button>
@@ -843,7 +871,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {car.colors.map((color) => (
                         <div
                           key={color.id}
-                          className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between gap-2 text-xs"
+                          className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span
@@ -851,9 +879,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               style={{ backgroundColor: color.hexCode }}
                             />
                             <div className="min-w-0">
-                              <p className="font-semibold text-white truncate">{color.name}</p>
-                              <p className="font-mono text-[10px] text-slate-400">{color.hexCode}</p>
+                              <p className="font-bold text-white truncate flex items-center gap-1.5">
+                                <span>{color.name}</span>
+                                <span className="font-mono text-[10px] text-slate-400">({color.hexCode})</span>
+                              </p>
                             </div>
+                          </div>
+
+                          {/* Case / Badge Couleur Intérieur possible */}
+                          <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] text-amber-300 w-fit">
+                            <span className="text-slate-400 text-[10px] font-semibold">Intérieur possible:</span>
+                            <span className="font-bold text-amber-300">{color.interiorColor || 'Noir Cuir'}</span>
                           </div>
 
                           {/* Controls */}
@@ -885,7 +921,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <button
                                 onClick={() => handleOpenEditColor(car.id, color)}
                                 className="p-1 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 rounded-lg cursor-pointer"
-                                title="Modifier la couleur & le stock"
+                                title="Modifier la couleur (Extérieur & Intérieur) & le stock"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -2452,6 +2488,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full bg-transparent font-mono text-sm font-bold text-white focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-amber-300 block">
+                  Couleur Intérieur possible / associée :
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editColorInterior}
+                  onChange={(e) => setEditColorInterior(e.target.value)}
+                  placeholder="ex: Noir Cuir, Cuir Marron Cognac, Rouge Sport"
+                  className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-100 font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
               </div>
 
               <div className="space-y-1">

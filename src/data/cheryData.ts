@@ -551,10 +551,10 @@ export const INITIAL_CARS: CarModel[] = [
       'Système d\'aide au démarrage en côte (HHC)'
     ],
     colors: [
-      { id: 'col-t2m-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 8, reserved: 2 },
-      { id: 'col-t2m-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 5, reserved: 1 },
-      { id: 'col-t2m-3', name: 'Noir Fantôme', hexCode: '#111827', stock: 4, reserved: 0 },
-      { id: 'col-t2m-4', name: 'Rouge Rubis', hexCode: '#DC2626', stock: 3, reserved: 1 },
+      { id: 'col-t2m-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 8, reserved: 2, interiorColor: 'Cuir Marron Cognac' },
+      { id: 'col-t2m-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 5, reserved: 1, interiorColor: 'Gris Anthracite / Noir' },
+      { id: 'col-t2m-3', name: 'Noir Fantôme', hexCode: '#111827', stock: 4, reserved: 0, interiorColor: 'Noir Cuir / Surpiqûres Rouges' },
+      { id: 'col-t2m-4', name: 'Rouge Rubis', hexCode: '#DC2626', stock: 3, reserved: 1, interiorColor: 'Cuir Noir Sport' },
     ],
     interiorColors: [
       { id: 'int-t2m-1', name: 'Noir Anthracite Surpiqûres Rouge', hexCode: '#1E293B', stock: 12, reserved: 3 },
@@ -581,9 +581,9 @@ export const INITIAL_CARS: CarModel[] = [
       'Système audio premium 12 HP'
     ],
     colors: [
-      { id: 'col-i03-1', name: 'Gris Armée Cyber', hexCode: '#475569', stock: 6, reserved: 2 },
-      { id: 'col-i03-2', name: 'Blanc Arctique', hexCode: '#FFFFFF', stock: 5, reserved: 1 },
-      { id: 'col-i03-3', name: 'Noir Carbone', hexCode: '#09090B', stock: 4, reserved: 0 },
+      { id: 'col-i03-1', name: 'Gris Armée Cyber', hexCode: '#475569', stock: 6, reserved: 2, interiorColor: 'Cuir Vert Militaire & Gold' },
+      { id: 'col-i03-2', name: 'Blanc Arctique', hexCode: '#FFFFFF', stock: 5, reserved: 1, interiorColor: 'Noir Cuir Technologique' },
+      { id: 'col-i03-3', name: 'Noir Carbone', hexCode: '#09090B', stock: 4, reserved: 0, interiorColor: 'Cuir Noir Surpiqûres Vert Cyber' },
     ],
     interiorColors: [
       { id: 'int-i03-1', name: 'Cuir Vert Militaire & Gold', hexCode: '#1E293B', stock: 8, reserved: 2 },
@@ -610,9 +610,9 @@ export const INITIAL_CARS: CarModel[] = [
       'Audio Haute Fidélité 12 Haut-parleurs'
     ],
     colors: [
-      { id: 'col-i034-1', name: 'Gris Armée Cyber', hexCode: '#334155', stock: 4, reserved: 1 },
-      { id: 'col-i034-2', name: 'Vert Bivouac', hexCode: '#14532D', stock: 3, reserved: 1 },
-      { id: 'col-i034-3', name: 'Noir Onyx', hexCode: '#000000', stock: 3, reserved: 0 },
+      { id: 'col-i034-1', name: 'Gris Armée Cyber', hexCode: '#334155', stock: 4, reserved: 1, interiorColor: 'Cuir Nappa Vert & Bronze' },
+      { id: 'col-i034-2', name: 'Vert Bivouac', hexCode: '#14532D', stock: 3, reserved: 1, interiorColor: 'Cuir Vert Bivouac & Noir' },
+      { id: 'col-i034-3', name: 'Noir Onyx', hexCode: '#000000', stock: 3, reserved: 0, interiorColor: 'Cuir Noir Titanium' },
     ],
     interiorColors: [
       { id: 'int-i034-1', name: 'Cuir Nappa Vert & Surpiqûres Bronze', hexCode: '#022C22', stock: 7, reserved: 2 },
