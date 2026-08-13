@@ -481,7 +481,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                               <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
                                 <span className="text-slate-400 font-mono">{color.hexCode}</span>
                                 <span className="text-slate-600">•</span>
-                                <span className="text-amber-300 font-medium">Intérieur: {color.interiorColor || 'Noir Cuir'}</span>
+                                <span className="text-amber-300 font-medium">Couleur Intérieur associée: {color.interiorColor || 'Noir Cuir'}</span>
                               </div>
                             </div>
                           </div>

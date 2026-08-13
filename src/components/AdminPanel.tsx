@@ -828,7 +828,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </div>
                           </div>
                           <div>
-                            <label className="text-[10px] text-amber-400 block font-semibold mb-0.5">Couleur Intérieur possible :</label>
+                            <label className="text-[10px] text-amber-400 block font-semibold mb-0.5">Couleur Intérieur associée :</label>
                             <input
                               type="text"
                               placeholder="ex: Noir Cuir, Cuir Marron Cognac"
@@ -886,9 +886,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </div>
                           </div>
 
-                          {/* Case / Badge Couleur Intérieur possible */}
+                          {/* Case / Badge Couleur Intérieur associée */}
                           <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] text-amber-300 w-fit">
-                            <span className="text-slate-400 text-[10px] font-semibold">Intérieur possible:</span>
+                            <span className="text-slate-400 text-[10px] font-semibold">Couleur Intérieur associée:</span>
                             <span className="font-bold text-amber-300">{color.interiorColor || 'Noir Cuir'}</span>
                           </div>
 
@@ -2492,7 +2492,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div className="space-y-1">
                 <label className="font-semibold text-amber-300 block">
-                  Couleur Intérieur possible / associée :
+                  Couleur Intérieur associée :
                 </label>
                 <input
                   type="text"
