@@ -558,8 +558,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t2m-1', name: 'Noir Anthracite Surpiqûres Rouge', hexCode: '#1E293B', stock: 12, reserved: 3 },
-      { id: 'int-t2m-2', name: 'Cuir Marron Cognac', hexCode: '#78350F', stock: 8, reserved: 1 },
-      { id: 'int-t2m-3', name: 'Beige Sable & Noir', hexCode: '#D4B996', stock: 6, reserved: 0 },
     ]
   },
   {
@@ -589,8 +587,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-i03-1', name: 'Cuir Vert Militaire & Gold', hexCode: '#1E293B', stock: 8, reserved: 2 },
-      { id: 'int-i03-2', name: 'Noir Technologique & Vert Cyber', hexCode: '#0F172A', stock: 6, reserved: 1 },
-      { id: 'int-i03-3', name: 'Gris Titanium & Cuir Blanc', hexCode: '#E2E8F0', stock: 4, reserved: 0 },
     ]
   },
   {
@@ -620,8 +616,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-i034-1', name: 'Cuir Nappa Vert & Surpiqûres Bronze', hexCode: '#022C22', stock: 7, reserved: 2 },
-      { id: 'int-i034-2', name: 'Cuir Marron Camel & Noir', hexCode: '#B45309', stock: 5, reserved: 1 },
-      { id: 'int-i034-3', name: 'Noir Titanium Sport', hexCode: '#0B0F19', stock: 6, reserved: 0 },
     ]
   },
   {
@@ -651,8 +645,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-a8p-1', name: 'Cuir Nappa Macchiato & Bleu Nuit', hexCode: '#1E293B', stock: 8, reserved: 2 },
-      { id: 'int-a8p-2', name: 'Cuir Marron Cognac Royal', hexCode: '#78350F', stock: 6, reserved: 1 },
-      { id: 'int-a8p-3', name: 'Noir Ébène & Aluminium Brossé', hexCode: '#09090B', stock: 5, reserved: 0 },
     ]
   },
   {
@@ -682,7 +674,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t4h-1', name: 'Cuir Synthétique Noir & Bleuté', hexCode: '#0F172A', stock: 10, reserved: 2 },
-      { id: 'int-t4h-2', name: 'Gris Anthracite & Cuir Noir', hexCode: '#334155', stock: 7, reserved: 1 },
     ]
   },
   {
@@ -712,8 +703,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t7p-1', name: 'Cuir Nappa Noir & Surpiqûres Électriques', hexCode: '#111827', stock: 8, reserved: 3 },
-      { id: 'int-t7p-2', name: 'Cuir Marron Cognac & Noir', hexCode: '#78350F', stock: 6, reserved: 1 },
-      { id: 'int-t7p-3', name: 'Beige Sable & Noir Alcantara', hexCode: '#D4B996', stock: 5, reserved: 0 },
     ]
   },
   {
@@ -743,8 +732,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t8p-1', name: 'Cuir Nappa Executive Noir & Cognac', hexCode: '#0B0F19', stock: 7, reserved: 2 },
-      { id: 'int-t8p-2', name: 'Cuir Brun Caramel & Noir', hexCode: '#92400E', stock: 5, reserved: 1 },
-      { id: 'int-t8p-3', name: 'Noir Monarque & Surpiqûres Dorées', hexCode: '#000000', stock: 6, reserved: 0 },
     ]
   },
   {
@@ -774,8 +761,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t9p-1', name: 'Cuir Nappa Blanc Yatch & Bleu Royal', hexCode: '#1E293B', stock: 6, reserved: 2 },
-      { id: 'int-t9p-2', name: 'Cuir Nappa Marron Moka & Noir', hexCode: '#451A03', stock: 5, reserved: 1 },
-      { id: 'int-t9p-3', name: 'Noir Imperial & Inserts Bois Précieux', hexCode: '#09090B', stock: 4, reserved: 0 },
     ]
   },
   {
@@ -806,8 +791,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t2-1', name: 'Noir Anthracite Surpiqûres Orange', hexCode: '#1E293B', stock: 10, reserved: 2 },
-      { id: 'int-t2-2', name: 'Tissu & Cuir Noir', hexCode: '#0F172A', stock: 8, reserved: 1 },
-      { id: 'int-t2-3', name: 'Gris Anthracite & Noir', hexCode: '#334155', stock: 6, reserved: 0 },
     ]
   },
   {
@@ -837,8 +820,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t4-1', name: 'Cuir Synthétique Noir Premium', hexCode: '#0F172A', stock: 12, reserved: 4 },
-      { id: 'int-t4-2', name: 'Cuir Marron Cognac', hexCode: '#78350F', stock: 7, reserved: 1 },
-      { id: 'int-t4-3', name: 'Beige Sable & Noir', hexCode: '#D4B996', stock: 5, reserved: 0 },
     ]
   },
   {
@@ -868,8 +849,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t7-1', name: 'Cuir Nappa Noir Surpiqué', hexCode: '#111827', stock: 8, reserved: 2 },
-      { id: 'int-t7-2', name: 'Cuir Marron Cognac & Noir', hexCode: '#78350F', stock: 6, reserved: 1 },
-      { id: 'int-t7-3', name: 'Rouge Sport & Noir', hexCode: '#991B1B', stock: 4, reserved: 0 },
     ]
   },
   {
@@ -898,8 +877,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-t8-1', name: 'Cuir Nappa Royal Noir Executive', hexCode: '#0B0F19', stock: 6, reserved: 2 },
-      { id: 'int-t8-2', name: 'Cuir Marron Cognac Impérial', hexCode: '#78350F', stock: 5, reserved: 1 },
-      { id: 'int-t8-3', name: 'Beige Sable & Cuir Noir', hexCode: '#D4B996', stock: 4, reserved: 0 },
     ]
   },
   {
@@ -928,7 +905,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-arr-1', name: 'Tissu & Simili-Cuir Noir Carbone', hexCode: '#1E293B', stock: 12, reserved: 3 },
-      { id: 'int-arr-2', name: 'Gris Anthracite Confort', hexCode: '#334155', stock: 8, reserved: 1 },
     ]
   },
   {
@@ -957,8 +933,6 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     interiorColors: [
       { id: 'int-om-1', name: 'Sièges Baquets Cuir Noir Sport & Surpiqûres Bleues', hexCode: '#0F172A', stock: 6, reserved: 1 },
-      { id: 'int-om-2', name: 'Cuir Rouge Rubis & Noir GT', hexCode: '#991B1B', stock: 5, reserved: 1 },
-      { id: 'int-om-3', name: 'Cuir Marron Cognac Sport', hexCode: '#78350F', stock: 4, reserved: 0 },
     ]
   }
 ];
@@ -1097,22 +1071,13 @@ export function getStoredCars(): CarModel[] {
     const data = localStorage.getItem(STORAGE_KEYS.CARS);
     if (data) {
       const parsed: CarModel[] = JSON.parse(data);
-      return parsed.map((car) => {
-        const initialCarMatch = INITIAL_CARS.find((ic) => ic.id === car.id);
-        const resolvedInteriorColors =
-          car.interiorColors && car.interiorColors.length > 0
-            ? car.interiorColors
-            : initialCarMatch?.interiorColors || [];
-
-        return {
-          ...car,
-          interiorColors: resolvedInteriorColors,
-          colors: (car.colors || []).map((c) => ({
-            ...c,
-            interiorColor: c.interiorColor === 'Noir Cuir' ? 'Noir' : c.interiorColor,
-          })),
-        };
-      });
+      return parsed.map((car) => ({
+        ...car,
+        colors: (car.colors || []).map((c) => ({
+          ...c,
+          interiorColor: c.interiorColor === 'Noir Cuir' ? 'Noir' : c.interiorColor,
+        })),
+      }));
     }
   } catch (e) {
     console.error('Error loading cars from storage', e);

@@ -105,57 +105,82 @@ function ensureDataDir() {
   }
 }
 
-function safeParseJSON(str: string) {
+function safeParseJSON(str: string | null | undefined) {
+  if (!str || typeof str !== "string") return null;
   try {
-    return JSON.parse(str);
+    const parsed = JSON.parse(str);
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
+    return null;
   } catch (err) {
     return null;
   }
 }
 
-// Endpoint pour lire la base de données locale du dossier projet (avec auto-réparation)
+function createDefaultDbPayload() {
+  return {
+    savedAt: new Date().toISOString(),
+    cars: [],
+    reservations: [],
+    commercials: [],
+    siteSettings: null,
+    accessories: [],
+    quotes: [],
+  };
+}
+
+// Endpoint pour lire la base de données locale du dossier projet (avec auto-réparation intelligente)
 app.get("/api/db", (req, res) => {
   try {
     ensureDataDir();
-    if (fs.existsSync(DB_FILE_PATH)) {
-      const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
-      let data = safeParseJSON(fileContent);
 
-      // Si db.json est corrompu, tenter de restaurer depuis la sauvegarde db.json.bak
-      if (!data && fs.existsSync(DB_BAK_PATH)) {
-        console.warn("[Chery DB Warning] db.json est corrompu. Restauration automatique depuis db.json.bak...");
+    let data: any = null;
+
+    // 1. Tenter la lecture du fichier principal db.json
+    if (fs.existsSync(DB_FILE_PATH)) {
+      try {
+        const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
+        data = safeParseJSON(fileContent);
+      } catch (e) {
+        console.warn("[Chery DB Warning] Impossible de lire db.json:", e);
+      }
+    }
+
+    // 2. Si db.json est absent ou corrompu, tenter la sauvegarde db.json.bak
+    if (!data && fs.existsSync(DB_BAK_PATH)) {
+      console.warn("[Chery DB Warning] db.json invalide ou manquant. Restauration depuis db.json.bak...");
+      try {
         const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
         data = safeParseJSON(bakContent);
         if (data) {
-          try {
-            fs.writeFileSync(DB_FILE_PATH, bakContent, "utf-8");
-            console.log("[Chery DB Success] Fichier db.json restauré avec succès à partir du backup.");
-          } catch (_) {}
+          fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+          console.log("[Chery DB Success] Fichier db.json restauré avec succès depuis le backup.");
         }
-      }
-
-      if (data) {
-        return res.json({ exists: true, ...data });
-      } else {
-        console.error("[Chery DB Error] Fichier db.json corrompu et aucun backup valide disponible.");
-        return res.json({
-          exists: false,
-          corrupted: true,
-          message: "Structure db.json non lisible. Mode réinitialisation propre actif."
-        });
-      }
-    } else if (fs.existsSync(DB_BAK_PATH)) {
-      const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
-      const data = safeParseJSON(bakContent);
-      if (data) {
-        try { fs.writeFileSync(DB_FILE_PATH, bakContent, "utf-8"); } catch (_) {}
-        return res.json({ exists: true, ...data });
+      } catch (e) {
+        console.warn("[Chery DB Warning] Backup db.json.bak également illisible:", e);
       }
     }
-    return res.json({ exists: false, message: "Aucun fichier db.json encore créé." });
+
+    // 3. Si aucun fichier lisible n'existe, auto-génération sécurisée d'une base saine
+    if (!data) {
+      console.log("[Chery DB Recovery] Initialisation d'une nouvelle base locale saine et création du backup...");
+      data = createDefaultDbPayload();
+      const initialJson = JSON.stringify(data, null, 2);
+      try {
+        fs.writeFileSync(DB_FILE_PATH, initialJson, "utf-8");
+        fs.writeFileSync(DB_BAK_PATH, initialJson, "utf-8");
+        console.log("[Chery DB Success] Base locale saine générée avec succès.");
+      } catch (writeErr) {
+        console.error("[Chery DB Error] Impossible d'écrire la base saine:", writeErr);
+      }
+    }
+
+    return res.json({ exists: true, ...data });
   } catch (error: any) {
     console.error("Erreur lecture db.json:", error);
-    return res.json({ exists: false, error: "Erreur lors de la lecture de la base locale." });
+    const fallback = createDefaultDbPayload();
+    return res.json({ exists: true, ...fallback, recovered: true });
   }
 });
 
@@ -163,39 +188,42 @@ app.get("/api/db", (req, res) => {
 app.post("/api/db/save", (req, res) => {
   try {
     ensureDataDir();
-    const { cars, reservations, commercials, siteSettings, accessories, quotes } = req.body;
+    const { cars, reservations, commercials, siteSettings, accessories, quotes } = req.body || {};
     
     const dbPayload = {
       savedAt: new Date().toISOString(),
-      cars: cars || [],
-      reservations: reservations || [],
-      commercials: commercials || [],
+      cars: Array.isArray(cars) ? cars : [],
+      reservations: Array.isArray(reservations) ? reservations : [],
+      commercials: Array.isArray(commercials) ? commercials : [],
       siteSettings: siteSettings || null,
-      accessories: accessories || [],
-      quotes: quotes || [],
+      accessories: Array.isArray(accessories) ? accessories : [],
+      quotes: Array.isArray(quotes) ? quotes : [],
     };
 
     const jsonString = JSON.stringify(dbPayload, null, 2);
 
-    // Write to temporary file first
+    // Écrire d'abord dans un fichier temporaire
     fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
 
-    // Validate integer JSON content in temp file before replacing live database
+    // Valider l'intégrité JSON du fichier temporaire avant de remplacer la base
     const verifyContent = fs.readFileSync(DB_TMP_PATH, "utf-8");
     if (!safeParseJSON(verifyContent)) {
       throw new Error("Erreur d'intégrité JSON détectée lors de l'écriture temporaire.");
     }
 
-    // Keep safety backup of previous valid db.json
+    // Sauvegarder la version actuelle dans .bak UNIQUEMENT si elle est 100% valide
     if (fs.existsSync(DB_FILE_PATH)) {
       try {
-        fs.copyFileSync(DB_FILE_PATH, DB_BAK_PATH);
+        const currentLive = fs.readFileSync(DB_FILE_PATH, "utf-8");
+        if (safeParseJSON(currentLive)) {
+          fs.writeFileSync(DB_BAK_PATH, currentLive, "utf-8");
+        }
       } catch (e) {
-        console.warn("[Chery DB Warning] Échec de la création de la sauvegarde .bak:", e);
+        console.warn("[Chery DB Warning] Échec de la mise à jour du backup .bak:", e);
       }
     }
 
-    // Atomic rename
+    // Renommage atomique
     fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
     console.log(`[Chery DB] Base de données enregistrée en mode atomique dans : ${DB_FILE_PATH}`);
 

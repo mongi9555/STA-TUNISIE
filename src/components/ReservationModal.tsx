@@ -104,11 +104,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>('Chèque Certifié');
   const [notes, setNotes] = useState('');
 
-  // Manual / Custom Interior Color State
-  const [isCustomInterior, setIsCustomInterior] = useState(false);
-  const [customInteriorName, setCustomInteriorName] = useState('');
-  const [customInteriorHex, setCustomInteriorHex] = useState('#78350F');
-
   // Form Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -132,7 +127,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     if (car) {
       if (car.interiorColors && car.interiorColors.length > 0) {
         setSelectedInteriorColorId(car.interiorColors[0].id);
-        setIsCustomInterior(false);
       }
       setDepositAmount(getFixedDepositForCar(car));
       setRegistrationFee(getRegistrationFeeForCar(car));
@@ -154,15 +148,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   const currentCar = cars.find((c) => c.id === selectedCarId) || cars[0];
   const currentColor = currentCar?.colors.find((c) => c.id === selectedColorId) || currentCar?.colors[0];
-  const currentInteriorColor = isCustomInterior
-    ? {
-        id: 'int-custom',
-        name: customInteriorName.trim() || 'Habillage Personnalisé',
-        hexCode: customInteriorHex,
-        stock: 99,
-        reserved: 0,
-      }
-    : currentCar?.interiorColors?.find((c) => c.id === selectedInteriorColorId) || currentCar?.interiorColors?.[0];
+  const currentInteriorColor = currentCar?.interiorColors?.find((c) => c.id === selectedInteriorColorId) || currentCar?.interiorColors?.[0];
 
   // Commercial session model quota calculation (quota = 5 by default per model per commercial)
   const quotaPerModel = currentCommercial?.quotaPerModel || 5;
@@ -614,151 +600,44 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
               {/* Choose Interior Color */}
               <div className="md:col-span-2 pt-2 border-t border-slate-900">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 mb-2">
-                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <span>Couleur Intérieure & Habillage Sellerie :</span>
-                    {currentInteriorColor && (
-                      <span className="text-[11px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                        {currentInteriorColor.name}
-                      </span>
-                    )}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomInterior(!isCustomInterior);
-                      if (!isCustomInterior && !customInteriorName) {
-                        setCustomInteriorName('Cuir Marron Cognac');
-                      }
-                    }}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isCustomInterior
-                        ? 'bg-amber-500 text-black border-amber-400 shadow-sm'
-                        : 'bg-slate-900 text-amber-300 border-amber-500/30 hover:border-amber-500 hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>✍️</span>
-                    <span>{isCustomInterior ? 'Mode Teinte Manuelle Actif' : 'Définir Manuellement la Teinte'}</span>
-                  </button>
-                </div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Couleur Intérieure & Habillage Sellerie :</span>
+                  {currentInteriorColor && (
+                    <span className="text-[11px] font-normal text-amber-400">
+                      Sélectionné: {currentInteriorColor.name}
+                    </span>
+                  )}
+                </label>
+                {currentCar && currentCar.interiorColors && currentCar.interiorColors.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {currentCar.interiorColors.map((intColor) => {
+                      const isSelected = selectedInteriorColorId === intColor.id || (!selectedInteriorColorId && currentCar.interiorColors?.[0].id === intColor.id);
 
-                {/* If Manual Custom Interior is Active */}
-                {isCustomInterior ? (
-                  <div className="p-3.5 bg-slate-950 border border-amber-500/50 rounded-xl space-y-3 shadow-inner">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Saisie Manuelle de la Teinte Intérieure / Sellerie :</span>
-                      </h5>
-                      <button
-                        type="button"
-                        onClick={() => setIsCustomInterior(false)}
-                        className="text-[10px] text-slate-400 hover:text-white underline"
-                      >
-                        Revenir aux teintes constructeur
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="sm:col-span-2">
-                        <label className="text-[10px] text-slate-400 block font-semibold mb-1">
-                          Nom de la sellerie / teinte intérieure souhaitée :
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={customInteriorName}
-                          onChange={(e) => setCustomInteriorName(e.target.value)}
-                          placeholder="ex: Cuir Marron Cognac, Beige Nappa, Rouge Sport..."
-                          className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-100 font-semibold focus:ring-1 focus:ring-amber-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-slate-400 block font-semibold mb-1">
-                          Nuancier / Code Couleur :
-                        </label>
-                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                          <input
-                            type="color"
-                            value={customInteriorHex}
-                            onChange={(e) => setCustomInteriorHex(e.target.value)}
-                            className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
+                      return (
+                        <button
+                          type="button"
+                          key={intColor.id}
+                          onClick={() => setSelectedInteriorColorId(intColor.id)}
+                          className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-2.5 cursor-pointer ${
+                            isSelected
+                              ? 'border-amber-500 bg-amber-950/30 ring-2 ring-amber-500/20 text-white'
+                              : 'border-slate-800 bg-slate-900 hover:border-slate-700 text-slate-300'
+                          }`}
+                        >
+                          <span
+                            className="w-5 h-5 rounded-md border border-slate-600 shrink-0 shadow-inner relative"
+                            style={{ backgroundColor: intColor.hexCode }}
                           />
-                          <span className="text-xs font-mono text-slate-300 font-bold">{customInteriorHex}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick suggestion chips */}
-                    <div>
-                      <span className="text-[10px] text-slate-400 block mb-1.5 font-semibold">
-                        Suggestions rapides Chery :
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          { name: 'Noir Carbone', hex: '#0F172A' },
-                          { name: 'Cuir Marron Cognac', hex: '#78350F' },
-                          { name: 'Beige Nappa & Sable', hex: '#D4B996' },
-                          { name: 'Gris Anthracite & Cuir', hex: '#334155' },
-                          { name: 'Rouge Sport & Noir', hex: '#991B1B' },
-                          { name: 'Camel Luxe', hex: '#B45309' },
-                          { name: 'Bleu Nuit Alcantara', hex: '#1E3A8A' },
-                          { name: 'Tissu & Simili-Cuir', hex: '#1E293B' },
-                        ].map((chip) => (
-                          <button
-                            type="button"
-                            key={chip.name}
-                            onClick={() => {
-                              setCustomInteriorName(chip.name);
-                              setCustomInteriorHex(chip.hex);
-                            }}
-                            className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-400/60 rounded-md text-[10px] text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow" style={{ backgroundColor: chip.hex }} />
-                            <span>{chip.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold truncate leading-tight">{intColor.name}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">Habillage Officiel Chery</p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
-                  /* Standard Predefined Chery Interior Colors */
-                  <div className="space-y-2">
-                    {currentCar && currentCar.interiorColors && currentCar.interiorColors.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {currentCar.interiorColors.map((intColor) => {
-                          const isSelected = selectedInteriorColorId === intColor.id || (!selectedInteriorColorId && currentCar.interiorColors?.[0].id === intColor.id);
-
-                          return (
-                            <button
-                              type="button"
-                              key={intColor.id}
-                              onClick={() => {
-                                setSelectedInteriorColorId(intColor.id);
-                                setIsCustomInterior(false);
-                              }}
-                              className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-2.5 cursor-pointer ${
-                                isSelected
-                                  ? 'border-amber-500 bg-amber-950/30 ring-2 ring-amber-500/20 text-white'
-                                  : 'border-slate-800 bg-slate-900 hover:border-slate-700 text-slate-300'
-                              }`}
-                            >
-                              <span
-                                className="w-5 h-5 rounded-md border border-slate-600 shrink-0 shadow-inner relative"
-                                style={{ backgroundColor: intColor.hexCode }}
-                              />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-bold truncate leading-tight">{intColor.name}</p>
-                                <p className="text-[10px] text-slate-400 font-mono">Teinte Constructeur</p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-500 italic">Habillage intérieur de série standard</p>
-                    )}
-                  </div>
+                  <p className="text-xs text-slate-500 italic">Habillage intérieur de série standard</p>
                 )}
               </div>
             </div>

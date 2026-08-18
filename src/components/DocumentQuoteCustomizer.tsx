@@ -27,7 +27,6 @@ import {
   Share2,
   X,
   UserCheck,
-  Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -65,9 +64,6 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
   const [selectedCar, setSelectedCar] = useState<CarModel>(cars[0] || null);
   const [selectedColorId, setSelectedColorId] = useState<string>(cars[0]?.colors[0]?.id || '');
   const [selectedInteriorId, setSelectedInteriorId] = useState<string>(cars[0]?.interiorColors?.[0]?.id || '');
-  const [isCustomInteriorQuote, setIsCustomInteriorQuote] = useState(false);
-  const [customInteriorQuoteName, setCustomInteriorQuoteName] = useState('');
-  const [customInteriorQuoteHex, setCustomInteriorQuoteHex] = useState('#78350F');
   const [selectedAccessoryIds, setSelectedAccessoryIds] = useState<string[]>([]);
   const [discountTND, setDiscountTND] = useState<number>(0);
   const [registrationFeeTND, setRegistrationFeeTND] = useState<number>(templateConfig.defaultRegistrationFeeTND ?? 0);
@@ -118,15 +114,7 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
 
   // Financial Calculations
   const selectedColor = selectedCar?.colors.find((c) => c.id === selectedColorId) || selectedCar?.colors[0];
-  const selectedInterior = isCustomInteriorQuote
-    ? {
-        id: 'int-custom',
-        name: customInteriorQuoteName.trim() || 'Habillage Personnalisé',
-        hexCode: customInteriorQuoteHex,
-        stock: 99,
-        reserved: 0,
-      }
-    : selectedCar?.interiorColors?.find((i) => i.id === selectedInteriorId) || selectedCar?.interiorColors?.[0];
+  const selectedInterior = selectedCar?.interiorColors?.find((i) => i.id === selectedInteriorId);
   const chosenAccessories = accessories.filter((a) => selectedAccessoryIds.includes(a.id));
 
   const basePriceTND = selectedCar?.priceTND || 0;
@@ -577,83 +565,6 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
                     ))}
                   </select>
                 </div>
-              </div>
-
-              {/* Interior Color & Sellerie Selection */}
-              <div className="p-3 bg-slate-900/50 dark:bg-slate-900/90 border border-slate-800 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-xs flex items-center gap-1.5 text-amber-400">
-                    <Palette className="w-3.5 h-3.5" />
-                    <span>Couleur Intérieure & Sellerie :</span>
-                    {selectedInterior && (
-                      <span className="font-semibold text-white ml-1">({selectedInterior.name})</span>
-                    )}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomInteriorQuote(!isCustomInteriorQuote);
-                      if (!isCustomInteriorQuote && !customInteriorQuoteName) {
-                        setCustomInteriorQuoteName('Cuir Marron Cognac');
-                      }
-                    }}
-                    className="text-[10px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
-                  >
-                    {isCustomInteriorQuote ? 'Choisir dans le catalogue' : '✍️ Définir Manuellement'}
-                  </button>
-                </div>
-
-                {isCustomInteriorQuote ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                    <div className="sm:col-span-2">
-                      <input
-                        type="text"
-                        value={customInteriorQuoteName}
-                        onChange={(e) => setCustomInteriorQuoteName(e.target.value)}
-                        placeholder="ex: Cuir Marron Cognac, Beige Nappa, Alcantara Sport..."
-                        className={`w-full p-2 rounded-lg border text-xs font-semibold ${inputBgClass}`}
-                      />
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {['Noir', 'Cuir Marron Cognac', 'Beige Nappa & Sable', 'Rouge Sport & Noir', 'Gris Anthracite', 'Camel Luxe'].map((sug) => (
-                          <button
-                            type="button"
-                            key={sug}
-                            onClick={() => setCustomInteriorQuoteName(sug)}
-                            className="text-[9px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
-                          >
-                            {sug}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5">
-                        <input
-                          type="color"
-                          value={customInteriorQuoteHex}
-                          onChange={(e) => setCustomInteriorQuoteHex(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
-                        />
-                        <span className="text-xs font-mono text-slate-300 font-bold">{customInteriorQuoteHex}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <select
-                    value={selectedInteriorId}
-                    onChange={(e) => {
-                      setSelectedInteriorId(e.target.value);
-                      setIsCustomInteriorQuote(false);
-                    }}
-                    className={`w-full p-2.5 rounded-xl border font-semibold text-xs cursor-pointer ${inputBgClass}`}
-                  >
-                    {selectedCar?.interiorColors?.map((intCol) => (
-                      <option key={intCol.id} value={intCol.id}>
-                        {intCol.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
 
               {/* Accessories Checklist */}

@@ -313,17 +313,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newColorStock, setNewColorStock] = useState<number>(5);
   const [newColorInterior, setNewColorInterior] = useState('Noir');
 
-  // Interior Color State Management
-  const [addingInteriorCarId, setAddingInteriorCarId] = useState<string | null>(null);
-  const [newInteriorName, setNewInteriorName] = useState('');
-  const [newInteriorHex, setNewInteriorHex] = useState('#78350F');
-  const [newInteriorStock, setNewInteriorStock] = useState<number>(5);
-
-  const [editingInteriorItem, setEditingInteriorItem] = useState<{ carId: string; interior: CarColor } | null>(null);
-  const [editInteriorName, setEditInteriorName] = useState('');
-  const [editInteriorHex, setEditInteriorHex] = useState('');
-  const [editInteriorStock, setEditInteriorStock] = useState<number>(0);
-
   // Edit Color Modal State
   const [editingColorItem, setEditingColorItem] = useState<{ carId: string; color: CarColor } | null>(null);
   const [editColorName, setEditColorName] = useState('');
@@ -530,94 +519,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     onUpdateCarStock(carId, updatedColors);
-  };
-
-  const handleAddInteriorSubmit = (carId: string) => {
-    const car = cars.find((c) => c.id === carId);
-    if (!car || !newInteriorName.trim() || !onEditCarModel) return;
-    const newInt: CarColor = {
-      id: `int-${Date.now()}`,
-      name: newInteriorName.trim(),
-      hexCode: newInteriorHex,
-      stock: newInteriorStock,
-      reserved: 0,
-    };
-    const updatedCar: CarModel = {
-      ...car,
-      interiorColors: [...(car.interiorColors || []), newInt],
-    };
-    onEditCarModel(updatedCar);
-    setAddingInteriorCarId(null);
-    setNewInteriorName('');
-    setNewInteriorHex('#78350F');
-    setNewInteriorStock(5);
-  };
-
-  const handleDeleteInterior = (carId: string, interiorId: string) => {
-    const car = cars.find((c) => c.id === carId);
-    if (!car || !onEditCarModel) return;
-    const updatedCar: CarModel = {
-      ...car,
-      interiorColors: (car.interiorColors || []).filter((i) => i.id !== interiorId),
-    };
-    onEditCarModel(updatedCar);
-  };
-
-  const handleInteriorStockChange = (carId: string, interiorId: string, delta: number) => {
-    const car = cars.find((c) => c.id === carId);
-    if (!car || !onEditCarModel) return;
-    const updatedCar: CarModel = {
-      ...car,
-      interiorColors: (car.interiorColors || []).map((i) =>
-        i.id === interiorId ? { ...i, stock: Math.max(0, i.stock + delta) } : i
-      ),
-    };
-    onEditCarModel(updatedCar);
-  };
-
-  const handleOpenEditInterior = (carId: string, interior: CarColor) => {
-    setEditingInteriorItem({ carId, interior });
-    setEditInteriorName(interior.name);
-    setEditInteriorHex(interior.hexCode);
-    setEditInteriorStock(interior.stock);
-  };
-
-  const handleSaveEditInterior = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingInteriorItem || !onEditCarModel) return;
-    const car = cars.find((c) => c.id === editingInteriorItem.carId);
-    if (!car) return;
-    const updatedCar: CarModel = {
-      ...car,
-      interiorColors: (car.interiorColors || []).map((i) =>
-        i.id === editingInteriorItem.interior.id
-          ? {
-              ...i,
-              name: editInteriorName.trim(),
-              hexCode: editInteriorHex,
-              stock: editInteriorStock,
-            }
-          : i
-      ),
-    };
-    onEditCarModel(updatedCar);
-    setEditingInteriorItem(null);
-  };
-
-  const handlePopulateDefaultCheryInteriors = (carId: string) => {
-    const car = cars.find((c) => c.id === carId);
-    if (!car || !onEditCarModel) return;
-    const defaults: CarColor[] = [
-      { id: `int-${Date.now()}-1`, name: 'Noir Carbone', hexCode: '#0F172A', stock: 10, reserved: 0 },
-      { id: `int-${Date.now()}-2`, name: 'Cuir Marron Cognac', hexCode: '#78350F', stock: 8, reserved: 0 },
-      { id: `int-${Date.now()}-3`, name: 'Beige Nappa & Sable', hexCode: '#D4B996', stock: 6, reserved: 0 },
-      { id: `int-${Date.now()}-4`, name: 'Rouge Sport & Noir', hexCode: '#991B1B', stock: 5, reserved: 0 },
-    ];
-    const updatedCar: CarModel = {
-      ...car,
-      interiorColors: [...(car.interiorColors || []), ...defaults],
-    };
-    onEditCarModel(updatedCar);
   };
 
   const handleSavePassword = () => {
@@ -941,18 +842,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               onChange={(e) => setNewColorInterior(e.target.value)}
                               className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 font-semibold focus:ring-1 focus:ring-amber-500"
                             />
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {['Noir', 'Cuir Marron Cognac', 'Beige Nappa & Sable', 'Rouge Sport & Noir', 'Gris Anthracite', 'Camel Luxe'].map((sug) => (
-                                <button
-                                  type="button"
-                                  key={sug}
-                                  onClick={() => setNewColorInterior(sug)}
-                                  className="text-[9px] px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded cursor-pointer"
-                                >
-                                  {sug}
-                                </button>
-                              ))}
-                            </div>
                           </div>
                           <div>
                             <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">Stock initial :</label>
@@ -1056,155 +945,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </div>
                         </div>
                       ))}
-                    </div>
-
-                    {/* DEDICATED INTERIOR COLORS / SELLERIES MANAGEMENT SECTION */}
-                    <div className="pt-4 mt-4 border-t border-slate-800/80 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Palette className="w-4 h-4 text-amber-400" />
-                          <h4 className="text-xs font-extrabold text-amber-300 uppercase tracking-wider">
-                            Sellerie & Teintes Intérieures ({car.interiorColors?.length || 0})
-                          </h4>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {(!car.interiorColors || car.interiorColors.length === 0) && (
-                            <button
-                              onClick={() => handlePopulateDefaultCheryInteriors(car.id)}
-                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] font-semibold rounded-lg transition-all border border-amber-500/20 cursor-pointer"
-                            >
-                              ⚡ Importer Teintes Chery
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setAddingInteriorCarId(addingInteriorCarId === car.id ? null : car.id);
-                              setNewInteriorName('');
-                              setNewInteriorHex('#78350F');
-                              setNewInteriorStock(5);
-                            }}
-                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold rounded-lg transition-all border border-amber-500/30 flex items-center gap-1 cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>+ Teinte Intérieure</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Add New Interior Form */}
-                      {addingInteriorCarId === car.id && (
-                        <div className="p-3.5 bg-slate-950 border border-amber-500/50 rounded-xl space-y-3 shadow-inner">
-                          <h5 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                            <Plus className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Ajouter une nouvelle sellerie / teinte intérieure :</span>
-                          </h5>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                            <div className="sm:col-span-2">
-                              <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">
-                                Nom de la Teinte Intérieure :
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="ex: Cuir Marron Cognac, Beige Nappa, Rouge Sport..."
-                                value={newInteriorName}
-                                onChange={(e) => setNewInteriorName(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                              />
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {[
-                                  { name: 'Noir Carbone', hex: '#0F172A' },
-                                  { name: 'Cuir Marron Cognac', hex: '#78350F' },
-                                  { name: 'Beige Nappa & Sable', hex: '#D4B996' },
-                                  { name: 'Gris Anthracite & Cuir', hex: '#334155' },
-                                  { name: 'Rouge Sport & Noir', hex: '#991B1B' },
-                                  { name: 'Camel Luxe', hex: '#B45309' },
-                                  { name: 'Bleu Nuit Alcantara', hex: '#1E3A8A' },
-                                  { name: 'Tissu & Simili-Cuir', hex: '#1E293B' },
-                                ].map((chip) => (
-                                  <button
-                                    type="button"
-                                    key={chip.name}
-                                    onClick={() => {
-                                      setNewInteriorName(chip.name);
-                                      setNewInteriorHex(chip.hex);
-                                    }}
-                                    className="text-[9px] px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chip.hex }} />
-                                    <span>{chip.name}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">
-                                Nuancier / Code Couleur :
-                              </label>
-                              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1">
-                                <input
-                                  type="color"
-                                  value={newInteriorHex}
-                                  onChange={(e) => setNewInteriorHex(e.target.value)}
-                                  className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
-                                />
-                                <span className="text-xs font-mono text-slate-300 font-bold">{newInteriorHex}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-end gap-2 pt-1">
-                            <button
-                              onClick={() => setAddingInteriorCarId(null)}
-                              className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs"
-                            >
-                              Annuler
-                            </button>
-                            <button
-                              onClick={() => handleAddInteriorSubmit(car.id)}
-                              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
-                            >
-                              Enregistrer Teinte Intérieure
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* List of Interior Colors */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {(car.interiorColors || []).map((intCol) => (
-                          <div
-                            key={intCol.id}
-                            className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between gap-2 text-xs"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className="w-4 h-4 rounded-md border border-slate-600 shrink-0 shadow-inner"
-                                style={{ backgroundColor: intCol.hexCode }}
-                              />
-                              <div className="min-w-0">
-                                <p className="font-bold text-white truncate text-[11px]">{intCol.name}</p>
-                                <p className="font-mono text-[9px] text-slate-400">{intCol.hexCode}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                onClick={() => handleOpenEditInterior(car.id, intCol)}
-                                className="p-1 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 rounded-lg cursor-pointer"
-                                title="Modifier la teinte intérieure"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteInterior(car.id, intCol.id)}
-                                className="p-1 bg-slate-900 hover:bg-red-950 text-slate-500 hover:text-red-400 border border-slate-800 rounded-lg cursor-pointer"
-                                title="Supprimer cette teinte intérieure"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -2824,18 +2564,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   placeholder="ex: Noir, Cuir Marron Cognac, Rouge Sport"
                   className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-100 font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {['Noir', 'Cuir Marron Cognac', 'Beige Nappa & Sable', 'Rouge Sport & Noir', 'Gris Anthracite', 'Camel Luxe'].map((sug) => (
-                    <button
-                      type="button"
-                      key={sug}
-                      onClick={() => setEditColorInterior(sug)}
-                      className="text-[9px] px-1.5 py-0.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded cursor-pointer"
-                    >
-                      {sug}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="space-y-1">
@@ -2864,101 +2592,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Enregistrer Modifications
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Modal: Edit Interior Color / Sellerie */}
-      {editingInteriorItem && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <form
-            onSubmit={handleSaveEditInterior}
-            className="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Palette className="w-5 h-5 text-amber-400" />
-                <h4 className="font-extrabold text-white text-base">Modifier la Teinte Intérieure / Sellerie</h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingInteriorItem(null)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-300 block">Nom de la Teinte Intérieure :</label>
-                <input
-                  type="text"
-                  required
-                  value={editInteriorName}
-                  onChange={(e) => setEditInteriorName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
-                />
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {[
-                    { name: 'Noir Carbone', hex: '#0F172A' },
-                    { name: 'Cuir Marron Cognac', hex: '#78350F' },
-                    { name: 'Beige Nappa & Sable', hex: '#D4B996' },
-                    { name: 'Gris Anthracite & Cuir', hex: '#334155' },
-                    { name: 'Rouge Sport & Noir', hex: '#991B1B' },
-                    { name: 'Camel Luxe', hex: '#B45309' },
-                  ].map((chip) => (
-                    <button
-                      type="button"
-                      key={chip.name}
-                      onClick={() => {
-                        setEditInteriorName(chip.name);
-                        setEditInteriorHex(chip.hex);
-                      }}
-                      className="text-[9px] px-1.5 py-0.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded flex items-center gap-1 cursor-pointer"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chip.hex }} />
-                      <span>{chip.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-300 block">Code Hexadécimal / Nuancier :</label>
-                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl p-2">
-                  <input
-                    type="color"
-                    value={editInteriorHex}
-                    onChange={(e) => setEditInteriorHex(e.target.value)}
-                    className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={editInteriorHex}
-                    onChange={(e) => setEditInteriorHex(e.target.value)}
-                    className="w-full bg-transparent font-mono text-sm font-bold text-white focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingInteriorItem(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
-              >
-                <Save className="w-4 h-4" /> Enregistrer Teinte Intérieure
               </button>
             </div>
           </form>

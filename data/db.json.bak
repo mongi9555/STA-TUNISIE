@@ -1,0 +1,1151 @@
+{
+  "savedAt": "2026-08-18T09:09:38.526Z",
+  "cars": [
+    {
+      "category": "Berline",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "maxSpeed": "190 km/h",
+      "bootCapacity": "475 Litres",
+      "guarantee": "7 ans ou 200 000 km",
+      "energy": "Hybride",
+      "powerHP": "147 ch (8 CV Fiscaux)",
+      "name": "Chery Arrizo 8 PHEV",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47649.webp?t=1782727426",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "interiorColors": [
+        {
+          "name": "Noir Carbone",
+          "stock": 10,
+          "hexCode": "#0F172A",
+          "id": "int-1787043676942-1",
+          "reserved": 0
+        },
+        {
+          "id": "int-1787043676942-2",
+          "name": "Cuir Marron Cognac",
+          "hexCode": "#78350F",
+          "reserved": 0,
+          "stock": 8
+        },
+        {
+          "name": "Beige Nappa & Sable",
+          "reserved": 0,
+          "id": "int-1787043676942-3",
+          "hexCode": "#D4B996",
+          "stock": 6
+        },
+        {
+          "stock": 5,
+          "id": "int-1787043676942-4",
+          "name": "Rouge Sport & Noir",
+          "hexCode": "#991B1B",
+          "reserved": 0
+        }
+      ],
+      "consumption": "6.8 L/100km",
+      "ficheTechniqueUrl": "",
+      "acceleration": "0-100 km/h en 8.9s",
+      "transmission": "Boîte Automatique",
+      "engine": "1.5 T DHT",
+      "priceTND": 89900,
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "id": "car-1785512735025",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "colors": [
+        {
+          "stock": 0,
+          "id": "col-1-1785512735025",
+          "name": "White",
+          "interiorColor": "Gris Clair",
+          "hexCode": "#F8FAFC",
+          "reserved": 0
+        },
+        {
+          "name": "Gray",
+          "reserved": 0,
+          "hexCode": "#475569",
+          "stock": 0,
+          "interiorColor": "Cuir Gris Clair",
+          "id": "col-2-1785512735025"
+        },
+        {
+          "stock": 0,
+          "interiorColor": "Cuir Gris Clair",
+          "hexCode": "#090D16",
+          "id": "col-3-1785512735025",
+          "reserved": 0,
+          "name": "Black"
+        }
+      ]
+    },
+    {
+      "powerHP": "147 ch (8 CV Fiscaux)",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "engine": "1.6 T-GDi Luxury BVA",
+      "acceleration": "0-100 km/h en 8.9s",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "colors": [],
+      "priceTND": 100000,
+      "consumption": "6.8 L/100km",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "transmission": "Boîte Automatique",
+      "maxSpeed": "190 km/h",
+      "energy": "Essence",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "id": "car-1785512823129",
+      "guarantee": "7 ans ou 200 000 km",
+      "category": "Berline",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724",
+      "ficheTechniqueUrl": "",
+      "name": "Chery Arrizo 8",
+      "bootCapacity": "475 Litres"
+    },
+    {
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077",
+      "bootCapacity": "475 Litres",
+      "ficheTechniqueUrl": "",
+      "maxSpeed": "190 km/h",
+      "category": "SUV",
+      "energy": "Essence",
+      "guarantee": "7 ans ou 200 000 km",
+      "priceTND": 129900,
+      "consumption": "6.8 L/100km",
+      "transmission": "Boîte Automatique",
+      "interiorColors": [
+        {
+          "reserved": 0,
+          "name": "Noir Carbone",
+          "stock": 10,
+          "id": "int-1787043707010-1",
+          "hexCode": "#0F172A"
+        },
+        {
+          "name": "Cuir Marron Cognac",
+          "hexCode": "#78350F",
+          "id": "int-1787043707010-2",
+          "reserved": 0,
+          "stock": 8
+        },
+        {
+          "stock": 6,
+          "name": "Beige Nappa & Sable",
+          "id": "int-1787043707010-3",
+          "hexCode": "#D4B996",
+          "reserved": 0
+        },
+        {
+          "reserved": 0,
+          "hexCode": "#991B1B",
+          "name": "Rouge Sport & Noir",
+          "stock": 5,
+          "id": "int-1787043707010-4"
+        }
+      ],
+      "powerHP": "147 ch (8 CV Fiscaux)",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "name": "Chery Tiggo 9 PHEV",
+      "colors": [
+        {
+          "stock": 5,
+          "hexCode": "#fcfcfc",
+          "id": "col-1-1785513071800",
+          "name": "White BX",
+          "interiorColor": "Cuir Noir",
+          "reserved": 0
+        },
+        {
+          "reserved": 0,
+          "id": "col-2-1785513071800",
+          "stock": 5,
+          "interiorColor": "Cuir Beige & Bleu",
+          "name": "Green SJ",
+          "hexCode": "#087252"
+        },
+        {
+          "reserved": 0,
+          "hexCode": "#727783",
+          "interiorColor": "Cuir Noir",
+          "name": "Tech Gray GX",
+          "id": "col-3-1785513071800",
+          "stock": 13
+        },
+        {
+          "interiorColor": "Cuir Beige & Bleu",
+          "stock": 13,
+          "hexCode": "#030303",
+          "reserved": 0,
+          "name": "Black CM",
+          "id": "col-1786981421374"
+        },
+        {
+          "stock": 9,
+          "id": "col-1786981512703",
+          "hexCode": "#a1a1a1",
+          "name": "Huanyu Gray",
+          "reserved": 0,
+          "interiorColor": "Cuir Noir"
+        }
+      ],
+      "engine": "1.5 T DHT AWD",
+      "acceleration": "0-100 km/h en 8.9s",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "id": "car-1785513071800",
+      "dimensions": "4400 x 1830 x 1670 mm"
+    },
+    {
+      "priceTND": 89900,
+      "powerHP": "147 ch (8 CV Fiscaux)",
+      "colors": [
+        {
+          "name": "White",
+          "interiorColor": "Cuir Noir",
+          "stock": 0,
+          "hexCode": "#f0f2f4",
+          "id": "col-1-1785513939488",
+          "reserved": 0
+        },
+        {
+          "id": "col-3-1785513939488",
+          "reserved": 0,
+          "interiorColor": "Cuir Noir",
+          "stock": 0,
+          "name": "Black CH",
+          "hexCode": "#0a0a0a"
+        }
+      ],
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "guarantee": "7 ans ou 200 000 km",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "bootCapacity": "475 Litres",
+      "engine": "2.3 L Turbo 4x2",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "acceleration": "0-100 km/h en 8.9s",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "name": "Chery Himla 4X2",
+      "id": "car-1785513939488",
+      "maxSpeed": "190 km/h",
+      "ficheTechniqueUrl": "",
+      "consumption": "6.8 L/100km",
+      "interiorColors": [
+        {
+          "id": "int-1787041462294-1",
+          "reserved": 0,
+          "hexCode": "#0F172A",
+          "stock": 10,
+          "name": "Noir Carbone"
+        },
+        {
+          "name": "Cuir Marron Cognac",
+          "id": "int-1787041462294-2",
+          "reserved": 0,
+          "stock": 8,
+          "hexCode": "#78350F"
+        },
+        {
+          "hexCode": "#D4B996",
+          "reserved": 0,
+          "id": "int-1787041462294-3",
+          "stock": 6,
+          "name": "Beige Nappa & Sable"
+        },
+        {
+          "stock": 5,
+          "hexCode": "#991B1B",
+          "id": "int-1787041462294-4",
+          "name": "Rouge Sport & Noir",
+          "reserved": 0
+        }
+      ],
+      "category": "SUV",
+      "energy": "Diesel",
+      "transmission": "Boîte Manuelle"
+    },
+    {
+      "maxSpeed": "150 km/h",
+      "dimensions": "5330 x 1920 x 1825 mm",
+      "guarantee": "5 ans ou 200 000 km",
+      "bootCapacity": "1060 Kg",
+      "name": "Chery Himla 4x4",
+      "category": "SUV",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+      "engine": "2.3 L Turbo 4x4",
+      "colors": [
+        {
+          "reserved": 0,
+          "name": "Silver Gray GR",
+          "id": "col-1-1785514106502",
+          "hexCode": "#bfbfbf",
+          "stock": 7,
+          "interiorColor": "Cuir Noir"
+        },
+        {
+          "stock": 2,
+          "id": "col-2-1785514106502",
+          "name": "Green SC",
+          "interiorColor": "Cuir Noir",
+          "reserved": 0,
+          "hexCode": "#38ad9a"
+        },
+        {
+          "id": "col-3-1785514106502",
+          "reserved": 0,
+          "stock": 2,
+          "interiorColor": "Cuir Noir",
+          "hexCode": "#ff9500",
+          "name": "Orange DU"
+        },
+        {
+          "reserved": 0,
+          "id": "col-1786981947069",
+          "interiorColor": "Cuir Noir",
+          "name": "Black CH",
+          "stock": 6,
+          "hexCode": "#0a0a0a"
+        }
+      ],
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "torque": "420 Nm @ 2000 tr/min",
+      "ficheTechniqueUrl": "",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "transmission": "Boîte Manuelle",
+      "powerHP": "161 ch (8 CV Fiscaux)",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "priceTND": 102900,
+      "energy": "Diesel",
+      "acceleration": "0-100 km/h en 8.3s",
+      "consumption": "8.7 L/100km",
+      "id": "car-1785514106502"
+    },
+    {
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "colors": [
+        {
+          "reserved": 0,
+          "id": "col-1-1785514374177",
+          "hexCode": "#bfbfbf",
+          "name": "Silver Gray GR",
+          "stock": 13,
+          "interiorColor": "Cuir Marron"
+        },
+        {
+          "name": "Green SC",
+          "interiorColor": "Cuir Marron",
+          "reserved": 0,
+          "stock": 3,
+          "hexCode": "#38ad9a",
+          "id": "col-2-1785514374177"
+        },
+        {
+          "hexCode": "#ff9500",
+          "stock": 3,
+          "reserved": 0,
+          "name": "Orange DU",
+          "interiorColor": "Cuir Marron",
+          "id": "col-3-1785514374177"
+        },
+        {
+          "interiorColor": "Cuir Marron",
+          "hexCode": "#0a0a0a",
+          "name": "Black CH",
+          "stock": 15,
+          "id": "col-1786982067459",
+          "reserved": 0
+        }
+      ],
+      "category": "SUV",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "bootCapacity": "475 Litres",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "engine": "2.3 L Turbo 4x4 BVA",
+      "maxSpeed": "190 km/h",
+      "ficheTechniqueUrl": "",
+      "powerHP": "147 ch (8 CV Fiscaux)",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+      "consumption": "6.8 L/100km",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "transmission": "Boîte Automatique",
+      "id": "car-1785514374177",
+      "energy": "Diesel",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "acceleration": "0-100 km/h en 8.9s",
+      "name": "Chery Himla 4X4",
+      "guarantee": "7 ans ou 200 000 km",
+      "priceTND": 119900
+    },
+    {
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "colors": [
+        {
+          "id": "col-1-1785753010029",
+          "stock": 0,
+          "reserved": 0,
+          "interiorColor": "Cuir Noir",
+          "name": "Red",
+          "hexCode": "#ff0000"
+        },
+        {
+          "interiorColor": "Cuir Noir",
+          "reserved": 0,
+          "hexCode": "#5a626c",
+          "stock": 0,
+          "id": "col-2-1785753010029",
+          "name": "Gray"
+        },
+        {
+          "stock": 0,
+          "id": "col-3-1785753010029",
+          "reserved": 0,
+          "hexCode": "#161618",
+          "name": "Black",
+          "interiorColor": "Cuir Noir"
+        },
+        {
+          "hexCode": "#edf0f7",
+          "reserved": 0,
+          "stock": 0,
+          "id": "col-1786983375958",
+          "name": "White",
+          "interiorColor": "Cuir Noir"
+        }
+      ],
+      "category": "SUV",
+      "engine": "1.0 T CVT",
+      "maxSpeed": "190 km/h",
+      "transmission": "Boîte Automatique",
+      "id": "car-1785753010029",
+      "acceleration": "0-100 km/h en 8.9s",
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47617.webp?t=1777544465",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "guarantee": "7 ans ou 200 000 km",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "energy": "Essence",
+      "bootCapacity": "475 Litres",
+      "consumption": "6.8 L/100km",
+      "name": "Chery Tiggo 2 Pro Max",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "ficheTechniqueUrl": "",
+      "priceTND": 66990
+    },
+    {
+      "colors": [
+        {
+          "interiorColor": "Cuir Noir",
+          "id": "col-1-1785753066750",
+          "name": "Silver KU",
+          "stock": 0,
+          "reserved": 0,
+          "hexCode": "#d1cccc"
+        },
+        {
+          "stock": 0,
+          "interiorColor": "Cuir Noir",
+          "id": "col-2-1785753066750",
+          "hexCode": "#ffffff",
+          "name": "White BW",
+          "reserved": 0
+        },
+        {
+          "interiorColor": "Cuir Noir",
+          "hexCode": "#6e6f72",
+          "id": "col-3-1785753066750",
+          "name": "Gray GV",
+          "reserved": 0,
+          "stock": 0
+        },
+        {
+          "name": "Black CL",
+          "id": "col-1786982272954",
+          "hexCode": "#050505",
+          "reserved": 0,
+          "stock": 0,
+          "interiorColor": "Cuir Noir"
+        }
+      ],
+      "priceTND": 79900,
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "name": "Chery Tiggo 4 HEV",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "consumption": "6.8 L/100km",
+      "engine": "1.5 L",
+      "bootCapacity": "475 Litres",
+      "guarantee": "7 ans ou 200 000 km",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "ficheTechniqueUrl": "",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731",
+      "acceleration": "0-100 km/h en 8.9s",
+      "energy": "Essence",
+      "maxSpeed": "190 km/h",
+      "transmission": "Boîte Automatique",
+      "id": "car-1785753066750",
+      "category": "SUV"
+    },
+    {
+      "colors": [
+        {
+          "hexCode": "#000000",
+          "name": "Black",
+          "interiorColor": "Cuir Marron",
+          "reserved": 0,
+          "id": "col-1-1785753150277",
+          "stock": 18
+        },
+        {
+          "reserved": 0,
+          "id": "col-2-1785753150277",
+          "hexCode": "#b3c2d5",
+          "name": "Silver",
+          "stock": 12,
+          "interiorColor": "Cuir Marron"
+        }
+      ],
+      "transmission": "Boîte Automatique",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
+      "id": "car-1785753150277",
+      "engine": "65.7 kWh 4x2",
+      "guarantee": "7 ans ou 200 000 km",
+      "consumption": "6.8 L/100km",
+      "category": "SUV",
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "maxSpeed": "190 km/h",
+      "acceleration": "0-100 km/h en 8.9s",
+      "bootCapacity": "475 Litres",
+      "name": "Chery I03 4X2",
+      "energy": "Essence",
+      "priceTND": 76900,
+      "ficheTechniqueUrl": "",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ]
+    },
+    {
+      "bootCapacity": "475 Litres",
+      "ficheTechniqueUrl": "",
+      "energy": "Essence",
+      "category": "SUV",
+      "consumption": "6.8 L/100km",
+      "maxSpeed": "190 km/h",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "transmission": "Boîte Automatique",
+      "engine": "69.77 kWh 4x4",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "id": "car-1785753208837",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "colors": [
+        {
+          "name": "Black",
+          "interiorColor": "Cuir Marron",
+          "stock": 31,
+          "reserved": 0,
+          "hexCode": "#000000",
+          "id": "col-1-1785753208837"
+        },
+        {
+          "stock": 23,
+          "reserved": 0,
+          "hexCode": "#b3c2d5",
+          "id": "col-2-1785753208837",
+          "interiorColor": "Cuir Marron",
+          "name": "Silver"
+        },
+        {
+          "id": "col-1786454499484",
+          "reserved": 0,
+          "name": "Green ",
+          "stock": 8,
+          "hexCode": "#0e775c",
+          "interiorColor": "Cuir Marron"
+        },
+        {
+          "interiorColor": "Cuir Marron",
+          "hexCode": "#6f7585",
+          "name": "Gray",
+          "id": "col-1786454514433",
+          "stock": 28,
+          "reserved": 0
+        }
+      ],
+      "name": "Chery I03 4X4",
+      "priceTND": 84900,
+      "acceleration": "0-100 km/h en 8.9s",
+      "guarantee": "7 ans ou 200 000 km"
+    },
+    {
+      "category": "SUV",
+      "ficheTechniqueUrl": "",
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "maxSpeed": "190 km/h",
+      "engine": "1.5 T DHT Hybrid",
+      "consumption": "6.8 L/100km",
+      "name": "Chery Tiggo 7 PHEV",
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835",
+      "colors": [
+        {
+          "interiorColor": "Cuir Noir",
+          "reserved": 0,
+          "name": "White BW",
+          "hexCode": "#ffffff",
+          "id": "col-1-1785753278797",
+          "stock": 25
+        },
+        {
+          "stock": 35,
+          "id": "col-2-1785753278797",
+          "reserved": 0,
+          "interiorColor": "Cuir Noir",
+          "name": "Phantom Gray GV",
+          "hexCode": "#939aa5"
+        },
+        {
+          "reserved": 0,
+          "stock": 25,
+          "hexCode": "#727783",
+          "interiorColor": "Cuir Noir",
+          "id": "col-3-1785753278797",
+          "name": "Tech Gray GX"
+        },
+        {
+          "stock": 30,
+          "hexCode": "#050505",
+          "reserved": 0,
+          "id": "col-1786454139529",
+          "name": "Black CL",
+          "interiorColor": "Cuir Noir"
+        },
+        {
+          "hexCode": "#217cb5",
+          "stock": 20,
+          "reserved": 0,
+          "id": "col-1786454192522",
+          "interiorColor": "Cuir Noir",
+          "name": "Exclusive WE"
+        }
+      ],
+      "bootCapacity": "475 Litres",
+      "guarantee": "7 ans ou 200 000 km",
+      "acceleration": "0-100 km/h en 8.9s",
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "id": "car-1785753278797",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "energy": "Hybride",
+      "priceTND": 88900,
+      "transmission": "Boîte Automatique"
+    },
+    {
+      "bootCapacity": "475 Litres",
+      "dimensions": "4400 x 1830 x 1670 mm",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403",
+      "category": "SUV",
+      "torque": "210 Nm @ 1750-4000 tr/min",
+      "colors": [
+        {
+          "name": "White BW",
+          "interiorColor": "Cuir Noir",
+          "id": "col-1-1785753367152",
+          "reserved": 0,
+          "hexCode": "#ffffff",
+          "stock": 10
+        },
+        {
+          "hexCode": "#668f88",
+          "interiorColor": "Cuir Noir",
+          "name": "Gray UM",
+          "stock": 9,
+          "reserved": 0,
+          "id": "col-2-1785753367152"
+        },
+        {
+          "stock": 18,
+          "id": "col-3-1785753367152",
+          "reserved": 0,
+          "name": "Black CL",
+          "interiorColor": "Cuir Noir",
+          "hexCode": "#050505"
+        },
+        {
+          "name": "Green SJ",
+          "interiorColor": "Cuir Noir",
+          "stock": 9,
+          "id": "col-1786454375127",
+          "hexCode": "#087252",
+          "reserved": 0
+        }
+      ],
+      "name": "Chery Tiggo 8 PHEV",
+      "maxSpeed": "190 km/h",
+      "engine": "1.5 T DHT",
+      "id": "car-1785753367152",
+      "transmission": "Boîte Automatique",
+      "ficheTechniqueUrl": "",
+      "priceTND": 102990,
+      "consumption": "6.8 L/100km",
+      "safetyFeatures": [
+        "6 Airbags",
+        "ABS + EBD",
+        "ESP Bosch 9.3",
+        "Radar de recul 360°",
+        "Isofix",
+        "Freinage d'urgence"
+      ],
+      "features": [
+        "Écran Tactile HD 10.25\"",
+        "Chargeur par induction",
+        "Toit panoramique",
+        "Climatisation Bizone Purifiée N95"
+      ],
+      "description": "SUV moderne équipé des dernières technologies Chery.",
+      "guarantee": "7 ans ou 200 000 km",
+      "powerHP": "147 ch (5 CV Fiscaux)",
+      "energy": "Hybride",
+      "acceleration": "0-100 km/h en 8.9s"
+    }
+  ],
+  "reservations": [],
+  "commercials": [
+    {
+      "role": "admin",
+      "id": "admin-lamine",
+      "password": "STA@2026+",
+      "name": "Lamine Abbasi",
+      "agency": "Direction Générale - Marketing",
+      "phone": "+216 71 800 900",
+      "avatar": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+      "title": "Directeur Marketing",
+      "permissions": {
+        "canExportReports": true,
+        "canEditPrices": true,
+        "canAccessAdminPanel": true,
+        "canCancelReservation": true,
+        "canManageStock": true,
+        "canPrintVouchers": true,
+        "canCreateReservation": true
+      },
+      "email": "lamine.abbasi@sta-tunisie.com"
+    },
+    {
+      "email": "sami.chaker@sta-tunisie.com",
+      "title": "Administrateur",
+      "password": "STA@2026+",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "name": "Sami Chaker",
+      "agency": "Direction Générale - Administration",
+      "phone": "+216 71 800 901",
+      "role": "admin",
+      "permissions": {
+        "canCancelReservation": true,
+        "canPrintVouchers": true,
+        "canCreateReservation": true,
+        "canAccessAdminPanel": true,
+        "canExportReports": true,
+        "canManageStock": true,
+        "canEditPrices": true
+      },
+      "id": "admin-sami"
+    },
+    {
+      "password": "123",
+      "phone": "+216 98 505 606",
+      "id": "comm-bassem",
+      "quotaPerModel": 5,
+      "role": "commercial",
+      "email": "bassem.jerbi@sta-tunisie.com",
+      "name": "Bassem Jerbi",
+      "title": "Responsable Commercial",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "agency": "siege STA",
+      "permissions": {
+        "canCancelReservation": false,
+        "canManageStock": false,
+        "canExportReports": true,
+        "canCreateReservation": true,
+        "canAccessAdminPanel": false,
+        "canPrintVouchers": true,
+        "canEditPrices": false
+      }
+    },
+    {
+      "agency": "Chery Agence Ain Zaghouen",
+      "password": "123",
+      "title": "Commerciale",
+      "role": "commercial",
+      "name": "Hanen Gharbi",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "permissions": {
+        "canExportReports": true,
+        "canPrintVouchers": true,
+        "canCreateReservation": true,
+        "canEditPrices": false,
+        "canManageStock": false,
+        "canAccessAdminPanel": false,
+        "canCancelReservation": false
+      },
+      "id": "comm-hanen",
+      "email": "hanen.gharbi@sta-tunisie.com",
+      "phone": "+216 20 707 808"
+    },
+    {
+      "permissions": {
+        "canCancelReservation": false,
+        "canExportReports": true,
+        "canCreateReservation": true,
+        "canPrintVouchers": true,
+        "canManageStock": false,
+        "canEditPrices": false,
+        "canAccessAdminPanel": false
+      },
+      "phone": "+216 26 909 101",
+      "password": "123",
+      "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
+      "agency": "Chery Agence Ain Zaghouen",
+      "name": "Ines Chaari",
+      "email": "ines.chaari@sta-tunisie.com",
+      "role": "commercial",
+      "title": "Commerciale",
+      "id": "comm-ines"
+    },
+    {
+      "name": "Marwa Frikha",
+      "phone": "+216 22 101 202",
+      "permissions": {
+        "canCancelReservation": false,
+        "canPrintVouchers": true,
+        "canEditPrices": false,
+        "canManageStock": false,
+        "canCreateReservation": true,
+        "canExportReports": true,
+        "canAccessAdminPanel": false
+      },
+      "role": "commercial",
+      "title": "Commerciale",
+      "email": "marwa.frikha@sta-tunisie.com",
+      "agency": "Siege STA",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      "password": "123",
+      "id": "comm-marwa"
+    },
+    {
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "permissions": {
+        "canCreateReservation": true,
+        "canPrintVouchers": true,
+        "canCancelReservation": false,
+        "canAccessAdminPanel": false,
+        "canExportReports": true,
+        "canManageStock": false,
+        "canEditPrices": false
+      },
+      "agency": "Siege STA",
+      "email": "moez.bennaser@sta-tunisie.com",
+      "title": "Commercial",
+      "name": "Moez Ben Naser",
+      "password": "123",
+      "role": "commercial",
+      "id": "comm-moez",
+      "phone": "+216 55 303 404"
+    },
+    {
+      "phone": "+216 71 800 990",
+      "role": "super_admin",
+      "agency": "Direction Informatique (DSI) - Siège STA",
+      "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+      "name": "Arbi Gharbi",
+      "id": "superadmin-arbi",
+      "password": "1234",
+      "title": "Directeur Système d'Informations (DSI)",
+      "email": "arbi.gharbi@chery.tn",
+      "permissions": {
+        "canPrintVouchers": true,
+        "canCreateReservation": true,
+        "canAccessAdminPanel": true,
+        "canCancelReservation": true,
+        "canEditPrices": true,
+        "canExportReports": true,
+        "canManageStock": true
+      }
+    },
+    {
+      "password": "1234",
+      "agency": "Direction Informatique (DSI) - Siège STA",
+      "title": "Manager IT",
+      "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+      "email": "kamel.belhoula@chery.tn",
+      "role": "super_admin",
+      "id": "superadmin-kamel",
+      "name": "Kamel Belhoula",
+      "phone": "+216 71 800 991",
+      "permissions": {
+        "canEditPrices": true,
+        "canCreateReservation": true,
+        "canAccessAdminPanel": true,
+        "canManageStock": true,
+        "canPrintVouchers": true,
+        "canCancelReservation": true,
+        "canExportReports": true
+      }
+    },
+    {
+      "password": "123",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "email": "nader.chtourou@sta-tunisie.com",
+      "id": "user-1785739349068",
+      "agency": "Chery Agence Sfax",
+      "title": "commerciale",
+      "phone": "+216 xxxxxx",
+      "role": "commercial",
+      "name": "Nader Chtourou"
+    },
+    {
+      "phone": "+216  95 787 334",
+      "password": "1234",
+      "email": "mongi.jamai@kgs.com.tn",
+      "id": "user-1787042811243",
+      "name": "Mongi Jamai",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "quotaPerModel": 5,
+      "role": "admin",
+      "agency": "STA Siege",
+      "title": "Support IT Level 2"
+    }
+  ],
+  "siteSettings": {
+    "siteBackgroundVideoUrl": "",
+    "headerBadgeText": "Espace Commercial & Direction",
+    "homeBackgroundBlur": false,
+    "homeBackgroundOverlayOpacity": 0.1,
+    "logoUrl": "data:image/png;base64,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",
+    "homeBackgroundImageUrl": "https://zondatec.com/wp-content/uploads/2026/07/Himla-1-1024x576.webp",
+    "homeBackgroundType": "image",
+    "siteBackgroundType": "image",
+    "siteSubtitle": "Système de Réservation, Stocks & Gestion des Accès — Siège STA",
+    "siteBackgroundBlur": false,
+    "siteBackgroundOverlayOpacity": 0.1,
+    "homeBackgroundVideoUrl": "",
+    "announcementBanner": {
+      "text": "⚡ [Super Admin DSI] Système de réservation opérationnel. Mises à jour automatiques des arrivages et personnalisations.",
+      "type": "info",
+      "enabled": true
+    },
+    "dsiContact": {
+      "address": "Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis",
+      "supportHours": "Lun - Ven: 08:00 - 17:30",
+      "phone": "+216 71 800 990",
+      "email": "dsi.support@chery.tn"
+    },
+    "siteBackgroundImageUrl": "https://chery.cl/wp-content/uploads/2025/10/HIMLA-Diseno-1.webp",
+    "siteName": "CHERY Tunisie",
+    "defaultThemeMode": "dark"
+  },
+  "accessories": [
+    {
+      "id": "acc-1",
+      "name": "Marchepieds Latéraux en Aluminium Brossé",
+      "category": "extérieur",
+      "priceTND": 750,
+      "description": "Design robuste et élégant facilitant l'accès à bord et protégeant la bas de caisse.",
+      "imageUrl": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "acc-2",
+      "name": "Tapis de Sol 3D Thermoformés sur-mesure Chery",
+      "category": "intérieur",
+      "priceTND": 180,
+      "description": "Protection maximale contre la poussière et l'eau avec bordures relevées anti-déversement.",
+      "imageUrl": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "acc-3",
+      "name": "Attelage de Remorquage Amovible d'Origine",
+      "category": "extérieur",
+      "priceTND": 950,
+      "description": "Capacité de remorquage jusqu'à 1500 kg avec faisceau électrique 13 broches inclus.",
+      "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "acc-4",
+      "name": "Films de Protection Solaire Anti-UV & Anti-Carjacking",
+      "category": "protection",
+      "priceTND": 320,
+      "description": "Teintage homologué des vitres latérales et lunette arrière. Filtre 99% des rayons UV."
+    },
+    {
+      "id": "acc-5",
+      "name": "Barres de Toit Longitudinales Alulight",
+      "category": "extérieur",
+      "priceTND": 450,
+      "description": "Permet le montage de coffre de toit ou porte-vélos jusqu'à 75 kg de charge."
+    },
+    {
+      "id": "acc-6",
+      "name": "Alarme Volumétrique & Anti-Soulèvement",
+      "category": "sécurité",
+      "priceTND": 380,
+      "description": "Système d'alarme d'origine connecté à la clé intelligente Keyless avec sirène haute puissance."
+    },
+    {
+      "id": "acc-7",
+      "name": "Becquet Arrière Sport Aéro",
+      "category": "extérieur",
+      "priceTND": 290,
+      "description": "Design sportif affiné peints couleur carrosserie."
+    },
+    {
+      "id": "acc-8",
+      "name": "Dashcam Caméra de Bord Ultra HD Wi-Fi",
+      "category": "multimédia",
+      "priceTND": 350,
+      "description": "Enregistrement continu en 4K avec vision nocturne et capteur de choc en stationnement."
+    }
+  ],
+  "quotes": []
+}
