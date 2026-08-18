@@ -860,33 +860,13 @@ export default function App() {
 
   const themeContainerClass =
     theme === 'light'
-      ? 'bg-slate-100 text-slate-900'
-      : theme === 'red'
-      ? 'bg-[#150507] text-red-50'
-      : theme === 'carbon'
-      ? 'bg-[#090a0f] text-neutral-100'
-      : theme === 'electric_cyan'
-      ? 'bg-[#03131a] text-cyan-50'
-      : theme === 'luxury_gold'
-      ? 'bg-[#120e0a] text-amber-50'
-      : theme === 'titanium'
-      ? 'bg-[#111518] text-slate-100'
-      : 'bg-slate-950 text-slate-100';
+      ? 'theme-light bg-white text-black'
+      : 'theme-dark bg-black text-white';
 
   const footerBgClass =
     theme === 'light'
-      ? 'bg-white border-slate-200 text-slate-600'
-      : theme === 'red'
-      ? 'bg-red-950/80 border-red-900/50 text-red-200'
-      : theme === 'carbon'
-      ? 'bg-neutral-950 border-neutral-800 text-neutral-300'
-      : theme === 'electric_cyan'
-      ? 'bg-cyan-950/80 border-cyan-900/50 text-cyan-200'
-      : theme === 'luxury_gold'
-      ? 'bg-amber-950/80 border-amber-900/50 text-amber-200'
-      : theme === 'titanium'
-      ? 'bg-slate-900 border-slate-800 text-slate-300'
-      : 'bg-slate-900 border-slate-800 text-slate-400';
+      ? 'bg-white border-slate-200 text-black'
+      : 'bg-black border-zinc-800 text-white';
 
   return (
     <div className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}>

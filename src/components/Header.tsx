@@ -92,21 +92,17 @@ export const Header: React.FC<HeaderProps> = ({
   const headerBgClass =
     theme === 'light'
       ? 'bg-white text-slate-900 border-slate-200 shadow-md'
-      : theme === 'red'
-      ? 'bg-gradient-to-r from-red-950 via-slate-950 to-red-950 text-white border-red-900/50 shadow-xl shadow-red-950/40'
-      : 'bg-slate-900 text-white border-slate-800 shadow-lg';
+      : 'bg-black text-white border-zinc-800 shadow-xl';
 
   const subHeaderBgClass =
     theme === 'light'
-      ? 'bg-slate-100/90 border-slate-200'
-      : theme === 'red'
-      ? 'bg-red-950/60 border-red-900/40'
-      : 'bg-slate-950/80 border-slate-800';
+      ? 'bg-slate-100 border-slate-200 text-slate-900'
+      : 'bg-black border-zinc-800 text-white';
 
   const selectBgClass =
     theme === 'light'
-      ? 'bg-slate-100 text-slate-800 border-slate-300'
-      : 'bg-slate-900 text-slate-200 border-slate-700';
+      ? 'bg-white text-slate-900 border-slate-300'
+      : 'bg-zinc-900 text-white border-zinc-700';
 
   const effectiveLogoUrl = siteSettings?.logoUrl || cheryLogo;
   const effectiveSiteName = siteSettings?.siteName || 'CHERY Tunisie';
@@ -189,36 +185,34 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Automotive Theme Selector */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={theme}
-              onChange={(e) => onThemeChange(e.target.value as ThemeMode)}
-              className={`text-xs font-bold py-1.5 px-3 rounded-xl border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                theme === 'light'
-                  ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
-                  : theme === 'carbon'
-                  ? 'bg-neutral-950 border-red-500/40 text-red-400'
-                  : theme === 'electric_cyan'
-                  ? 'bg-cyan-950 border-cyan-500/40 text-cyan-300'
-                  : theme === 'luxury_gold'
-                  ? 'bg-amber-950/90 border-amber-500/40 text-amber-300'
-                  : theme === 'titanium'
-                  ? 'bg-slate-900 border-slate-600 text-slate-200'
-                  : theme === 'red'
-                  ? 'bg-red-950 border-red-700 text-red-200'
-                  : 'bg-slate-950 border-slate-800 text-white'
+          {/* Selecteur Thème 100% Noir vs 100% Blanc */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-900/90 dark:bg-black/90 border border-slate-700/60 dark:border-zinc-800 shadow-sm">
+            <button
+              type="button"
+              onClick={() => onThemeChange('dark')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                theme !== 'light'
+                  ? 'bg-zinc-800 text-white shadow border border-zinc-700'
+                  : 'text-slate-400 hover:text-white'
               }`}
-              title="Sélectionner le Thème Automobile du Site"
+              title="Thème 100% Noir avec écriture blanche"
             >
-              <option value="dark" className="bg-slate-900 text-white">🌑 Thème Nuit Carbone (Sombre)</option>
-              <option value="light" className="bg-white text-slate-900">☀️ Thème Showroom Épuré (Clair)</option>
-              <option value="red" className="bg-red-950 text-red-200">🔴 Thème Chery Crimson</option>
-              <option value="carbon" className="bg-neutral-950 text-red-400">🏎️ Fibre de Carbone Racing</option>
-              <option value="electric_cyan" className="bg-cyan-950 text-cyan-300">⚡ Omoda EV Cyber Cyan</option>
-              <option value="luxury_gold" className="bg-amber-950 text-amber-300">👑 Tiggo Executive Gold</option>
-              <option value="titanium" className="bg-slate-900 text-slate-200">🛡️ Titanium High-Tech</option>
-            </select>
+              <Moon className="w-3.5 h-3.5 text-zinc-300" />
+              <span>Noir</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onThemeChange('light')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                theme === 'light'
+                  ? 'bg-white text-black shadow border border-slate-300'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Thème 100% Blanc avec écriture noire"
+            >
+              <Sun className="w-3.5 h-3.5 text-amber-500" />
+              <span>Blanc</span>
+            </button>
           </div>
 
           <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-300' : 'bg-slate-800/80 border-slate-700'}`}>
