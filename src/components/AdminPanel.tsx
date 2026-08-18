@@ -2456,8 +2456,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
                 <Palette className="w-5 h-5 text-amber-400" />
                 <div>
-                  <h4 className="font-extrabold text-white text-base">8. Thèmes Visuels du Site (Thème 100% Noir &amp; Thème 100% Blanc)</h4>
-                  <p className="text-xs text-slate-400">Définissez le thème par défaut appliqué sur le site : 100% Noir Pur (Écriture Blanche) ou 100% Blanc Pur (Écriture Noire), avec bascule instantanée en un clic.</p>
+                  <h4 className="font-extrabold text-white text-base">8. Thèmes Visuels Spécifiques au Domaine Automobile</h4>
+                  <p className="text-xs text-slate-400">Définissez le thème par défaut appliqué sur le site (Nuit Carbone, Fibre de Carbone, Omoda EV Cyber, Tiggo Gold, Chery Crimson, Showroom Épuré, Titanium High-Tech).</p>
                 </div>
               </div>
 

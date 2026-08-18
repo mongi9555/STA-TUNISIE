@@ -32,8 +32,8 @@ export const BackgroundMediaRender: React.FC<BackgroundMediaProps> = ({
   type = 'image',
   imageUrl,
   videoUrl,
-  overlayOpacity = 0.85,
-  blur = true,
+  overlayOpacity = 0.75,
+  blur = false,
   defaultFallbackImage,
   className = '',
 }) => {
@@ -66,8 +66,8 @@ export const BackgroundMediaRender: React.FC<BackgroundMediaProps> = ({
             loop
             muted
             playsInline
-            className={`w-full h-full object-cover object-center filter brightness-105 contrast-100 transition-all duration-700 ${
-              blur ? 'blur-md scale-110' : 'scale-105'
+            className={`w-full h-full object-cover object-center filter brightness-90 contrast-105 transition-all duration-700 ${
+              blur ? 'blur-sm scale-110' : 'scale-105'
             }`}
           >
             <source src={videoUrl} />
@@ -78,17 +78,17 @@ export const BackgroundMediaRender: React.FC<BackgroundMediaProps> = ({
         effectiveImage && (
           <div
             className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700 ${
-              blur ? 'blur-md scale-105' : 'scale-100'
+              blur ? 'blur-sm scale-105' : 'scale-100'
             }`}
             style={{ backgroundImage: `url(${effectiveImage})` }}
           />
         )
       )}
 
-      {/* 2. HIGH-CONTRAST LIGHT OVERLAY FOR TEXT READABILITY */}
+      {/* 2. GRADIENT OVERLAY FOR TEXT CONTRAST */}
       <div
-        className="absolute inset-0 bg-white/90 backdrop-blur-[2px] transition-opacity duration-500"
-        style={{ opacity: Math.max(0.75, overlayOpacity) }}
+        className="absolute inset-0 bg-slate-950 transition-opacity duration-500"
+        style={{ opacity: overlayOpacity }}
       />
     </div>
   );

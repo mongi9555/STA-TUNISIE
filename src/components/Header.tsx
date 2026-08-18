@@ -92,17 +92,21 @@ export const Header: React.FC<HeaderProps> = ({
   const headerBgClass =
     theme === 'light'
       ? 'bg-white text-slate-900 border-slate-200 shadow-md'
-      : 'bg-black text-white border-zinc-800 shadow-xl';
+      : theme === 'red'
+      ? 'bg-gradient-to-r from-red-950 via-slate-950 to-red-950 text-white border-red-900/50 shadow-xl shadow-red-950/40'
+      : 'bg-slate-900 text-white border-slate-800 shadow-lg';
 
   const subHeaderBgClass =
     theme === 'light'
-      ? 'bg-slate-100 border-slate-200 text-slate-900'
-      : 'bg-black border-zinc-800 text-white';
+      ? 'bg-slate-100/90 border-slate-200'
+      : theme === 'red'
+      ? 'bg-red-950/60 border-red-900/40'
+      : 'bg-slate-950/80 border-slate-800';
 
   const selectBgClass =
     theme === 'light'
-      ? 'bg-white text-slate-900 border-slate-300'
-      : 'bg-zinc-900 text-white border-zinc-700';
+      ? 'bg-slate-100 text-slate-800 border-slate-300'
+      : 'bg-slate-900 text-slate-200 border-slate-700';
 
   const effectiveLogoUrl = siteSettings?.logoUrl || cheryLogo;
   const effectiveSiteName = siteSettings?.siteName || 'CHERY Tunisie';
@@ -159,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* User Session Switcher & Notifications */}
+        {/* User Session Switcher & Theme Selector */}
         <div className="flex items-center gap-3 flex-wrap justify-center">
           {/* Automatic Stock Request Notification Bell */}
           <div className="relative">
@@ -168,22 +172,56 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowNotificationsModal(true)}
               className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer relative ${
                 stockRequests.filter((r) => r.status === 'En attente').length > 0
-                  ? 'bg-amber-100 border-amber-400 text-amber-900 hover:bg-amber-200 shadow-md'
-                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm'
+                  ? 'bg-amber-950/80 border-amber-500/70 text-amber-300 hover:bg-amber-900 shadow-lg shadow-amber-950/50'
+                  : theme === 'light'
+                  ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
               }`}
               title="Centre de Notifications Automatiques & Alertes Stock"
             >
-              <Bell className={`w-4 h-4 ${stockRequests.filter((r) => r.status === 'En attente').length > 0 ? 'animate-bounce text-amber-600' : 'text-slate-700'}`} />
-              <span className="text-xs font-extrabold text-slate-900 hidden sm:inline">Alertes</span>
+              <Bell className={`w-4 h-4 ${stockRequests.filter((r) => r.status === 'En attente').length > 0 ? 'animate-bounce text-amber-400' : ''}`} />
+              <span className="text-xs font-bold hidden sm:inline">Alertes</span>
               {stockRequests.filter((r) => r.status === 'En attente').length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-rose-600 text-white font-extrabold text-[10px] rounded-full border-2 border-white shadow animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-rose-600 text-white font-extrabold text-[10px] rounded-full border-2 border-slate-950 shadow animate-pulse">
                   {stockRequests.filter((r) => r.status === 'En attente').length}
                 </span>
               )}
             </button>
           </div>
 
-          <div className="flex items-center gap-3 p-1.5 px-3 rounded-xl border bg-slate-50 border-slate-300 shadow-sm">
+          {/* Automotive Theme Selector */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={theme}
+              onChange={(e) => onThemeChange(e.target.value as ThemeMode)}
+              className={`text-xs font-bold py-1.5 px-3 rounded-xl border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
+                theme === 'light'
+                  ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
+                  : theme === 'carbon'
+                  ? 'bg-neutral-950 border-red-500/40 text-red-400'
+                  : theme === 'electric_cyan'
+                  ? 'bg-cyan-950 border-cyan-500/40 text-cyan-300'
+                  : theme === 'luxury_gold'
+                  ? 'bg-amber-950/90 border-amber-500/40 text-amber-300'
+                  : theme === 'titanium'
+                  ? 'bg-slate-900 border-slate-600 text-slate-200'
+                  : theme === 'red'
+                  ? 'bg-red-950 border-red-700 text-red-200'
+                  : 'bg-slate-950 border-slate-800 text-white'
+              }`}
+              title="Sélectionner le Thème Automobile du Site"
+            >
+              <option value="dark" className="bg-slate-900 text-white">🌑 Thème Nuit Carbone (Sombre)</option>
+              <option value="light" className="bg-white text-slate-900">☀️ Thème Showroom Épuré (Clair)</option>
+              <option value="red" className="bg-red-950 text-red-200">🔴 Thème Chery Crimson</option>
+              <option value="carbon" className="bg-neutral-950 text-red-400">🏎️ Fibre de Carbone Racing</option>
+              <option value="electric_cyan" className="bg-cyan-950 text-cyan-300">⚡ Omoda EV Cyber Cyan</option>
+              <option value="luxury_gold" className="bg-amber-950 text-amber-300">👑 Tiggo Executive Gold</option>
+              <option value="titanium" className="bg-slate-900 text-slate-200">🛡️ Titanium High-Tech</option>
+            </select>
+          </div>
+
+          <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-300' : 'bg-slate-800/80 border-slate-700'}`}>
             <div className="flex items-center gap-2">
               <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
                 <img
@@ -199,30 +237,30 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
               <div className="text-left text-xs">
-                <div className="font-bold flex items-center gap-1.5 text-slate-900">
+                <div className={`font-semibold flex items-center gap-1.5 ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
                   <span>{currentUser.name}</span>
                   {currentUser.role === 'super_admin' ? (
-                    <span className="bg-purple-100 text-purple-800 text-[10px] px-1.5 py-0.2 rounded border border-purple-300 font-mono font-bold flex items-center gap-1">
+                    <span className="bg-purple-500/20 text-purple-400 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-500/40 font-mono font-bold flex items-center gap-1">
                       ⚡ SUPER ADMIN DSI
                     </span>
                   ) : currentUser.role === 'admin' ? (
-                    <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.2 rounded border border-amber-300 font-mono font-bold">
+                    <span className="bg-amber-500/20 text-amber-500 dark:text-amber-300 text-[10px] px-1.5 py-0.2 rounded border border-amber-500/30 font-mono font-bold">
                       {currentUser.title || 'ADMIN'}
                     </span>
                   ) : (
-                    <span className="bg-blue-100 text-blue-900 text-[10px] px-1.5 py-0.2 rounded border border-blue-300 font-semibold flex items-center gap-1" title="Accès Commercial : Max 5 réservations par modèle de voiture">
+                    <span className="bg-blue-500/20 text-blue-500 dark:text-blue-300 text-[10px] px-1.5 py-0.2 rounded border border-blue-500/30 font-semibold flex items-center gap-1" title="Accès Commercial : Max 5 réservations par modèle de voiture">
                       COMMERCIAL 🔒 (Quota: {currentUser.quotaPerModel || 5}/modèle)
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-[11px] font-semibold truncate max-w-[150px] text-slate-700">
+                  <p className={`text-[11px] truncate max-w-[150px] ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
                     {currentUser.agency}
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowAvatarModal(true)}
-                    className="text-[10px] text-red-600 hover:text-red-700 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                    className="text-[10px] text-red-500 hover:text-red-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
                     title="Changer ma photo de profil"
                   >
                     <Camera className="w-2.5 h-2.5" />
@@ -232,14 +270,14 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <div className="h-6 w-px mx-1 bg-slate-300" />
+            <div className={`h-6 w-px mx-1 ${theme === 'light' ? 'bg-slate-300' : 'bg-slate-700'}`} />
 
             {/* User selector dropdown */}
             <div className="relative flex items-center gap-2">
               <select
                 value={currentUser.id}
                 onChange={(e) => handleUserDropdownChange(e.target.value)}
-                className="text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500 font-bold cursor-pointer bg-white text-slate-900 border border-slate-300 shadow-sm"
+                className={`text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium cursor-pointer ${selectBgClass}`}
               >
                 <optgroup label="Direction Informatique (Super Admin DSI)">
                   {allUsers
@@ -276,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({
                 whileTap={{ scale: 0.95 }}
                 onClick={onLogout}
                 title="Se déconnecter de la session"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-300 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/10 hover:bg-red-600/25 text-red-500 dark:text-red-400 hover:text-red-600 border border-red-500/40 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Déconnexion</span>
@@ -468,46 +506,50 @@ export const Header: React.FC<HeaderProps> = ({
               transition={{ duration: 0.2 }}
               onSubmit={handleVerifyAndSwitch}
               autoComplete="off"
-              className="bg-white text-slate-900 border border-slate-300 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+              className={`border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 ${
+                theme === 'light'
+                  ? 'bg-white text-slate-900 border-slate-200'
+                  : 'bg-slate-900 text-white border-slate-800'
+              }`}
             >
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
                 <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-red-600" />
-                  <h3 className="font-extrabold text-base text-slate-900">Authentification Requise</h3>
+                  <Lock className="w-5 h-5 text-red-500" />
+                  <h3 className="font-extrabold text-base">Authentification Requise</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => { setPendingUserToSwitch(null); setInputPassword(''); }}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-xl border bg-slate-50 border-slate-200">
+              <div className={`flex items-center gap-3 p-3 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
                 <img
                   src={pendingUserToSwitch.avatar}
                   alt={pendingUserToSwitch.name}
                   className="w-12 h-12 rounded-full object-cover border-2 border-red-500"
                 />
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900">{pendingUserToSwitch.name}</h4>
-                  <p className="text-xs font-semibold text-slate-600">{pendingUserToSwitch.agency}</p>
-                  <span className="inline-block mt-0.5 px-2 py-0.2 bg-red-100 text-red-700 font-mono text-[10px] rounded font-bold border border-red-200">
+                  <h4 className="font-extrabold text-sm">{pendingUserToSwitch.name}</h4>
+                  <p className="text-xs text-slate-400">{pendingUserToSwitch.agency}</p>
+                  <span className="inline-block mt-0.5 px-2 py-0.2 bg-red-500/10 text-red-500 font-mono text-[10px] rounded font-bold border border-red-500/20">
                     {pendingUserToSwitch.role === 'admin' ? pendingUserToSwitch.title || 'ADMINISTRATION' : 'COMMERCIAL'}
                   </span>
                 </div>
               </div>
 
               {authError && (
-                <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-red-700 text-xs flex items-center gap-2 font-semibold">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <div className="p-3 bg-red-950/60 border border-red-500/50 rounded-xl text-red-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                   <span>{authError}</span>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-900 block">Saisir le Mot de Passe :</label>
+                <label className="text-xs font-semibold block">Saisir le Mot de Passe :</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -518,12 +560,14 @@ export const Header: React.FC<HeaderProps> = ({
                     placeholder="Saisissez votre mot de passe..."
                     value={inputPassword}
                     onChange={(e) => setInputPassword(e.target.value)}
-                    className="w-full border rounded-xl pl-3 pr-10 py-2.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-slate-900 border-slate-300 shadow-sm"
+                    className={`w-full border rounded-xl pl-3 pr-10 py-2.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      theme === 'light' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-950 text-white border-slate-700'
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                     title={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -531,17 +575,17 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-700/60">
                 <button
                   type="button"
                   onClick={() => { setPendingUserToSwitch(null); setInputPassword(''); }}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer border border-slate-300"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-md shadow-red-600/30 flex items-center gap-1.5 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" /> Valider & Se Connecter
                 </button>
@@ -551,29 +595,29 @@ export const Header: React.FC<HeaderProps> = ({
         )}
         {/* Automatic Stock Request Notifications Modal / Drawer */}
         {showNotificationsModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white border border-slate-300 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-slate-900"
+              className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
             >
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-amber-100 text-amber-800 border border-amber-300 rounded-xl relative">
-                    <Bell className="w-5 h-5 animate-pulse text-amber-600" />
+                  <div className="p-2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl relative">
+                    <Bell className="w-5 h-5 animate-pulse" />
                     {stockRequests.filter((r) => r.status === 'En attente').length > 0 && (
                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
                     )}
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-white flex items-center gap-2">
                       <span>Alertes & Notifications Automatiques</span>
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-mono font-bold rounded-full border border-blue-300">
+                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold rounded-full border border-blue-500/30">
                         LIVE DSI
                       </span>
                     </h3>
-                    <p className="text-xs font-semibold text-slate-600">
+                    <p className="text-xs text-slate-400">
                       Suivi en temps réel des demandes de quotas et réapprovisionnements stock
                     </p>
                   </div>
@@ -582,31 +626,31 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowNotificationsModal(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg transition-colors cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Status Summary Pill */}
-              <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-xs">
-                <div className="p-2 bg-amber-50 border border-amber-300 rounded-lg">
-                  <span className="block font-black text-amber-700 text-lg">
+              <div className="grid grid-cols-3 gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center text-xs">
+                <div className="p-2 bg-amber-950/40 border border-amber-500/30 rounded-lg">
+                  <span className="block font-black text-amber-400 text-lg">
                     {stockRequests.filter((r) => r.status === 'En attente').length}
                   </span>
-                  <span className="text-[10px] text-amber-800 uppercase font-extrabold">En Attente</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">En Attente</span>
                 </div>
-                <div className="p-2 bg-emerald-50 border border-emerald-300 rounded-lg">
-                  <span className="block font-black text-emerald-700 text-lg">
+                <div className="p-2 bg-emerald-950/40 border border-emerald-500/30 rounded-lg">
+                  <span className="block font-black text-emerald-400 text-lg">
                     {stockRequests.filter((r) => r.status === 'Approuvé').length}
                   </span>
-                  <span className="text-[10px] text-emerald-800 uppercase font-extrabold">Approuvées</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Approuvées</span>
                 </div>
-                <div className="p-2 bg-rose-50 border border-rose-300 rounded-lg">
-                  <span className="block font-black text-rose-700 text-lg">
+                <div className="p-2 bg-rose-950/40 border border-rose-500/30 rounded-lg">
+                  <span className="block font-black text-rose-400 text-lg">
                     {stockRequests.filter((r) => r.status === 'Refusé').length}
                   </span>
-                  <span className="text-[10px] text-rose-800 uppercase font-extrabold">Refusées</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Refusées</span>
                 </div>
               </div>
 
@@ -614,8 +658,8 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                 {stockRequests.length === 0 ? (
                   <div className="p-8 text-center text-slate-500 space-y-2">
-                    <Bell className="w-10 h-10 mx-auto text-slate-400" />
-                    <p className="text-xs font-bold text-slate-600">Aucune notification pour le moment.</p>
+                    <Bell className="w-10 h-10 mx-auto text-slate-700" />
+                    <p className="text-xs font-semibold">Aucune notification pour le moment.</p>
                   </div>
                 ) : (
                   stockRequests.map((req) => (
@@ -623,42 +667,42 @@ export const Header: React.FC<HeaderProps> = ({
                       key={req.id}
                       className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         req.status === 'En attente'
-                          ? 'bg-amber-50/80 border-amber-300 shadow-sm'
+                          ? 'bg-amber-950/30 border-amber-500/50 shadow-md shadow-amber-950/20'
                           : req.status === 'Approuvé'
-                          ? 'bg-emerald-50/80 border-emerald-300'
-                          : 'bg-slate-50 border-slate-200 opacity-80'
+                          ? 'bg-slate-950/60 border-emerald-500/30'
+                          : 'bg-slate-950/60 border-slate-800 opacity-75'
                       }`}
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-slate-900 text-xs">{req.commercialName}</span>
+                          <span className="font-extrabold text-white text-xs">{req.commercialName}</span>
                           {req.commercialAgency && (
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-800 text-[10px] font-bold rounded border border-slate-300">
+                            <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] font-bold rounded border border-slate-700">
                               {req.commercialAgency}
                             </span>
                           )}
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
                               req.status === 'En attente'
-                                ? 'bg-amber-100 text-amber-900 border-amber-400 font-extrabold'
+                                ? 'bg-amber-950 text-amber-300 border-amber-500/60 animate-pulse'
                                 : req.status === 'Approuvé'
-                                ? 'bg-emerald-100 text-emerald-900 border-emerald-400 font-extrabold'
-                                : 'bg-rose-100 text-rose-900 border-rose-400 font-extrabold'
+                                ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                                : 'bg-rose-950 text-rose-300 border-rose-500/40'
                             }`}
                           >
-                            {req.status === 'En attente' && <Clock className="w-3 h-3 text-amber-700" />}
-                            {req.status === 'Approuvé' && <CheckCircle2 className="w-3 h-3 text-emerald-700" />}
-                            {req.status === 'Refusé' && <X className="w-3 h-3 text-rose-700" />}
+                            {req.status === 'En attente' && <Clock className="w-3 h-3 text-amber-400" />}
+                            {req.status === 'Approuvé' && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                            {req.status === 'Refusé' && <X className="w-3 h-3 text-rose-400" />}
                             <span>{req.status}</span>
                           </span>
                         </div>
 
-                        <p className="text-xs font-semibold text-slate-800">
-                          Demande : <strong className="text-red-600">{req.carName}</strong> (+{req.requestedQuantity} Réservations)
+                        <p className="text-xs text-slate-300">
+                          Demande : <strong className="text-red-400">{req.carName}</strong> (+{req.requestedQuantity} Réservations)
                         </p>
 
                         {req.reason && (
-                          <p className="text-[11px] font-medium text-slate-600 italic">"{req.reason}"</p>
+                          <p className="text-[11px] text-slate-400 italic">"{req.reason}"</p>
                         )}
 
                         <p className="text-[10px] text-slate-500 font-mono">
@@ -673,7 +717,7 @@ export const Header: React.FC<HeaderProps> = ({
                             setShowNotificationsModal(false);
                             setActiveTab('admin');
                           }}
-                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 shrink-0 transition-all cursor-pointer shadow"
+                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 shrink-0 transition-all cursor-pointer shadow"
                         >
                           <span>Traiter</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -685,7 +729,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
                 {(currentUser.role === 'admin' || currentUser.role === 'super_admin') ? (
                   <button
                     type="button"
@@ -693,13 +737,13 @@ export const Header: React.FC<HeaderProps> = ({
                       setShowNotificationsModal(false);
                       setActiveTab('admin');
                     }}
-                    className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                    className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-950"
                   >
                     <Sliders className="w-4 h-4" />
                     <span>Ouvrir l'Espace Administration & Validation Quotas</span>
                   </button>
                 ) : (
-                  <p className="text-xs font-semibold text-slate-600 text-center w-full">
+                  <p className="text-xs text-slate-400 text-center w-full">
                     Vos demandes de quota sont transmises directement à la Direction Commerciale Chery Tunisie.
                   </p>
                 )}
