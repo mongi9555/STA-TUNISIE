@@ -91,12 +91,12 @@ import { CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  // Theme state initialization
-  const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('chery_theme') as ThemeMode) || 'dark');
+  // Theme locked to 100% light theme with dark high-contrast typography
+  const [theme, setTheme] = useState<ThemeMode>('light');
 
   useEffect(() => {
-    localStorage.setItem('chery_theme', theme);
-  }, [theme]);
+    localStorage.setItem('chery_theme', 'light');
+  }, []);
 
   // State initialization with localStorage fallback
   const [cars, setCars] = useState<CarModel[]>(() => getStoredCars());
@@ -858,15 +858,8 @@ export default function App() {
     );
   }
 
-  const themeContainerClass =
-    theme === 'light'
-      ? 'theme-light bg-white text-black'
-      : 'theme-dark bg-black text-white';
-
-  const footerBgClass =
-    theme === 'light'
-      ? 'bg-white border-slate-200 text-black'
-      : 'bg-black border-zinc-800 text-white';
+  const themeContainerClass = 'theme-light bg-slate-50 text-slate-900';
+  const footerBgClass = 'bg-white/95 backdrop-blur-md border-slate-300 text-slate-900 shadow-sm';
 
   return (
     <div className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}>
@@ -1052,7 +1045,7 @@ export default function App() {
       <footer className={`${footerBgClass} border-t py-6 text-xs transition-colors duration-300 mt-auto`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="px-2 py-1 rounded bg-black/80 dark:bg-black/90 border border-slate-700/60 shadow-sm flex items-center justify-center min-w-[70px]">
+            <div className="px-2 py-1 rounded bg-slate-900 border border-slate-700 shadow-sm flex items-center justify-center min-w-[70px]">
               {siteSettings?.footerLogoUrl && siteSettings.footerLogoUrl !== '/sta_logo_white.svg' && siteSettings.footerLogoUrl !== '/sta_logo_dark.svg' && siteSettings.footerLogoUrl !== '/sta_logo.svg' ? (
                 <img
                   src={siteSettings.footerLogoUrl}
@@ -1064,22 +1057,22 @@ export default function App() {
               )}
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight">
+              <span className="font-extrabold text-sm tracking-tight text-slate-900">
                 {siteSettings?.footerTitle || "STA — Société Tunisienne d'Automobiles"}
               </span>
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[11px] font-semibold text-slate-600">
                 {siteSettings?.footerSubtitle || "Distributeur Officiel & Réseau Agréé"}
               </span>
             </div>
           </div>
           <div className="text-center md:text-right space-y-0.5">
-            <p className="text-slate-400">
+            <p className="text-slate-600 font-medium">
               {siteSettings?.footerDescription || "Plateforme réservée aux commerciaux & réseau d'agences agréées."}
             </p>
-            <p className="font-medium">
+            <p className="font-bold text-slate-900">
               {siteSettings?.footerCopyright || (
                 <>
-                  © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="font-bold text-red-500">Jamai Mongi</span>. Tous droits réservés.
+                  © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="font-extrabold text-red-600">Jamai Mongi</span>. Tous droits réservés.
                 </>
               )}
             </p>
