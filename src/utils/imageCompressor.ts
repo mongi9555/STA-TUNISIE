@@ -1,5 +1,57 @@
 /**
- * Compresses a Data URL image to a maximum dimension and quality.
+ * Compresses an uploaded File directly into an optimized square avatar Data URL.
+ */
+export function fileToCompressedAvatarDataUrl(
+  file: File,
+  size = 320,
+  quality = 0.85
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('Le fichier sélectionné n\'est pas une image valide.'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (!result) {
+        reject(new Error('Impossible de lire le fichier image.'));
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        // Calculate square center crop
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          // Smooth image scaling
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        } else {
+          resolve(result);
+        }
+      };
+      img.onerror = () => reject(new Error('Impossible de charger l\'image.'));
+      img.src = result;
+    };
+    reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * If the input is a PDF or non-image, or if it is already small, returns as is.
  */
 export function compressImageDataUrl(

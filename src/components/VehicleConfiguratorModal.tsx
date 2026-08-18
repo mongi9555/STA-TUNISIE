@@ -19,6 +19,7 @@ import {
   Info,
   ChevronRight,
   ChevronLeft,
+  Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -50,6 +51,9 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
   const [selectedInterior, setSelectedInterior] = useState<CarColor | undefined>(
     initialCar?.interiorColors?.[0] || cars[0]?.interiorColors?.[0]
   );
+  const [isCustomInterior, setIsCustomInterior] = useState(false);
+  const [customInteriorName, setCustomInteriorName] = useState('');
+  const [customInteriorHex, setCustomInteriorHex] = useState('#78350F');
   const [selectedAccessoryIds, setSelectedAccessoryIds] = useState<string[]>([]);
   const [discountTND, setDiscountTND] = useState<number>(0);
   const [registrationFeeTND, setRegistrationFeeTND] = useState<number>(0);
@@ -60,6 +64,7 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
       setSelectedCar(initialCar);
       setSelectedColor(initialCar.colors[0]);
       setSelectedInterior(initialCar.interiorColors?.[0]);
+      setIsCustomInterior(false);
     }
   }, [initialCar]);
 
@@ -96,15 +101,25 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
   const subtotalTND = basePriceTND + accessoriesPriceTND - discountTND;
   const totalWithRegTND = subtotalTND + registrationFeeTND;
 
+  const effectiveInterior = isCustomInterior
+    ? {
+        id: 'int-custom',
+        name: customInteriorName.trim() || 'Habillage Personnalisé',
+        hexCode: customInteriorHex,
+        stock: 99,
+        reserved: 0,
+      }
+    : selectedInterior;
+
   const currentConfig: VehicleConfiguration = {
     carId: selectedCar.id,
     carName: selectedCar.name,
     colorId: selectedColor?.id || '',
     colorName: selectedColor?.name || '',
     colorHex: selectedColor?.hexCode || '#000000',
-    interiorColorId: selectedInterior?.id,
-    interiorColorName: selectedInterior?.name,
-    interiorColorHex: selectedInterior?.hexCode,
+    interiorColorId: effectiveInterior?.id,
+    interiorColorName: effectiveInterior?.name,
+    interiorColorHex: effectiveInterior?.hexCode,
     selectedAccessories: chosenAccessories,
     customDiscountTND: discountTND,
     registrationFeeTND,
@@ -274,18 +289,95 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                 </div>
 
                 {/* Interior Color Picker */}
-                {selectedCar.interiorColors && selectedCar.interiorColors.length > 0 && (
-                  <div>
-                    <label className="font-extrabold text-xs uppercase tracking-wider text-slate-400 block mb-2">
-                      2B. Ambiance & Sellerie Intérieure :
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-extrabold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-amber-400" />
+                      <span>2B. Ambiance & Sellerie Intérieure :</span>
+                      {effectiveInterior && (
+                        <span className="text-amber-400 font-bold normal-case">({effectiveInterior.name})</span>
+                      )}
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomInterior(!isCustomInterior);
+                        if (!isCustomInterior && !customInteriorName) {
+                          setCustomInteriorName('Cuir Marron Cognac');
+                        }
+                      }}
+                      className="text-[11px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
+                    >
+                      {isCustomInterior ? 'Catalogue Constructeur' : '✍️ Définir Manuellement'}
+                    </button>
+                  </div>
+
+                  {isCustomInterior ? (
+                    <div className="p-3 bg-slate-950/80 border border-amber-500/50 rounded-xl space-y-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-slate-400 block font-semibold mb-1">
+                            Nom de la sellerie intérieure :
+                          </label>
+                          <input
+                            type="text"
+                            value={customInteriorName}
+                            onChange={(e) => setCustomInteriorName(e.target.value)}
+                            placeholder="ex: Cuir Marron Cognac, Beige Nappa, Rouge Sport..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400 block font-semibold mb-1">
+                            Nuancier / Code Couleur :
+                          </label>
+                          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+                            <input
+                              type="color"
+                              value={customInteriorHex}
+                              onChange={(e) => setCustomInteriorHex(e.target.value)}
+                              className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
+                            />
+                            <span className="text-xs font-mono text-slate-300 font-bold">{customInteriorHex}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { name: 'Noir Carbone', hex: '#0F172A' },
+                          { name: 'Cuir Marron Cognac', hex: '#78350F' },
+                          { name: 'Beige Nappa & Sable', hex: '#D4B996' },
+                          { name: 'Gris Anthracite & Cuir', hex: '#334155' },
+                          { name: 'Rouge Sport & Noir', hex: '#991B1B' },
+                          { name: 'Camel Luxe', hex: '#B45309' },
+                        ].map((chip) => (
+                          <button
+                            type="button"
+                            key={chip.name}
+                            onClick={() => {
+                              setCustomInteriorName(chip.name);
+                              setCustomInteriorHex(chip.hex);
+                            }}
+                            className="text-[9px] px-2 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chip.hex }} />
+                            <span>{chip.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : selectedCar.interiorColors && selectedCar.interiorColors.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {selectedCar.interiorColors.map((intCol) => {
                         const isSel = selectedInterior?.id === intCol.id;
                         return (
                           <button
                             key={intCol.id}
-                            onClick={() => setSelectedInterior(intCol)}
+                            onClick={() => {
+                              setSelectedInterior(intCol);
+                              setIsCustomInterior(false);
+                            }}
                             className={`p-3 rounded-xl border flex items-center gap-2 text-left cursor-pointer transition ${
                               isSel
                                 ? 'bg-red-600/20 border-red-500 text-white ring-2 ring-red-500'
@@ -301,8 +393,10 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                         );
                       })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">Sellerie de série standard</p>
+                  )}
+                </div>
               </div>
 
               {/* Step 3: Accessories Catalogue */}

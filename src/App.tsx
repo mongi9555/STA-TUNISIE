@@ -852,6 +852,7 @@ export default function App() {
           setCurrentUser(user);
           showToast(`Bienvenue, session activée pour ${user.name} !`);
         }}
+        onUpdateUser={handleUpdateCommercial}
       />
     );
   }
@@ -912,6 +913,7 @@ export default function App() {
               showToast(`Session Commerciale activée : ${u.name} (${u.agency})`);
             }
           }}
+          onUpdateUser={handleUpdateCommercial}
           onLogout={() => {
             setCurrentUser(null);
             showToast('Déconnexion réussie. À bientôt !');

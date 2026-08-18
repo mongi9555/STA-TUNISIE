@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CommercialUser, ThemeMode, SiteSettings, CarModel, StockRequest } from '../types';
-import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight } from 'lucide-react';
+import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
@@ -11,6 +12,7 @@ interface HeaderProps {
   currentUser: CommercialUser;
   allUsers: CommercialUser[];
   onSelectUser: (user: CommercialUser) => void;
+  onUpdateUser?: (user: CommercialUser) => void;
   onLogout: () => void;
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
@@ -27,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   allUsers,
   onSelectUser,
+  onUpdateUser,
   onLogout,
   activeTab,
   setActiveTab,
@@ -39,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   // Notification Drawer State
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
 
   // Session Switch Password Verification Modal
   const [pendingUserToSwitch, setPendingUserToSwitch] = useState<CommercialUser | null>(null);
@@ -235,14 +239,22 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-300' : 'bg-slate-800/80 border-slate-700'}`}>
             <div className="flex items-center gap-2">
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-9 h-9 rounded-full object-cover border-2 border-red-500 shadow"
-              />
+              <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-9 h-9 rounded-full object-cover border-2 border-red-500 shadow group-hover:brightness-75 transition-all"
+                />
+                <div
+                  title="Changer ma photo de login / profil"
+                  className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                >
+                  <Camera className="w-4 h-4 text-red-400" />
+                </div>
+              </div>
               <div className="text-left text-xs">
                 <div className={`font-semibold flex items-center gap-1.5 ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
-                  {currentUser.name}
+                  <span>{currentUser.name}</span>
                   {currentUser.role === 'super_admin' ? (
                     <span className="bg-purple-500/20 text-purple-400 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-500/40 font-mono font-bold flex items-center gap-1">
                       ⚡ SUPER ADMIN DSI
@@ -257,9 +269,20 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                   )}
                 </div>
-                <p className={`text-[11px] truncate max-w-[180px] ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
-                  {currentUser.agency}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className={`text-[11px] truncate max-w-[150px] ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {currentUser.agency}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarModal(true)}
+                    className="text-[10px] text-red-500 hover:text-red-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                    title="Changer ma photo de profil"
+                  >
+                    <Camera className="w-2.5 h-2.5" />
+                    <span>Photo</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -834,6 +857,19 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </AnimatePresence>
+      {/* User Photo Upload Modal */}
+      {showAvatarModal && (
+        <UserPhotoUploadModal
+          user={currentUser}
+          isOpen={true}
+          onClose={() => setShowAvatarModal(false)}
+          onSaveAvatar={(newAvatar) => {
+            if (onUpdateUser) {
+              onUpdateUser({ ...currentUser, avatar: newAvatar });
+            }
+          }}
+        />
+      )}
     </header>
   );
 };

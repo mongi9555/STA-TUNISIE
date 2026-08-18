@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote } from '../types';
 import { TechSpecModal } from './TechSpecModal';
-import { compressImageDataUrl } from '../utils/imageCompressor';
+import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
+import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -37,6 +38,7 @@ import {
   FileText,
   Upload,
   Image as ImageIcon,
+  Camera,
   Megaphone,
   Globe,
   Sparkles,
@@ -309,7 +311,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#1E3A8A');
   const [newColorStock, setNewColorStock] = useState<number>(5);
-  const [newColorInterior, setNewColorInterior] = useState('Noir Cuir');
+  const [newColorInterior, setNewColorInterior] = useState('Noir');
+
+  // Interior Color State Management
+  const [addingInteriorCarId, setAddingInteriorCarId] = useState<string | null>(null);
+  const [newInteriorName, setNewInteriorName] = useState('');
+  const [newInteriorHex, setNewInteriorHex] = useState('#78350F');
+  const [newInteriorStock, setNewInteriorStock] = useState<number>(5);
+
+  const [editingInteriorItem, setEditingInteriorItem] = useState<{ carId: string; interior: CarColor } | null>(null);
+  const [editInteriorName, setEditInteriorName] = useState('');
+  const [editInteriorHex, setEditInteriorHex] = useState('');
+  const [editInteriorStock, setEditInteriorStock] = useState<number>(0);
 
   // Edit Color Modal State
   const [editingColorItem, setEditingColorItem] = useState<{ carId: string; color: CarColor } | null>(null);
@@ -387,6 +400,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newUserPhone, setNewUserPhone] = useState('+216 ');
   const [newUserPassword, setNewUserPassword] = useState('123');
   const [newUserQuota, setNewUserQuota] = useState<number>(5);
+  const [newUserAvatar, setNewUserAvatar] = useState<string>('');
+  const [userForPhotoModal, setUserForPhotoModal] = useState<CommercialUser | null>(null);
+  const newAvatarInputRef = useRef<HTMLInputElement>(null);
 
   const togglePasswordVisibility = (userId: string) => {
     setVisiblePasswords((prev) => ({
@@ -404,7 +420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       hexCode: newColorHex,
       stock: newColorStock,
       reserved: 0,
-      interiorColor: newColorInterior.trim() || 'Noir Cuir',
+      interiorColor: newColorInterior.trim() || 'Noir',
     };
 
     onAddColorToCar(carId, newColor);
@@ -412,7 +428,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewColorName('');
     setNewColorHex('#1E3A8A');
     setNewColorStock(5);
-    setNewColorInterior('Noir Cuir');
+    setNewColorInterior('Noir');
   };
 
   const handleOpenEditColor = (carId: string, color: CarColor) => {
@@ -420,7 +436,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditColorName(color.name);
     setEditColorHex(color.hexCode);
     setEditColorStock(color.stock);
-    setEditColorInterior(color.interiorColor || 'Noir Cuir');
+    setEditColorInterior(color.interiorColor || 'Noir');
   };
 
   const handleSaveEditColor = (e: React.FormEvent) => {
@@ -430,7 +446,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       name: editColorName,
       hexCode: editColorHex,
       stock: editColorStock,
-      interiorColor: editColorInterior.trim() || 'Noir Cuir',
+      interiorColor: editColorInterior.trim() || 'Noir',
     });
     setEditingColorItem(null);
   };
@@ -516,6 +532,94 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onUpdateCarStock(carId, updatedColors);
   };
 
+  const handleAddInteriorSubmit = (carId: string) => {
+    const car = cars.find((c) => c.id === carId);
+    if (!car || !newInteriorName.trim() || !onEditCarModel) return;
+    const newInt: CarColor = {
+      id: `int-${Date.now()}`,
+      name: newInteriorName.trim(),
+      hexCode: newInteriorHex,
+      stock: newInteriorStock,
+      reserved: 0,
+    };
+    const updatedCar: CarModel = {
+      ...car,
+      interiorColors: [...(car.interiorColors || []), newInt],
+    };
+    onEditCarModel(updatedCar);
+    setAddingInteriorCarId(null);
+    setNewInteriorName('');
+    setNewInteriorHex('#78350F');
+    setNewInteriorStock(5);
+  };
+
+  const handleDeleteInterior = (carId: string, interiorId: string) => {
+    const car = cars.find((c) => c.id === carId);
+    if (!car || !onEditCarModel) return;
+    const updatedCar: CarModel = {
+      ...car,
+      interiorColors: (car.interiorColors || []).filter((i) => i.id !== interiorId),
+    };
+    onEditCarModel(updatedCar);
+  };
+
+  const handleInteriorStockChange = (carId: string, interiorId: string, delta: number) => {
+    const car = cars.find((c) => c.id === carId);
+    if (!car || !onEditCarModel) return;
+    const updatedCar: CarModel = {
+      ...car,
+      interiorColors: (car.interiorColors || []).map((i) =>
+        i.id === interiorId ? { ...i, stock: Math.max(0, i.stock + delta) } : i
+      ),
+    };
+    onEditCarModel(updatedCar);
+  };
+
+  const handleOpenEditInterior = (carId: string, interior: CarColor) => {
+    setEditingInteriorItem({ carId, interior });
+    setEditInteriorName(interior.name);
+    setEditInteriorHex(interior.hexCode);
+    setEditInteriorStock(interior.stock);
+  };
+
+  const handleSaveEditInterior = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInteriorItem || !onEditCarModel) return;
+    const car = cars.find((c) => c.id === editingInteriorItem.carId);
+    if (!car) return;
+    const updatedCar: CarModel = {
+      ...car,
+      interiorColors: (car.interiorColors || []).map((i) =>
+        i.id === editingInteriorItem.interior.id
+          ? {
+              ...i,
+              name: editInteriorName.trim(),
+              hexCode: editInteriorHex,
+              stock: editInteriorStock,
+            }
+          : i
+      ),
+    };
+    onEditCarModel(updatedCar);
+    setEditingInteriorItem(null);
+  };
+
+  const handlePopulateDefaultCheryInteriors = (carId: string) => {
+    const car = cars.find((c) => c.id === carId);
+    if (!car || !onEditCarModel) return;
+    const defaults: CarColor[] = [
+      { id: `int-${Date.now()}-1`, name: 'Noir Carbone', hexCode: '#0F172A', stock: 10, reserved: 0 },
+      { id: `int-${Date.now()}-2`, name: 'Cuir Marron Cognac', hexCode: '#78350F', stock: 8, reserved: 0 },
+      { id: `int-${Date.now()}-3`, name: 'Beige Nappa & Sable', hexCode: '#D4B996', stock: 6, reserved: 0 },
+      { id: `int-${Date.now()}-4`, name: 'Rouge Sport & Noir', hexCode: '#991B1B', stock: 5, reserved: 0 },
+    ];
+    const updatedCar: CarModel = {
+      ...car,
+      interiorColors: [...(car.interiorColors || []), ...defaults],
+    };
+    onEditCarModel(updatedCar);
+  };
+
   const handleSavePassword = () => {
     if (!editingPasswordUser || !inputNewPassword.trim()) return;
     onUpdateCommercialPassword(editingPasswordUser.id, inputNewPassword.trim());
@@ -546,7 +650,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       phone: newUserPhone.trim(),
       password: newUserPassword.trim(),
       quotaPerModel: newUserQuota || 5,
-      avatar: randomAvatar,
+      avatar: newUserAvatar.trim() || randomAvatar,
     };
 
     onAddCommercial(newUser);
@@ -558,6 +662,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewUserEmail('');
     setNewUserPhone('+216 ');
     setNewUserPassword('123');
+    setNewUserAvatar('');
   };
 
   const adminsList = commercials.filter((u) => u.role === 'admin');
@@ -831,11 +936,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <label className="text-[10px] text-amber-400 block font-semibold mb-0.5">Couleur Intérieur associée :</label>
                             <input
                               type="text"
-                              placeholder="ex: Noir Cuir, Cuir Marron Cognac"
+                              placeholder="ex: Noir, Cuir Marron Cognac"
                               value={newColorInterior}
                               onChange={(e) => setNewColorInterior(e.target.value)}
                               className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 font-semibold focus:ring-1 focus:ring-amber-500"
                             />
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {['Noir', 'Cuir Marron Cognac', 'Beige Nappa & Sable', 'Rouge Sport & Noir', 'Gris Anthracite', 'Camel Luxe'].map((sug) => (
+                                <button
+                                  type="button"
+                                  key={sug}
+                                  onClick={() => setNewColorInterior(sug)}
+                                  className="text-[9px] px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded cursor-pointer"
+                                >
+                                  {sug}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                           <div>
                             <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">Stock initial :</label>
@@ -889,7 +1006,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           {/* Case / Badge Couleur Intérieur associée */}
                           <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] text-amber-300 w-fit">
                             <span className="text-slate-400 text-[10px] font-semibold">Couleur Intérieur associée:</span>
-                            <span className="font-bold text-amber-300">{color.interiorColor || 'Noir Cuir'}</span>
+                            <span className="font-bold text-amber-300">{color.interiorColor || 'Noir'}</span>
                           </div>
 
                           {/* Controls */}
@@ -939,6 +1056,155 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </div>
                         </div>
                       ))}
+                    </div>
+
+                    {/* DEDICATED INTERIOR COLORS / SELLERIES MANAGEMENT SECTION */}
+                    <div className="pt-4 mt-4 border-t border-slate-800/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-amber-400" />
+                          <h4 className="text-xs font-extrabold text-amber-300 uppercase tracking-wider">
+                            Sellerie & Teintes Intérieures ({car.interiorColors?.length || 0})
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {(!car.interiorColors || car.interiorColors.length === 0) && (
+                            <button
+                              onClick={() => handlePopulateDefaultCheryInteriors(car.id)}
+                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] font-semibold rounded-lg transition-all border border-amber-500/20 cursor-pointer"
+                            >
+                              ⚡ Importer Teintes Chery
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setAddingInteriorCarId(addingInteriorCarId === car.id ? null : car.id);
+                              setNewInteriorName('');
+                              setNewInteriorHex('#78350F');
+                              setNewInteriorStock(5);
+                            }}
+                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold rounded-lg transition-all border border-amber-500/30 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>+ Teinte Intérieure</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Add New Interior Form */}
+                      {addingInteriorCarId === car.id && (
+                        <div className="p-3.5 bg-slate-950 border border-amber-500/50 rounded-xl space-y-3 shadow-inner">
+                          <h5 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                            <Plus className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Ajouter une nouvelle sellerie / teinte intérieure :</span>
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">
+                                Nom de la Teinte Intérieure :
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="ex: Cuir Marron Cognac, Beige Nappa, Rouge Sport..."
+                                value={newInteriorName}
+                                onChange={(e) => setNewInteriorName(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                              />
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {[
+                                  { name: 'Noir Carbone', hex: '#0F172A' },
+                                  { name: 'Cuir Marron Cognac', hex: '#78350F' },
+                                  { name: 'Beige Nappa & Sable', hex: '#D4B996' },
+                                  { name: 'Gris Anthracite & Cuir', hex: '#334155' },
+                                  { name: 'Rouge Sport & Noir', hex: '#991B1B' },
+                                  { name: 'Camel Luxe', hex: '#B45309' },
+                                  { name: 'Bleu Nuit Alcantara', hex: '#1E3A8A' },
+                                  { name: 'Tissu & Simili-Cuir', hex: '#1E293B' },
+                                ].map((chip) => (
+                                  <button
+                                    type="button"
+                                    key={chip.name}
+                                    onClick={() => {
+                                      setNewInteriorName(chip.name);
+                                      setNewInteriorHex(chip.hex);
+                                    }}
+                                    className="text-[9px] px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chip.hex }} />
+                                    <span>{chip.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-slate-400 block font-semibold mb-0.5">
+                                Nuancier / Code Couleur :
+                              </label>
+                              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1">
+                                <input
+                                  type="color"
+                                  value={newInteriorHex}
+                                  onChange={(e) => setNewInteriorHex(e.target.value)}
+                                  className="w-6 h-6 rounded cursor-pointer border-none bg-transparent"
+                                />
+                                <span className="text-xs font-mono text-slate-300 font-bold">{newInteriorHex}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              onClick={() => setAddingInteriorCarId(null)}
+                              className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={() => handleAddInteriorSubmit(car.id)}
+                              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                            >
+                              Enregistrer Teinte Intérieure
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* List of Interior Colors */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(car.interiorColors || []).map((intCol) => (
+                          <div
+                            key={intCol.id}
+                            className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between gap-2 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="w-4 h-4 rounded-md border border-slate-600 shrink-0 shadow-inner"
+                                style={{ backgroundColor: intCol.hexCode }}
+                              />
+                              <div className="min-w-0">
+                                <p className="font-bold text-white truncate text-[11px]">{intCol.name}</p>
+                                <p className="font-mono text-[9px] text-slate-400">{intCol.hexCode}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={() => handleOpenEditInterior(car.id, intCol)}
+                                className="p-1 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 rounded-lg cursor-pointer"
+                                title="Modifier la teinte intérieure"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteInterior(car.id, intCol.id)}
+                                className="p-1 bg-slate-900 hover:bg-red-950 text-slate-500 hover:text-red-400 border border-slate-800 rounded-lg cursor-pointer"
+                                title="Supprimer cette teinte intérieure"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1001,11 +1267,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <img
-                        src={admin.avatar}
-                        alt={admin.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-amber-500 shadow"
-                      />
+                      <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(admin)}>
+                        <img
+                          src={admin.avatar}
+                          alt={admin.name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500 shadow group-hover:brightness-75 transition-all"
+                        />
+                        <div
+                          title="Changer la photo de profil / login"
+                          className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                        >
+                          <Camera className="w-4 h-4 text-amber-400" />
+                        </div>
+                      </div>
                       <div>
                         <h5 className="font-extrabold text-white text-sm">{admin.name}</h5>
                         <p className="text-xs font-semibold text-amber-300">{admin.title || 'Administrateur'}</p>
@@ -1101,11 +1375,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={comm.avatar}
-                            alt={comm.name}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-red-500/60 shadow"
-                          />
+                          <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(comm)}>
+                            <img
+                              src={comm.avatar}
+                              alt={comm.name}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-red-500/60 shadow group-hover:brightness-75 transition-all"
+                            />
+                            <div
+                              title="Changer la photo de login du commercial"
+                              className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                            >
+                              <Camera className="w-4 h-4 text-red-400" />
+                            </div>
+                          </div>
                           <div>
                             <h5 className="font-extrabold text-white text-sm">{comm.name}</h5>
                             <p className="text-xs text-slate-400">{comm.agency}</p>
@@ -2390,6 +2672,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* Avatar Upload Field for New User */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={newUserAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=320&auto=format&fit=crop&q=80'}
+                  alt="Avatar preview"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
+                />
+                <div>
+                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
+                  <p className="text-[10px] text-slate-400">Téléversez une photo personnalisée pour l'utilisateur</p>
+                </div>
+              </div>
+              <input
+                ref={newAvatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    try {
+                      const compressed = await fileToCompressedAvatarDataUrl(file, 320, 0.88);
+                      setNewUserAvatar(compressed);
+                    } catch (err) {
+                      console.error('Error compressing new user avatar:', err);
+                    }
+                  }
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => newAvatarInputRef.current?.click()}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5 text-red-400" />
+                <span>Uploader Photo</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 text-xs block">Mot de Passe d'Accès *</label>
@@ -2499,9 +2821,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   value={editColorInterior}
                   onChange={(e) => setEditColorInterior(e.target.value)}
-                  placeholder="ex: Noir Cuir, Cuir Marron Cognac, Rouge Sport"
+                  placeholder="ex: Noir, Cuir Marron Cognac, Rouge Sport"
                   className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-100 font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {['Noir', 'Cuir Marron Cognac', 'Beige Nappa & Sable', 'Rouge Sport & Noir', 'Gris Anthracite', 'Camel Luxe'].map((sug) => (
+                    <button
+                      type="button"
+                      key={sug}
+                      onClick={() => setEditColorInterior(sug)}
+                      className="text-[9px] px-1.5 py-0.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded cursor-pointer"
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -2530,6 +2864,101 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Enregistrer Modifications
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Edit Interior Color / Sellerie */}
+      {editingInteriorItem && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSaveEditInterior}
+            className="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Palette className="w-5 h-5 text-amber-400" />
+                <h4 className="font-extrabold text-white text-base">Modifier la Teinte Intérieure / Sellerie</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingInteriorItem(null)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-300 block">Nom de la Teinte Intérieure :</label>
+                <input
+                  type="text"
+                  required
+                  value={editInteriorName}
+                  onChange={(e) => setEditInteriorName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {[
+                    { name: 'Noir Carbone', hex: '#0F172A' },
+                    { name: 'Cuir Marron Cognac', hex: '#78350F' },
+                    { name: 'Beige Nappa & Sable', hex: '#D4B996' },
+                    { name: 'Gris Anthracite & Cuir', hex: '#334155' },
+                    { name: 'Rouge Sport & Noir', hex: '#991B1B' },
+                    { name: 'Camel Luxe', hex: '#B45309' },
+                  ].map((chip) => (
+                    <button
+                      type="button"
+                      key={chip.name}
+                      onClick={() => {
+                        setEditInteriorName(chip.name);
+                        setEditInteriorHex(chip.hex);
+                      }}
+                      className="text-[9px] px-1.5 py-0.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chip.hex }} />
+                      <span>{chip.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-300 block">Code Hexadécimal / Nuancier :</label>
+                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl p-2">
+                  <input
+                    type="color"
+                    value={editInteriorHex}
+                    onChange={(e) => setEditInteriorHex(e.target.value)}
+                    className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={editInteriorHex}
+                    onChange={(e) => setEditInteriorHex(e.target.value)}
+                    className="w-full bg-transparent font-mono text-sm font-bold text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setEditingInteriorItem(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-4 h-4" /> Enregistrer Teinte Intérieure
               </button>
             </div>
           </form>
@@ -3172,6 +3601,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             </div>
 
+            {/* Avatar Row in Edit User Modal */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={editingUserSession.avatar}
+                  alt={editingUserSession.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
+                />
+                <div>
+                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
+                  <p className="text-[10px] text-slate-400">Photo utilisée sur l'écran d'accueil et les fiches</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUserForPhotoModal(editingUserSession)}
+                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Changer la photo</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 block">Nom & Prénom *</label>
@@ -3542,6 +3994,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         car={selectedSpecCarAdmin}
         onClose={() => setSelectedSpecCarAdmin(null)}
       />
+
+      {/* User Photo Upload Modal */}
+      {userForPhotoModal && (
+        <UserPhotoUploadModal
+          user={userForPhotoModal}
+          isOpen={true}
+          onClose={() => setUserForPhotoModal(null)}
+          onSaveAvatar={(newAvatar) => {
+            const updated = { ...userForPhotoModal, avatar: newAvatar };
+            if (onUpdateCommercial) {
+              onUpdateCommercial(updated);
+            }
+            if (editingUserSession && editingUserSession.id === userForPhotoModal.id) {
+              setEditingUserSession(updated);
+            }
+            setUserForPhotoModal(null);
+          }}
+        />
+      )}
     </div>
   );
 };
