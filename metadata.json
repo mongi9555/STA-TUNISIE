@@ -1,6 +1,6 @@
 {
   "name": "Chery Tunisie - Réservation & Gestion de Stock",
-  "description": "Application de réservation de véhicules Chery Tunisie pour commerciaux avec suivi des stocks par couleur en temps réel, gestion client (Personne Physique / Société), upload de documents et espace administrateur.",
+  "description": "Plateforme STA — Société Tunisienne d'Automobiles de réservation de véhicules Chery Tunisie pour commerciaux avec suivi des stocks par couleur en temps réel, gestion client, upload de documents et espace administrateur avec éditeur de personnalisation et logo footer.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

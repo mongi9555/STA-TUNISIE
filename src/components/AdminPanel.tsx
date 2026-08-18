@@ -3,6 +3,7 @@ import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissi
 import { TechSpecModal } from './TechSpecModal';
 import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
 import { UserPhotoUploadModal } from './UserPhotoUploadModal';
+import { StaLogo } from './StaLogo';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -161,6 +162,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [dsiHours, setDsiHours] = useState(siteSettings?.dsiContact?.supportHours || 'Lun - Ven: 08:00 - 17:30');
   const [dsiAddress, setDsiAddress] = useState(siteSettings?.dsiContact?.address || 'Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis');
 
+  // Footer Personalization Local Form State
+  const [footerLogoInput, setFooterLogoInput] = useState(siteSettings?.footerLogoUrl || '/sta_logo_white.svg');
+  const [footerTitleInput, setFooterTitleInput] = useState(siteSettings?.footerTitle || "STA — Société Tunisienne d'Automobiles");
+  const [footerSubtitleInput, setFooterSubtitleInput] = useState(siteSettings?.footerSubtitle || 'Distributeur Officiel & Réseau Agréé');
+  const [footerDescriptionInput, setFooterDescriptionInput] = useState(siteSettings?.footerDescription || "Plateforme réservée aux commerciaux & réseau d'agences agréées.");
+  const [footerCopyrightInput, setFooterCopyrightInput] = useState(siteSettings?.footerCopyright || "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.");
+
   // Background Media Customization State (Home & Global Site)
   const [homeBgType, setHomeBgType] = useState<'image' | 'video'>(
     siteSettings?.homeBackgroundType === 'video' ? 'video' : 'image'
@@ -264,6 +272,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleFooterLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const compressed = await compressImageDataUrl(dataUrl, 800, 400, 0.9);
+      const uploadedUrl = await uploadMediaFile(file, compressed);
+      setFooterLogoInput(uploadedUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
     if (!onUpdateSiteSettings) return;
@@ -284,6 +305,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         supportHours: dsiHours.trim(),
         address: dsiAddress.trim(),
       },
+      // Personnalisation du Pied de Page (Footer)
+      footerLogoUrl: footerLogoInput.trim(),
+      footerTitle: footerTitleInput.trim(),
+      footerSubtitle: footerSubtitleInput.trim(),
+      footerDescription: footerDescriptionInput.trim(),
+      footerCopyright: footerCopyrightInput.trim(),
+
       // Page d'accueil (Choix rôle)
       homeBackgroundType: homeBgType,
       homeBackgroundImageUrl: homeBgInput.trim(),
@@ -1714,12 +1742,245 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 3: BANDEAU D'ANNONCE GLOBALE */}
+            {/* PANEL 3: ÉDITEUR DU LOGO ET PIED DE PAGE (FOOTER) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 lg:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                    <Layout className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-white text-base">3. Éditeur du Logo &amp; Pied de Page (Footer)</h4>
+                    <p className="text-xs text-slate-400">Personnalisez le logo du bas de page, l'intitulé officiel de la société, le sous-titre et les mentions légales.</p>
+                  </div>
+                </div>
+
+                {/* Reset to default STA footer */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFooterLogoInput('/sta_logo_white.svg');
+                    setFooterTitleInput("STA — Société Tunisienne d'Automobiles");
+                    setFooterSubtitleInput("Distributeur Officiel & Réseau Agréé");
+                    setFooterDescriptionInput("Plateforme réservée aux commerciaux & réseau d'agences agréées.");
+                    setFooterCopyrightInput("© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.");
+                  }}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Réinitialiser Footer STA par défaut</span>
+                </button>
+              </div>
+
+              {/* Live Footer Previews (Dark & Light) */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">Aperçu en Direct du Pied de Page (Footer) :</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-950 rounded-2xl border border-slate-800">
+                  {/* Dark Mode Preview */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-3 text-slate-200 text-xs shadow-inner">
+                    <span className="text-[10px] text-slate-400 font-mono uppercase font-bold">Thème Sombre</span>
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 rounded bg-black/90 border border-slate-700/60 shadow-sm flex items-center justify-center min-w-[65px]">
+                        {footerLogoInput && footerLogoInput !== '/sta_logo_white.svg' && footerLogoInput !== '/sta_logo_dark.svg' && footerLogoInput !== '/sta_logo.svg' ? (
+                          <img
+                            src={footerLogoInput}
+                            alt="Aperçu Footer Logo"
+                            className="h-6 w-auto object-contain max-w-[120px]"
+                          />
+                        ) : (
+                          <StaLogo className="h-5 w-auto" variant="white" showText={true} />
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-xs text-white truncate">{footerTitleInput || "STA — Société Tunisienne d'Automobiles"}</span>
+                        <span className="text-[10px] text-slate-400 truncate">{footerSubtitleInput || "Distributeur Officiel & Réseau Agréé"}</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-800 pt-2 text-[10px] space-y-0.5">
+                      <p className="text-slate-400">{footerDescriptionInput || "Plateforme réservée aux commerciaux & réseau d'agences agréées."}</p>
+                      <p className="font-medium text-slate-300">{footerCopyrightInput || "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés."}</p>
+                    </div>
+                  </div>
+
+                  {/* Light Mode Preview */}
+                  <div className="bg-slate-100 border border-slate-300 rounded-xl p-4 flex flex-col justify-between gap-3 text-slate-800 text-xs shadow-inner">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase font-bold">Thème Clair</span>
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 rounded bg-slate-900 border border-slate-800 shadow-sm flex items-center justify-center min-w-[65px]">
+                        {footerLogoInput && footerLogoInput !== '/sta_logo_white.svg' && footerLogoInput !== '/sta_logo_dark.svg' && footerLogoInput !== '/sta_logo.svg' ? (
+                          <img
+                            src={footerLogoInput}
+                            alt="Aperçu Footer Logo"
+                            className="h-6 w-auto object-contain max-w-[120px]"
+                          />
+                        ) : (
+                          <StaLogo className="h-5 w-auto" variant="white" showText={true} />
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-xs text-slate-900 truncate">{footerTitleInput || "STA — Société Tunisienne d'Automobiles"}</span>
+                        <span className="text-[10px] text-slate-500 truncate">{footerSubtitleInput || "Distributeur Officiel & Réseau Agréé"}</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-300 pt-2 text-[10px] space-y-0.5">
+                      <p className="text-slate-500">{footerDescriptionInput || "Plateforme réservée aux commerciaux & réseau d'agences agréées."}</p>
+                      <p className="font-medium text-slate-700">{footerCopyrightInput || "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés."}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Logo Upload & URL Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Upload Local Logo */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">Téléverser une Image / SVG pour le Logo du Footer :</label>
+                  <label className="flex bg-slate-950 border border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-purple-950/20 text-xs text-purple-300 font-bold">
+                    <Upload className="w-4 h-4 text-purple-400" />
+                    <span>Choisir un Logo Footer (PNG, JPG, SVG, WebP)...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFooterLogoFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Direct URL Input */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">Ou saisir une URL Web directe du Logo Footer :</label>
+                  <input
+                    type="text"
+                    placeholder="https://.../logo-sta.svg"
+                    value={footerLogoInput}
+                    onChange={(e) => setFooterLogoInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Presets for Footer Logo */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  Logos Prédéfinis Recommandés pour le Footer (1-Click) :
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFooterLogoInput('/sta_logo_white.svg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      footerLogoInput === '/sta_logo_white.svg'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="p-1.5 bg-black rounded-lg border border-slate-700 shrink-0">
+                      <StaLogo className="h-4 w-auto" variant="white" showText={false} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo STA Blanc (Recommandé)</p>
+                      <p className="text-[10px] text-slate-400">Vectoriel SVG Haute Netteté</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFooterLogoInput('/sta_logo_dark.svg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      footerLogoInput === '/sta_logo_dark.svg'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="p-1.5 bg-white rounded-lg border border-slate-300 shrink-0">
+                      <StaLogo className="h-4 w-auto" variant="dark" showText={false} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo STA Dark (Inversé)</p>
+                      <p className="text-[10px] text-slate-400">Pour fond clair contrasté</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFooterLogoInput('https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&auto=format&fit=crop&q=80')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      footerLogoInput.includes('photo-1617788138017-80ad40651399')
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                      <img
+                        src="https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&auto=format&fit=crop&q=80"
+                        alt="Chery"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Écusson Chery Automobile</p>
+                      <p className="text-[10px] text-slate-400">Logo Constructeur</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Text Fields for Footer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">Titre Officiel / Nom de l'Entreprise :</label>
+                  <input
+                    type="text"
+                    value={footerTitleInput}
+                    onChange={(e) => setFooterTitleInput(e.target.value)}
+                    placeholder="STA — Société Tunisienne d'Automobiles"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">Sous-Titre / Mention Réseau :</label>
+                  <input
+                    type="text"
+                    value={footerSubtitleInput}
+                    onChange={(e) => setFooterSubtitleInput(e.target.value)}
+                    placeholder="Distributeur Officiel & Réseau Agréé"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">Description / Note d'Accès :</label>
+                  <input
+                    type="text"
+                    value={footerDescriptionInput}
+                    onChange={(e) => setFooterDescriptionInput(e.target.value)}
+                    placeholder="Plateforme réservée aux commerciaux & réseau d'agences agréées."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">Mention de Copyright &amp; Développement :</label>
+                  <input
+                    type="text"
+                    value={footerCopyrightInput}
+                    onChange={(e) => setFooterCopyrightInput(e.target.value)}
+                    placeholder="© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL 4: BANDEAU D'ANNONCE GLOBALE */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3 justify-between">
                 <div className="flex items-center gap-2">
                   <Megaphone className="w-5 h-5 text-amber-400" />
-                  <h4 className="font-extrabold text-white text-base">3. Bandeau d'Annonce Globale en Haut du Site</h4>
+                  <h4 className="font-extrabold text-white text-base">4. Bandeau d'Annonce Globale en Haut du Site</h4>
                 </div>
 
                 {/* Toggle Switch */}
@@ -1762,11 +2023,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 4: SUPPORT TECHNIQUE DSI */}
+            {/* PANEL 5: SUPPORT TECHNIQUE DSI */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-extrabold text-white text-base">4. Coordonnées & Assistance Technique DSI</h4>
+                <h4 className="font-extrabold text-white text-base">5. Coordonnées &amp; Assistance Technique DSI</h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -1820,7 +2081,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 5: ARRIÈRE-PLAN DE LA PAGE D'ACCUEIL (Choix du Rôle / Login) */}
+            {/* PANEL 6: ARRIÈRE-PLAN DE LA PAGE D'ACCUEIL (Choix du Rôle / Login) */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-6 lg:col-span-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-2.5">
@@ -1828,7 +2089,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Layout className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-white text-base">5. Arrière-Plan de la Page d'Accueil (Choix du Rôle & Connexion)</h4>
+                    <h4 className="font-extrabold text-white text-base">6. Arrière-Plan de la Page d'Accueil (Choix du Rôle &amp; Connexion)</h4>
                     <p className="text-xs text-slate-400">Choisissez d'afficher la Vidéo HD de l'Événement Chery Tunisie ou une Image personnalisée.</p>
                   </div>
                 </div>
@@ -2022,7 +2283,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 6: ARRIÈRE-PLAN GLOBAL DU SITE (Espace Connecté / Dashboard Workspace) */}
+            {/* PANEL 7: ARRIÈRE-PLAN GLOBAL DU SITE (Espace Connecté / Dashboard Workspace) */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-6 lg:col-span-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-2.5">
@@ -2030,7 +2291,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Monitor className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-white text-base">6. Arrière-Plan Global de l'Espace de Travail (Après Connexion)</h4>
+                    <h4 className="font-extrabold text-white text-base">7. Arrière-Plan Global de l'Espace de Travail (Après Connexion)</h4>
                     <p className="text-xs text-slate-400">Appliquez un fond d'écran (Image ou Vidéo) sur l'ensemble de l'application commercial & administration.</p>
                   </div>
                 </div>
@@ -2190,12 +2451,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               )}
             </div>
 
-            {/* PANEL 6: THÈMES SPÉCIFIQUES AU DOMAINE AUTOMOBILE */}
+            {/* PANEL 8: THÈMES SPÉCIFIQUES AU DOMAINE AUTOMOBILE */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 lg:col-span-2">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
                 <Palette className="w-5 h-5 text-amber-400" />
                 <div>
-                  <h4 className="font-extrabold text-white text-base">6. Thèmes Visuels Spécifiques au Domaine Automobile</h4>
+                  <h4 className="font-extrabold text-white text-base">8. Thèmes Visuels Spécifiques au Domaine Automobile</h4>
                   <p className="text-xs text-slate-400">Définissez le thème par défaut appliqué sur le site (Nuit Carbone, Fibre de Carbone, Omoda EV Cyber, Tiggo Gold, Chery Crimson, Showroom Épuré, Titanium High-Tech).</p>
                 </div>
               </div>

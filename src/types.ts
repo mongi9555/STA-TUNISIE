@@ -39,6 +39,14 @@ export interface SiteSettings {
   announcementBanner?: AnnouncementBannerSettings;
   dsiContact?: DsiContactSettings;
   accentColor?: string;
+
+  // Personnalisation du Pied de Page (Footer)
+  footerLogoUrl?: string;
+  footerTitle?: string;
+  footerSubtitle?: string;
+  footerDescription?: string;
+  footerCopyright?: string;
+
   // Page d'accueil (Choix rôle / Login) - Fond d'écran Image ou Vidéo
   homeBackgroundType?: 'image' | 'video' | 'default';
   homeBackgroundImageUrl?: string;

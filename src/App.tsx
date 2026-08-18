@@ -1072,20 +1072,36 @@ export default function App() {
       <footer className={`${footerBgClass} border-t py-6 text-xs transition-colors duration-300 mt-auto`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="px-2 py-1 rounded bg-black/80 dark:bg-black/90 border border-slate-700/60 shadow-sm flex items-center justify-center">
-              <StaLogo className="h-6 w-auto" variant="white" showText={true} />
+            <div className="px-2 py-1 rounded bg-black/80 dark:bg-black/90 border border-slate-700/60 shadow-sm flex items-center justify-center min-w-[70px]">
+              {siteSettings?.footerLogoUrl && siteSettings.footerLogoUrl !== '/sta_logo_white.svg' && siteSettings.footerLogoUrl !== '/sta_logo_dark.svg' && siteSettings.footerLogoUrl !== '/sta_logo.svg' ? (
+                <img
+                  src={siteSettings.footerLogoUrl}
+                  alt="Footer Logo"
+                  className="h-6 w-auto object-contain max-w-[140px]"
+                />
+              ) : (
+                <StaLogo className="h-6 w-auto" variant="white" showText={true} />
+              )}
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight">STA — Société Tunisienne d'Automobiles</span>
-              <span className="text-[10px] text-slate-400">Distributeur Officiel &amp; Réseau Agréé</span>
+              <span className="font-bold text-sm tracking-tight">
+                {siteSettings?.footerTitle || "STA — Société Tunisienne d'Automobiles"}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {siteSettings?.footerSubtitle || "Distributeur Officiel & Réseau Agréé"}
+              </span>
             </div>
           </div>
           <div className="text-center md:text-right space-y-0.5">
             <p className="text-slate-400">
-              Plateforme réservée aux commerciaux &amp; réseau d'agences agréées.
+              {siteSettings?.footerDescription || "Plateforme réservée aux commerciaux & réseau d'agences agréées."}
             </p>
             <p className="font-medium">
-              © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="font-bold text-red-500">Jamai Mongi</span>. Tous droits réservés.
+              {siteSettings?.footerCopyright || (
+                <>
+                  © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="font-bold text-red-500">Jamai Mongi</span>. Tous droits réservés.
+                </>
+              )}
             </p>
           </div>
         </div>
