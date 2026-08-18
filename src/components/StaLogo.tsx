@@ -1,0 +1,59 @@
+import React from 'react';
+
+interface StaLogoProps {
+  className?: string;
+  variant?: 'white' | 'dark' | 'auto';
+  showText?: boolean;
+}
+
+export const StaLogo: React.FC<StaLogoProps> = ({
+  className = 'h-8 w-auto',
+  variant = 'auto',
+  showText = true,
+}) => {
+  const colorClass =
+    variant === 'white'
+      ? 'text-white fill-white'
+      : variant === 'dark'
+      ? 'text-slate-900 fill-slate-900'
+      : 'text-slate-900 dark:text-white fill-current';
+
+  return (
+    <svg
+      viewBox="0 0 600 200"
+      className={`${className} ${colorClass} shrink-0`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+    >
+      <g fill="currentColor">
+        {/* S */}
+        <path d="M 40 45 C 40 22 58 10 90 10 L 175 10 C 190 10 198 18 198 32 L 198 42 C 198 54 188 62 174 62 L 105 62 C 92 62 86 67 86 73 C 86 79 92 84 105 84 L 175 84 C 205 84 220 98 220 120 C 220 142 202 154 170 154 L 85 154 C 70 154 62 146 62 132 L 62 122 C 62 110 72 102 86 102 L 170 102 C 178 102 182 98 182 93 C 182 88 178 84 170 84 L 90 84 C 55 84 40 70 40 45 Z" />
+        
+        {/* T */}
+        <path d="M 230 10 L 370 10 L 370 46 L 318 46 L 318 154 L 282 154 L 282 46 L 230 46 Z" />
+        
+        {/* A */}
+        <path d="M 412 10 L 478 10 L 560 154 L 512 154 L 494 120 L 428 120 L 410 154 L 362 154 Z M 461 40 L 440 92 L 482 92 Z" />
+        
+        {/* Underline Bar */}
+        <rect x="35" y="162" width="530" height="6" rx="1.5" />
+        
+        {/* Subtitle: SOCIÉTÉ TUNISIENNE D'AUTOMOBILES */}
+        {showText && (
+          <text
+            x="300"
+            y="188"
+            textAnchor="middle"
+            fontFamily="'Arial Black', 'Montserrat', 'Impact', sans-serif"
+            fontWeight="900"
+            fontSize="20.5"
+            letterSpacing="3.5"
+            fill="currentColor"
+          >
+            SOCIÉTÉ TUNISIENNE D'AUTOMOBILES
+          </text>
+        )}
+      </g>
+    </svg>
+  );
+};

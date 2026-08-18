@@ -531,9 +531,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
 
       {/* Footer info */}
       <footer className="relative z-10 text-center text-slate-400 text-[11px] py-2 space-y-0.5">
-        <p>Chery Automobile Tunisie — Société Tunisienne d'Automobiles (STA)</p>
+        <p>STA — Société Tunisienne d'Automobiles</p>
         <p className="text-slate-400 font-medium">
-          © 2026 CHERY Tunisie STA. Conçu &amp; Développé par <span className="text-white font-bold">Jamai Mongi</span>. Tous droits réservés.
+          © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="text-white font-bold">Jamai Mongi</span>. Tous droits réservés.
         </p>
       </footer>
     </div>

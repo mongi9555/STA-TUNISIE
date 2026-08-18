@@ -173,7 +173,7 @@ export const AUTOMOTIVE_THEME_DEFINITIONS: AutomotiveThemeDefinition[] = [
 ];
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  logoUrl: '',
+  logoUrl: '/sta_logo_white.svg',
   siteName: 'CHERY Tunisie',
   siteSubtitle: 'Système de Réservation, Stocks & Gestion des Accès — Siège STA',
   headerBadgeText: 'Espace Commercial & Direction',
@@ -206,8 +206,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 
 // --- Initial Customization Configurations ---
 export const DEFAULT_DOCUMENT_TEMPLATE: DocumentTemplateConfig = {
-  companyName: "Société Tunisienne d'Automobiles (STA Chery)",
-  logoUrl: '',
+  companyName: "Société Tunisienne d'Automobiles (STA)",
+  logoUrl: '/sta_logo_white.svg',
   matriculeFiscale: '1489203/A/M/000',
   address: 'Zone Industrielle Ben Arous, Rue des Entrepreneurs, 2013 Tunis',
   phone: '+216 71 800 990',

@@ -86,6 +86,7 @@ import { KnowledgeBaseManager } from './components/KnowledgeBaseManager';
 import { DocumentQuoteCustomizer } from './components/DocumentQuoteCustomizer';
 import { TestDriveList } from './components/TestDriveList';
 import { TestDriveModal } from './components/TestDriveModal';
+import { StaLogo } from './components/StaLogo';
 import { CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1070,18 +1071,21 @@ export default function App() {
       {/* Footer */}
       <footer className={`${footerBgClass} border-t py-6 text-xs transition-colors duration-300 mt-auto`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-red-600 text-white font-extrabold flex items-center justify-center text-[10px]">
-              C
+          <div className="flex items-center gap-3">
+            <div className="px-2 py-1 rounded bg-black/80 dark:bg-black/90 border border-slate-700/60 shadow-sm flex items-center justify-center">
+              <StaLogo className="h-6 w-auto" variant="white" showText={true} />
             </div>
-            <span className="font-bold">Chery Tunisie — Société Tunisienne d'Automobiles</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm tracking-tight">STA — Société Tunisienne d'Automobiles</span>
+              <span className="text-[10px] text-slate-400">Distributeur Officiel &amp; Réseau Agréé</span>
+            </div>
           </div>
           <div className="text-center md:text-right space-y-0.5">
             <p className="text-slate-400">
               Plateforme réservée aux commerciaux &amp; réseau d'agences agréées.
             </p>
             <p className="font-medium">
-              © 2026 Chery Tunisie STA. Conçu &amp; Développé par <span className="font-bold text-red-500">Jamai Mongi</span>. Tous droits réservés.
+              © 2026 STA — Société Tunisienne d'Automobiles. Conçu &amp; Développé par <span className="font-bold text-red-500">Jamai Mongi</span>. Tous droits réservés.
             </p>
           </div>
         </div>
