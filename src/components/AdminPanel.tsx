@@ -9,6 +9,8 @@ import {
   DEFAULT_COMMERCIAL_PERMISSIONS,
   PRESET_AUTOMOTIVE_WALLPAPERS,
   AUTOMOTIVE_THEME_DEFINITIONS,
+  isPickupCar,
+  getCarCapacityLabel,
 } from '../data/cheryData';
 import {
   Settings,
@@ -359,7 +361,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCarTransmission, setNewCarTransmission] = useState('Boîte Automatique CVT 9 rapports');
   const [newCarEnergy, setNewCarEnergy] = useState<CarModel['energy']>('Essence');
   const [newCarGuarantee, setNewCarGuarantee] = useState('7 ans ou 200 000 km');
-  const [newCarImage, setNewCarImage] = useState('https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80');
+  const [newCarImage, setNewCarImage] = useState('https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724');
   const [newCarDesc, setNewCarDesc] = useState('SUV moderne équipé des dernières technologies Chery.');
   const [newCarFicheUrl, setNewCarFicheUrl] = useState('');
   
@@ -499,7 +501,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       transmission: newCarTransmission.trim(),
       energy: newCarEnergy,
       guarantee: newCarGuarantee.trim(),
-      imageUrl: newCarImage.trim() || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80',
+      imageUrl: newCarImage.trim() || 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
       description: newCarDesc.trim(),
       ficheTechniqueUrl: newCarFicheUrl.trim(),
       powerHP: newCarPower.trim(),
@@ -640,76 +642,129 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Admin Header Banner */}
-      <div className="bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-900 border border-amber-800/40 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-full border border-amber-500/30">
-              Espace Administrateur Direction Générale
-            </span>
-          </div>
-          <h2 className="text-2xl font-black text-white tracking-tight mt-1">
-            Gestion Centralisée des Stocks, Mots de Passe & Sessions
-          </h2>
-          <p className="text-xs text-slate-300 max-w-2xl mt-1">
-            Direction Marketing (Lamine Abbasi) & Administration (Sami Chaker). Créez de nouvelles sessions commerciales, configurez les mots de passe et ajustez les disponibilités de stock par couleur.
-          </p>
+      <div className="bg-gradient-to-r from-amber-950/70 via-slate-900 to-slate-900 border border-amber-800/40 rounded-2xl p-5 md:p-6 shadow-md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-full border border-amber-500/30">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>Espace Administrateur Direction Générale</span>
+              </span>
+              <span className="text-[11px] text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700">
+                Chery Tunisie • Société Tunisienne Automobile
+              </span>
+            </div>
 
-          <div className="mt-3 flex items-center gap-2 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg w-fit">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Base de données sauvegardée dans le dossier du projet : <strong>/data/db.json</strong></span>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Gestion Centralisée des Stocks, Mots de Passe & Paramètres
+            </h2>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Direction Marketing & Administration STA. Supervisez les disponibilités de stock par modèle et couleur, gérez les comptes commerciaux et personnalisez la plateforme.
+            </p>
+          </div>
+
+          {/* Quick Database Status Badge */}
+          <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3.5 py-2 rounded-xl shrink-0 self-start lg:self-center shadow-inner">
+            <div className="relative flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping absolute opacity-75"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative"></div>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-[11px] text-emerald-200">Base locale & Cloud active</span>
+              <span className="text-[10px] text-emerald-400/80 font-mono">/data/db.json • Synchronisée</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Sub-tabs */}
-        <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-bold shrink-0 flex-wrap gap-1">
+      {/* Modern Dedicated Admin Navigation Tabs */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 shadow-sm">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
           <button
+            type="button"
             onClick={() => setActiveAdminTab('inventory')}
-            className={`px-3.5 py-2 rounded-lg transition-all ${
-              activeAdminTab === 'inventory' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'inventory'
+                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
-            Gestion des Stocks & Couleurs
+            <Car className="w-4 h-4" />
+            <span>Gestion des Stocks & Couleurs</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeAdminTab === 'inventory' ? 'bg-amber-700/80 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              {cars.length}
+            </span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveAdminTab('commercials')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeAdminTab === 'commercials' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'commercials'
+                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Gestion des Sessions & Mots de Passe</span>
+            <span>Sessions & Mots de Passe</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeAdminTab === 'commercials' ? 'bg-amber-700/80 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              {commercials.length}
+            </span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveAdminTab('stock_requests')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeAdminTab === 'stock_requests' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'stock_requests'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
-            <Megaphone className="w-4 h-4 text-blue-300" />
+            <Megaphone className="w-4 h-4" />
             <span>Demandes de Quota & Stock</span>
-            {stockRequests.filter((r) => r.status === 'En attente').length > 0 && (
+            {stockRequests.filter((r) => r.status === 'En attente').length > 0 ? (
               <span className="px-1.5 py-0.5 bg-rose-600 text-white font-extrabold text-[10px] rounded-full animate-bounce">
                 {stockRequests.filter((r) => r.status === 'En attente').length}
               </span>
+            ) : (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeAdminTab === 'stock_requests' ? 'bg-blue-700/80 text-white' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {stockRequests.length}
+              </span>
             )}
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveAdminTab('branding')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeAdminTab === 'branding' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'branding'
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
-            <Palette className="w-4 h-4 text-purple-300" />
-            <span>⚡ Personnalisation du Site & Logo</span>
+            <Palette className="w-4 h-4" />
+            <span>Personnalisation du Site & Logo</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveAdminTab('database')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeAdminTab === 'database' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'database'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
-            <Database className="w-4 h-4 text-emerald-300" />
-            <span>🗄️ Base de Données & Backup JSON</span>
+            <Database className="w-4 h-4" />
+            <span>Base de Données & Backup JSON</span>
           </button>
         </div>
       </div>
@@ -2901,6 +2956,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <option value="SUV">SUV</option>
                   <option value="Berline">Berline</option>
+                  <option value="Pick-up">Pick-up (4X4 / 4X2)</option>
                   <option value="Crossover">Crossover</option>
                   <option value="Électrique/Hybride">Électrique / Hybride</option>
                 </select>
@@ -3084,12 +3140,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       />
                     </div>
                     <div className="col-span-2 sm:col-span-3">
-                      <label className="text-[10px] font-semibold text-slate-400 block">Volume du Coffre :</label>
+                      <label className="text-[10px] font-semibold text-slate-400 block">
+                        {isPickupCar(editingCarModel) || editingCarModel.category === 'Pick-up' ? 'Charge Utile (Kg / Tonnes) :' : 'Volume du Coffre :'}
+                      </label>
                       <input
                         type="text"
-                        placeholder="ex: 475 Litres"
+                        placeholder={isPickupCar(editingCarModel) || editingCarModel.category === 'Pick-up' ? 'ex: 1050 Kg (Charge Utile)' : 'ex: 475 Litres'}
                         value={editingCarModel.bootCapacity || ''}
-                        onChange={(e) => setEditingCarModel({ ...editingCarModel, bootCapacity: e.target.value })}
+                        onChange={(e) => setEditingCarModel({ ...editingCarModel, bootCapacity: e.target.value, payload: (isPickupCar(editingCarModel) || editingCarModel.category === 'Pick-up') ? e.target.value : editingCarModel.payload })}
                         className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-white text-[11px]"
                       />
                     </div>
@@ -3219,6 +3277,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <option value="SUV">SUV</option>
                   <option value="Berline">Berline</option>
+                  <option value="Pick-up">Pick-up (4X4 / 4X2)</option>
                   <option value="Crossover">Crossover</option>
                   <option value="Électrique/Hybride">Électrique / Hybride</option>
                 </select>
@@ -3398,10 +3457,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       />
                     </div>
                     <div className="col-span-2 sm:col-span-3">
-                      <label className="text-[10px] font-semibold text-slate-400 block">Volume du Coffre :</label>
+                      <label className="text-[10px] font-semibold text-slate-400 block">
+                        {newCarCategory === 'Pick-up' || isPickupCar(newCarName) ? 'Charge Utile (Kg / Tonnes) :' : 'Volume du Coffre :'}
+                      </label>
                       <input
                         type="text"
-                        placeholder="ex: 475 Litres"
+                        placeholder={newCarCategory === 'Pick-up' || isPickupCar(newCarName) ? 'ex: 1050 Kg (Charge Utile)' : 'ex: 475 Litres'}
                         value={newCarBoot}
                         onChange={(e) => setNewCarBoot(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-white text-[11px]"

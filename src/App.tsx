@@ -41,6 +41,7 @@ import {
   INITIAL_COMMERCIALS,
   INITIAL_CARS,
   DEFAULT_SITE_SETTINGS,
+  isVirtualCar,
 } from './data/cheryData';
 import {
   db,
@@ -53,6 +54,7 @@ import {
   accessoriesCollection,
   quotesCollection,
   seedInitialDataIfEmpty,
+  cleanupVirtualCarsFromFirestore,
   saveCarToFirestore,
   deleteCarFromFirestore,
   saveReservationToFirestore,
@@ -91,12 +93,49 @@ import { CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  // Theme state initialization
-  const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('chery_theme') as ThemeMode) || 'dark');
+  // Theme state initialization with matchMedia and time of day preferences
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('chery_theme') as ThemeMode;
+    if (saved === 'dark' || saved === 'light') return saved;
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+      if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    }
+    const hour = new Date().getHours();
+    return hour >= 7 && hour < 19 ? 'light' : 'dark';
+  });
 
   useEffect(() => {
     localStorage.setItem('chery_theme', theme);
+    const isLight = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-theme-mode', isLight ? 'light' : 'dark');
+      if (isLight) {
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+      } else {
+        document.documentElement.classList.add('dark-theme');
+        document.documentElement.classList.remove('light-theme');
+      }
+    }
   }, [theme]);
+
+  // Listen to system theme changes via matchMedia
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      const manualPref = localStorage.getItem('chery_theme_manual');
+      if (!manualPref) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+      return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    }
+  }, []);
 
   // State initialization with localStorage fallback
   const [cars, setCars] = useState<CarModel[]>(() => getStoredCars());
@@ -257,8 +296,13 @@ export default function App() {
 
     const unsubscribeCars = onSnapshot(carsCollection, (snapshot) => {
       if (!snapshot.empty) {
-        const fetched = snapshot.docs.map((doc) => doc.data() as CarModel);
-        setCars(fetched);
+        const fetched = snapshot.docs
+          .map((doc) => doc.data() as CarModel)
+          .filter((car) => !isVirtualCar(car));
+        if (fetched.length > 0) {
+          setCars(fetched);
+          saveStoredCars(fetched);
+        }
       }
     }, (err) => console.warn('Cars snapshot listener warning:', err));
 
@@ -845,22 +889,33 @@ export default function App() {
 
   // Render Login Screen if user logged out
   if (!currentUser) {
+    const isLight = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
     return (
-      <LoginScreen
-        users={commercials}
-        siteSettings={siteSettings}
-        onLogin={(user) => {
-          setCurrentUser(user);
-          showToast(`Bienvenue, session activée pour ${user.name} !`);
-        }}
-        onUpdateUser={handleUpdateCommercial}
-      />
+      <div data-theme={theme} data-theme-mode={isLight ? 'light' : 'dark'} className="min-h-screen">
+        <LoginScreen
+          users={commercials}
+          siteSettings={siteSettings}
+          onLogin={(user) => {
+            setCurrentUser(user);
+            showToast(`Bienvenue, session activée pour ${user.name} !`);
+          }}
+          onUpdateUser={handleUpdateCommercial}
+        />
+      </div>
     );
   }
+
+  const isLightTheme = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
 
   const themeContainerClass =
     theme === 'light'
       ? 'bg-slate-100 text-slate-900'
+      : theme === 'nordic_clean'
+      ? 'bg-slate-100 text-slate-900'
+      : theme === 'pearl_luxury'
+      ? 'bg-stone-100 text-stone-900'
+      : theme === 'crystal_cyan'
+      ? 'bg-cyan-50/50 text-slate-900'
       : theme === 'red'
       ? 'bg-[#150507] text-red-50'
       : theme === 'carbon'
@@ -874,8 +929,8 @@ export default function App() {
       : 'bg-slate-950 text-slate-100';
 
   const footerBgClass =
-    theme === 'light'
-      ? 'bg-white border-slate-200 text-slate-600'
+    isLightTheme
+      ? 'bg-white border-slate-200 text-slate-600 shadow-inner'
       : theme === 'red'
       ? 'bg-red-950/80 border-red-900/50 text-red-200'
       : theme === 'carbon'
@@ -889,7 +944,11 @@ export default function App() {
       : 'bg-slate-900 border-slate-800 text-slate-400';
 
   return (
-    <div className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}>
+    <div
+      data-theme={theme}
+      data-theme-mode={isLightTheme ? 'light' : 'dark'}
+      className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}
+    >
 
       {/* Global Site Workspace Background (Image / Vidéo / Thème) */}
       <BackgroundMediaRender

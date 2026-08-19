@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CarModel, CarColor } from '../types';
-import { getFixedDepositForCar, getFullCarPrice, getRegistrationFeeForCar } from '../data/cheryData';
+import { getFixedDepositForCar, getFullCarPrice, getRegistrationFeeForCar, isPickupCar, getCarCapacityLabel } from '../data/cheryData';
 import { PdfViewer } from './PdfViewer';
 import {
   X,
@@ -378,8 +378,10 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                       <span className="font-mono font-bold text-white">{car.dimensions || '4400 x 1830 x 1670 mm'}</span>
                     </div>
                     <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">Volume du Coffre :</span>
-                      <span className="font-mono font-bold text-white">{car.bootCapacity || '475 Litres'}</span>
+                      <span className="text-slate-400">{isPickupCar(car) ? 'Charge Utile :' : 'Volume du Coffre :'}</span>
+                      <span className="font-mono font-bold text-white">
+                        {car.payload || car.bootCapacity || (isPickupCar(car) ? '1050 Kg (Charge Utile)' : '475 Litres')}
+                      </span>
                     </div>
                     <div className="flex justify-between py-1.5 text-slate-300">
                       <span className="text-slate-400">Garantie Constructeur :</span>

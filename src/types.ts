@@ -16,7 +16,17 @@ export interface StockRequest {
 }
 
 export type UserRole = 'super_admin' | 'admin' | 'commercial';
-export type ThemeMode = 'dark' | 'light' | 'red' | 'carbon' | 'electric_cyan' | 'luxury_gold' | 'titanium';
+export type ThemeMode =
+  | 'light'
+  | 'nordic_clean'
+  | 'pearl_luxury'
+  | 'crystal_cyan'
+  | 'dark'
+  | 'red'
+  | 'carbon'
+  | 'electric_cyan'
+  | 'luxury_gold'
+  | 'titanium';
 
 export interface AnnouncementBannerSettings {
   enabled: boolean;
@@ -97,10 +107,12 @@ export interface CarColor {
   interiorColor?: string; // Couleur intérieure disponible / associée (ex: Noir, Cuir Marron Cognac, Rouge Sport)
 }
 
+export type CarCategory = 'SUV' | 'Berline' | 'Crossover' | 'Électrique/Hybride' | 'Pick-up';
+
 export interface CarModel {
   id: string;
   name: string;
-  category: 'SUV' | 'Berline' | 'Crossover' | 'Électrique/Hybride';
+  category: CarCategory | string;
   priceTND: number;
   requiredDepositTND?: number; // Acompte fixe requis pour réservation
   registrationFeeTND?: number; // Frais d'immatriculation, carte grise & timbre fiscal (défaut 0 TND)
@@ -119,7 +131,8 @@ export interface CarModel {
   powerHP?: string; // ex: "147 ch (8 CV Fiscaux)"
   torque?: string; // ex: "210 Nm"
   dimensions?: string; // ex: "4400 x 1830 x 1670 mm"
-  bootCapacity?: string; // ex: "475 Litres"
+  bootCapacity?: string; // ex: "475 Litres" ou Charge utile "1050 Kg" pour Pick-up 4X4/4X2
+  payload?: string; // Spécifique Pick-up: Charge Utile (ex: "1050 Kg")
   maxSpeed?: string; // ex: "190 km/h"
   acceleration?: string; // ex: "0-100 km/h en 8.9s"
   galleryImages?: string[];

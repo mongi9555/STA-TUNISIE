@@ -89,23 +89,31 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   // Dynamic Header CSS according to active theme
+  const isLightTheme = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
+
   const headerBgClass =
     theme === 'light'
       ? 'bg-white text-slate-900 border-slate-200 shadow-md'
+      : theme === 'nordic_clean'
+      ? 'bg-slate-50 text-slate-900 border-blue-200/80 shadow-md'
+      : theme === 'pearl_luxury'
+      ? 'bg-stone-50 text-stone-900 border-amber-200/80 shadow-md'
+      : theme === 'crystal_cyan'
+      ? 'bg-teal-50 text-slate-900 border-teal-200/80 shadow-md'
       : theme === 'red'
       ? 'bg-gradient-to-r from-red-950 via-slate-950 to-red-950 text-white border-red-900/50 shadow-xl shadow-red-950/40'
       : 'bg-slate-900 text-white border-slate-800 shadow-lg';
 
   const subHeaderBgClass =
-    theme === 'light'
-      ? 'bg-slate-100/90 border-slate-200'
+    isLightTheme
+      ? 'bg-white/90 border-slate-200'
       : theme === 'red'
       ? 'bg-red-950/60 border-red-900/40'
       : 'bg-slate-950/80 border-slate-800';
 
   const selectBgClass =
-    theme === 'light'
-      ? 'bg-slate-100 text-slate-800 border-slate-300'
+    isLightTheme
+      ? 'bg-white text-slate-800 border-slate-300 shadow-sm'
       : 'bg-slate-900 text-slate-200 border-slate-700';
 
   const effectiveLogoUrl = siteSettings?.logoUrl || cheryLogo;
@@ -151,13 +159,13 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-xl tracking-tight flex items-center gap-1.5">
-                <span className={theme === 'light' ? 'text-slate-900' : 'text-white'}>{effectiveSiteName}</span>
+                <span className={isLightTheme ? 'text-slate-900' : 'text-white'}>{effectiveSiteName}</span>
               </h1>
-              <span className="px-2.5 py-0.5 text-[11px] font-bold bg-red-600/20 text-red-500 dark:text-red-300 border border-red-500/40 rounded-full shadow-sm">
+              <span className="px-2.5 py-0.5 text-[11px] font-bold bg-red-600/20 text-red-600 dark:text-red-300 border border-red-500/40 rounded-full shadow-sm">
                 {effectiveBadgeText}
               </span>
             </div>
-            <p className={`text-xs font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-xs font-medium ${isLightTheme ? 'text-slate-500' : 'text-slate-400'}`}>
               {effectiveSiteSubtitle}
             </p>
           </div>
@@ -173,8 +181,8 @@ export const Header: React.FC<HeaderProps> = ({
               className={`p-2.5 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer relative ${
                 stockRequests.filter((r) => r.status === 'En attente').length > 0
                   ? 'bg-amber-950/80 border-amber-500/70 text-amber-300 hover:bg-amber-900 shadow-lg shadow-amber-950/50'
-                  : theme === 'light'
-                  ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+                  : isLightTheme
+                  ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100 shadow-sm'
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
               }`}
               title="Centre de Notifications Automatiques & Alertes Stock"
@@ -194,8 +202,8 @@ export const Header: React.FC<HeaderProps> = ({
             <select
               value={theme}
               onChange={(e) => onThemeChange(e.target.value as ThemeMode)}
-              className={`text-xs font-bold py-1.5 px-3 rounded-xl border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                theme === 'light'
+              className={`text-xs font-bold py-2 px-3 rounded-xl border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                isLightTheme
                   ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
                   : theme === 'carbon'
                   ? 'bg-neutral-950 border-red-500/40 text-red-400'
@@ -209,19 +217,26 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-red-950 border-red-700 text-red-200'
                   : 'bg-slate-950 border-slate-800 text-white'
               }`}
-              title="Sélectionner le Thème Automobile du Site"
+              title="Sélectionner le Thème Automobile Professionnel"
             >
-              <option value="dark" className="bg-slate-900 text-white">🌑 Thème Nuit Carbone (Sombre)</option>
-              <option value="light" className="bg-white text-slate-900">☀️ Thème Showroom Épuré (Clair)</option>
-              <option value="red" className="bg-red-950 text-red-200">🔴 Thème Chery Crimson</option>
-              <option value="carbon" className="bg-neutral-950 text-red-400">🏎️ Fibre de Carbone Racing</option>
-              <option value="electric_cyan" className="bg-cyan-950 text-cyan-300">⚡ Omoda EV Cyber Cyan</option>
-              <option value="luxury_gold" className="bg-amber-950 text-amber-300">👑 Tiggo Executive Gold</option>
-              <option value="titanium" className="bg-slate-900 text-slate-200">🛡️ Titanium High-Tech</option>
+              <optgroup label="✨ Thèmes Très Clairs & Professionnels">
+                <option value="light">☀️ Showroom Blanc Pur & Platine</option>
+                <option value="nordic_clean">❄️ Blanc Polaire & Cobalt Pro</option>
+                <option value="pearl_luxury">💎 Perle Blanche & Or Champagne</option>
+                <option value="crystal_cyan">🌊 Blanc Cristal & Cyan Tech</option>
+              </optgroup>
+              <optgroup label="🌙 Thèmes Sombres & High-Tech">
+                <option value="dark">🌑 Nuit Carbone (Sombre)</option>
+                <option value="red">🔴 Chery Crimson Racing</option>
+                <option value="carbon">🏎️ Fibre de Carbone Sport</option>
+                <option value="electric_cyan">⚡ Omoda EV Cyber Cyan</option>
+                <option value="luxury_gold">👑 Tiggo Gold Prestige</option>
+                <option value="titanium">🛡️ Titanium High-Tech</option>
+              </optgroup>
             </select>
           </div>
 
-          <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${theme === 'light' ? 'bg-slate-100 border-slate-300' : 'bg-slate-800/80 border-slate-700'}`}>
+          <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${isLightTheme ? 'bg-white border-slate-300 shadow-sm' : 'bg-slate-800/80 border-slate-700'}`}>
             <div className="flex items-center gap-2">
               <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
                 <img
@@ -237,24 +252,24 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
               <div className="text-left text-xs">
-                <div className={`font-semibold flex items-center gap-1.5 ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
+                <div className={`font-semibold flex items-center gap-1.5 ${isLightTheme ? 'text-slate-900' : 'text-slate-100'}`}>
                   <span>{currentUser.name}</span>
                   {currentUser.role === 'super_admin' ? (
-                    <span className="bg-purple-500/20 text-purple-400 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-500/40 font-mono font-bold flex items-center gap-1">
+                    <span className="bg-purple-500/20 text-purple-600 dark:text-purple-300 text-[10px] px-1.5 py-0.2 rounded border border-purple-500/40 font-mono font-bold flex items-center gap-1">
                       ⚡ SUPER ADMIN DSI
                     </span>
                   ) : currentUser.role === 'admin' ? (
-                    <span className="bg-amber-500/20 text-amber-500 dark:text-amber-300 text-[10px] px-1.5 py-0.2 rounded border border-amber-500/30 font-mono font-bold">
+                    <span className="bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[10px] px-1.5 py-0.2 rounded border border-amber-500/30 font-mono font-bold">
                       {currentUser.title || 'ADMIN'}
                     </span>
                   ) : (
-                    <span className="bg-blue-500/20 text-blue-500 dark:text-blue-300 text-[10px] px-1.5 py-0.2 rounded border border-blue-500/30 font-semibold flex items-center gap-1" title="Accès Commercial : Max 5 réservations par modèle de voiture">
-                      COMMERCIAL 🔒 (Quota: {currentUser.quotaPerModel || 5}/modèle)
+                    <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-[10px] px-1.5 py-0.2 rounded border border-emerald-500/30 font-semibold flex items-center gap-1">
+                      COMMERCIAL
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className={`text-[11px] truncate max-w-[150px] ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-[11px] truncate max-w-[150px] ${isLightTheme ? 'text-slate-500' : 'text-slate-400'}`}>
                     {currentUser.agency}
                   </p>
                   <button
@@ -270,7 +285,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <div className={`h-6 w-px mx-1 ${theme === 'light' ? 'bg-slate-300' : 'bg-slate-700'}`} />
+            <div className={`h-6 w-px mx-1 ${isLightTheme ? 'bg-slate-300' : 'bg-slate-700'}`} />
 
             {/* User selector dropdown */}
             <div className="relative flex items-center gap-2">
@@ -333,7 +348,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'dashboard'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'dashboard' && (
@@ -359,7 +374,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'catalog'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'catalog' && (
@@ -380,7 +395,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'reservations'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'reservations' && (
@@ -403,7 +418,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'documents_devis'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'documents_devis' && (
@@ -424,7 +439,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'knowledge_base'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'knowledge_base' && (
@@ -445,7 +460,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'test_drives'
                   ? 'text-white font-bold'
-                  : theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {activeTab === 'test_drives' && (
@@ -468,7 +483,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                   activeTab === 'admin'
                     ? 'text-white font-bold'
-                    : theme === 'light' ? 'text-amber-700 hover:text-amber-900 hover:bg-amber-100/60' : 'text-amber-300 hover:text-white hover:bg-slate-800/60'
+                    : isLightTheme ? 'text-amber-700 hover:text-amber-900 hover:bg-amber-100/60' : 'text-amber-300 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
                 {activeTab === 'admin' && (
@@ -487,7 +502,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           <div className="flex items-center gap-3 py-1.5 shrink-0 relative">
-            <div className={`hidden lg:flex items-center gap-2 text-xs font-mono ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+            <div className={`hidden lg:flex items-center gap-2 text-xs font-mono ${isLightTheme ? 'text-slate-500' : 'text-slate-400'}`}>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Réseau Chery TN Sync Live</span>
             </div>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CarModel, CarColor, Reservation, CommercialUser, StockRequest } from '../types';
 import { getFullCarPrice, getRegistrationFeeForCar } from '../data/cheryData';
-import { Search, Filter, AlertTriangle, CheckCircle2, Car, Package, Sparkles, Plus, AlertCircle, RefreshCw, FileText, ShieldCheck, Bell, Clock, Megaphone, X, ArrowRight, Sliders } from 'lucide-react';
+import { Search, Filter, AlertTriangle, CheckCircle2, Car, Package, Sparkles, Plus, AlertCircle, RefreshCw, FileText, ShieldCheck, Bell, Clock, Megaphone, X, ArrowRight, Sliders, Palette } from 'lucide-react';
 import { TechSpecModal } from './TechSpecModal';
 
 interface StockDashboardProps {
@@ -27,6 +27,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedColorFilter, setSelectedColorFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [selectedSpecCar, setSelectedSpecCar] = useState<CarModel | null>(null);
@@ -48,25 +49,70 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 
   const totalReservations = reservations.length;
 
+  // Extract all unique color categories/names for quick filtering
+  const uniqueColorList = useMemo(() => {
+    const map = new Map<string, { name: string; hexCode: string }>();
+    cars.forEach((car) => {
+      car.colors.forEach((col) => {
+        const lower = col.name.toLowerCase();
+        let groupKey = col.name;
+        if (lower.includes('blanc')) groupKey = 'Blanc';
+        else if (lower.includes('noir')) groupKey = 'Noir';
+        else if (lower.includes('gris') || lower.includes('titan')) groupKey = 'Gris';
+        else if (lower.includes('bleu')) groupKey = 'Bleu';
+        else if (lower.includes('rouge') || lower.includes('bordeaux')) groupKey = 'Rouge / Bordeaux';
+        else if (lower.includes('vert')) groupKey = 'Vert';
+        else if (lower.includes('argent')) groupKey = 'Argent';
+
+        if (!map.has(groupKey)) {
+          map.set(groupKey, { name: groupKey, hexCode: col.hexCode });
+        }
+      });
+    });
+    return Array.from(map.values());
+  }, [cars]);
+
   // Filter cars logic
-  const filteredCars = cars.filter((car) => {
-    const matchesSearch =
-      car.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      car.colors.some((col) => col.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCars = useMemo(() => {
+    return cars.filter((car) => {
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        term === '' ||
+        car.name.toLowerCase().includes(term) ||
+        car.category.toLowerCase().includes(term) ||
+        car.energy.toLowerCase().includes(term) ||
+        car.colors.some((col) => col.name.toLowerCase().includes(term) || col.hexCode.toLowerCase().includes(term));
 
-    const matchesCategory = selectedCategory === 'all' || car.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || car.category === selectedCategory;
 
-    let matchesStock = true;
-    if (stockFilter === 'in_stock') {
-      matchesStock = car.colors.some((col) => col.stock > 2);
-    } else if (stockFilter === 'low_stock') {
-      matchesStock = car.colors.some((col) => col.stock > 0 && col.stock <= 2);
-    } else if (stockFilter === 'out_of_stock') {
-      matchesStock = car.colors.some((col) => col.stock === 0);
-    }
+      let matchesColor = true;
+      if (selectedColorFilter !== 'all') {
+        const filterKey = selectedColorFilter.toLowerCase();
+        matchesColor = car.colors.some((col) => {
+          const colName = col.name.toLowerCase();
+          if (filterKey === 'blanc') return colName.includes('blanc');
+          if (filterKey === 'noir') return colName.includes('noir');
+          if (filterKey === 'gris') return colName.includes('gris') || colName.includes('titan');
+          if (filterKey === 'bleu') return colName.includes('bleu');
+          if (filterKey === 'rouge / bordeaux') return colName.includes('rouge') || colName.includes('bordeaux');
+          if (filterKey === 'vert') return colName.includes('vert');
+          if (filterKey === 'argent') return colName.includes('argent');
+          return colName.includes(filterKey);
+        });
+      }
 
-    return matchesSearch && matchesCategory && matchesStock;
-  });
+      let matchesStock = true;
+      if (stockFilter === 'in_stock') {
+        matchesStock = car.colors.some((col) => col.stock > 2);
+      } else if (stockFilter === 'low_stock') {
+        matchesStock = car.colors.some((col) => col.stock > 0 && col.stock <= 2);
+      } else if (stockFilter === 'out_of_stock') {
+        matchesStock = car.colors.some((col) => col.stock === 0);
+      }
+
+      return matchesSearch && matchesCategory && matchesColor && matchesStock;
+    });
+  }, [cars, searchTerm, selectedCategory, selectedColorFilter, stockFilter]);
 
   return (
     <div className="space-y-6">
@@ -231,11 +277,19 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Rechercher modèle ou couleur..."
+              placeholder="Rechercher modèle ou couleur (ex: Noir, Blanc, PHEV...)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Filter Pills */}
@@ -246,17 +300,17 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
             >
-              <option value="all">Toutes Catégories</option>
+              <option value="all">Toutes Catégories ({cars.length})</option>
               <option value="SUV">SUV</option>
               <option value="Berline">Berline</option>
-              <option value="Crossover">Crossover</option>
+              <option value="Pick-up">Pick-up</option>
             </select>
 
             {/* Stock Level Filter */}
             <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium">
               <button
                 onClick={() => setStockFilter('all')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   stockFilter === 'all' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -264,7 +318,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               </button>
               <button
                 onClick={() => setStockFilter('in_stock')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   stockFilter === 'in_stock' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -272,15 +326,15 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               </button>
               <button
                 onClick={() => setStockFilter('low_stock')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   stockFilter === 'low_stock' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Stock Faible (1-2)
+                Faible (1-2)
               </button>
               <button
                 onClick={() => setStockFilter('out_of_stock')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                   stockFilter === 'out_of_stock' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -296,10 +350,50 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-                <span>Annuler Modifs Stock (Par Défaut)</span>
+                <span>Stock Défaut</span>
               </button>
             )}
           </div>
+        </div>
+
+        {/* Color Quick Filter Bar */}
+        <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
+          <div className="flex items-center gap-1.5 text-slate-400 font-bold mr-1">
+            <Palette className="w-3.5 h-3.5 text-red-500" />
+            <span>Filtrer par couleur :</span>
+          </div>
+
+          <button
+            onClick={() => setSelectedColorFilter('all')}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 cursor-pointer text-xs ${
+              selectedColorFilter === 'all'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+            }`}
+          >
+            <span>Toutes les teintes</span>
+          </button>
+
+          {uniqueColorList.map((col) => {
+            const isSelected = selectedColorFilter.toLowerCase() === col.name.toLowerCase();
+            return (
+              <button
+                key={col.name}
+                onClick={() => setSelectedColorFilter(isSelected ? 'all' : col.name)}
+                className={`px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center gap-2 cursor-pointer text-xs ${
+                  isSelected
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30 ring-2 ring-red-400'
+                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                }`}
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-slate-600 shrink-0"
+                  style={{ backgroundColor: col.hexCode }}
+                />
+                <span>{col.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -381,28 +475,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                   <span className="px-2.5 py-1 bg-slate-900/90 backdrop-blur text-slate-300 text-xs font-semibold rounded-lg shadow">
                     {car.energy}
                   </span>
-                  {currentUser && (() => {
-                    const quotaPerModel = currentUser.quotaPerModel || 5;
-                    const count = reservations.filter(
-                      (r) =>
-                        (r.commercialId === currentUser.id || r.commercialName === currentUser.name) &&
-                        r.carId === car.id &&
-                        r.status !== 'Annulée'
-                    ).length;
-                    const reached = count >= quotaPerModel;
-                    return (
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg shadow backdrop-blur flex items-center gap-1 border ${
-                        reached
-                          ? 'bg-rose-950/90 text-rose-300 border-rose-500/60'
-                          : count > 0
-                          ? 'bg-amber-950/90 text-amber-300 border-amber-500/40'
-                          : 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
-                      }`}>
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        Quota: {count}/{quotaPerModel}
-                      </span>
-                    );
-                  })()}
                 </div>
 
                 <div className="absolute top-3 right-3">
@@ -486,7 +558,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                             </div>
                           </div>
 
-                          {/* Stock pill & Action */}
+                          {/* Stock pill */}
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span
                               className={`text-[11px] font-bold px-2 py-0.5 rounded-md font-mono ${
@@ -499,16 +571,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                             >
                               {isOutOfStock ? '0 Épuisé' : `${color.stock} dispo`}
                             </span>
-
-                            {!isOutOfStock && (
-                              <button
-                                onClick={() => onOpenReservationModal(car, color)}
-                                title={`Réserver ${car.name} en ${color.name}`}
-                                className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors shadow"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            )}
                           </div>
                         </div>
                       );
@@ -541,10 +603,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 </div>
 
                 {/* Reservation Action Button for whole car */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">
-                    Acompte recommandé: <strong className="text-slate-200 font-mono">2,000 TND</strong>
-                  </span>
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-end">
                   <button
                     onClick={() => onOpenReservationModal(car)}
                     disabled={totalCarStock === 0}
@@ -554,7 +613,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                     }`}
                   >
-                    <Plus className="w-4 h-4" />
                     <span>Créer Réservation Client</span>
                   </button>
                 </div>

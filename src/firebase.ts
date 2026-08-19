@@ -1,13 +1,41 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, writeBatch, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  getDocs,
+  writeBatch,
+  getDoc,
+  Firestore,
+} from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest } from './types';
-import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS } from './data/cheryData';
+import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar } from './data/cheryData';
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const db = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = firebaseConfig.firestoreDatabaseId
+    ? initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+        ignoreUndefinedProperties: true,
+      }, firebaseConfig.firestoreDatabaseId)
+    : initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+        ignoreUndefinedProperties: true,
+      });
+} catch {
+  firestoreInstance = firebaseConfig.firestoreDatabaseId
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
+}
+
+export const db = firestoreInstance;
 
 // Collection references
 export const carsCollection = collection(db, 'cars');
@@ -48,20 +76,65 @@ export function sanitizeForFirestore<T>(data: T): T {
 /**
  * Seed initial data to Firestore if collections are empty.
  */
+/**
+ * Helper to run a Firestore promise with a safety timeout to prevent hanging when offline
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 3500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore operation timed out (offline mode active)')), timeoutMs)
+    ),
+  ]);
+}
+
+/**
+ * Deletes any virtual/mock placeholder cars from Firestore database.
+ */
+export async function cleanupVirtualCarsFromFirestore() {
+  try {
+    const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
+    const virtualDocs = carsSnap.docs.filter((d) => {
+      const data = d.data() as CarModel;
+      return isVirtualCar(data) || isVirtualCar(d.id);
+    });
+
+    if (virtualDocs.length > 0) {
+      console.log(`[Firestore Cleanup] Deleting ${virtualDocs.length} virtual cars from Firestore...`);
+      const batch = writeBatch(db);
+      virtualDocs.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await withTimeout(batch.commit(), 4000);
+      console.log('[Firestore Cleanup] Virtual cars successfully deleted from Firestore.');
+    }
+  } catch (error) {
+    console.warn('Note on virtual cars cleanup from Firestore (offline or queued):', error);
+  }
+}
+
+/**
+ * Seed initial data to Firestore if collections are empty.
+ */
 export async function seedInitialDataIfEmpty() {
   try {
-    const carsSnap = await getDocs(carsCollection);
-    if (carsSnap.empty) {
-      console.log('Seeding initial cars to Firestore...');
+    // First, purge any leftover virtual cars from Firestore
+    await cleanupVirtualCarsFromFirestore();
+
+    const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
+    const validCars = carsSnap.docs.filter((d) => !isVirtualCar(d.data() as CarModel));
+
+    if (validCars.length === 0) {
+      console.log('Seeding initial official cars to Firestore...');
       const batch = writeBatch(db);
       INITIAL_CARS.forEach((car) => {
         const docRef = doc(db, 'cars', car.id);
         batch.set(docRef, sanitizeForFirestore(car));
       });
-      await batch.commit();
+      await withTimeout(batch.commit(), 4000);
     }
 
-    const commSnap = await getDocs(commercialsCollection);
+    const commSnap = await withTimeout(getDocs(commercialsCollection), 4000);
     if (commSnap.empty) {
       console.log('Seeding initial commercials to Firestore...');
       const batch = writeBatch(db);
@@ -69,16 +142,16 @@ export async function seedInitialDataIfEmpty() {
         const docRef = doc(db, 'commercials', comm.id);
         batch.set(docRef, sanitizeForFirestore(comm));
       });
-      await batch.commit();
+      await withTimeout(batch.commit(), 4000);
     }
 
-    const siteSettingsDoc = await getDoc(doc(db, 'settings', 'site_settings'));
+    const siteSettingsDoc = await withTimeout(getDoc(doc(db, 'settings', 'site_settings')), 4000);
     if (!siteSettingsDoc.exists()) {
       console.log('Seeding initial site settings to Firestore...');
-      await setDoc(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(DEFAULT_SITE_SETTINGS));
+      await withTimeout(setDoc(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(DEFAULT_SITE_SETTINGS)), 4000);
     }
   } catch (error) {
-    console.error('Error seeding initial Firestore data:', error);
+    console.warn('Note on seeding initial Firestore data (operating with local state or offline fallback):', error);
   }
 }
 

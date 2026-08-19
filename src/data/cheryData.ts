@@ -1,8 +1,7 @@
 import {
-  CommercialUser,
   CarModel,
+  CommercialUser,
   Reservation,
-  UserPermissions,
   SiteSettings,
   KnowledgeBaseItem,
   DocumentTemplateConfig,
@@ -10,492 +9,270 @@ import {
   CustomQuote,
   TestDriveAppointment,
   StockRequest,
+  UserPermissions,
+  ThemeMode,
 } from '../types';
 
-export interface AutomotiveWallpaperPreset {
-  id: string;
-  title: string;
-  category: string;
-  url: string;
-  previewUrl: string;
-}
-
-export const PRESET_AUTOMOTIVE_WALLPAPERS: AutomotiveWallpaperPreset[] = [
-  {
-    id: 'wall-icar03-offroad',
-    title: 'Chery iCAR 03 Off-Road Noir',
-    category: 'Off-Road & Aventure',
-    url: '/chery_icar03_offroad.jpg',
-    previewUrl: '/chery_icar03_offroad.jpg',
-  },
-  {
-    id: 'wall-showroom',
-    title: 'Showroom Chery STA Luxe',
-    category: 'Showroom',
-    url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'wall-carbon-racing',
-    title: 'Fibre de Carbone Nuit Racing',
-    category: 'Sport & Racing',
-    url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'wall-tiggo-highway',
-    title: 'SUV Tiggo Pro Highway Sunset',
-    category: 'Evasion & Route',
-    url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=400&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'wall-omoda-cockpit',
-    title: 'Cockpit Cyber Omoda EV Cyan',
-    category: 'Électrique / High-Tech',
-    url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=400&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'wall-titanium-studio',
-    title: 'Gris Titanium Metallic Studio',
-    category: 'Premium Studio',
-    url: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'wall-night-tunnel',
-    title: 'Tunnel High-Speed Motion',
-    category: 'Performance',
-    url: 'https://images.unsplash.com/photo-1514316454349-750a7fd3da3a?w=1920&auto=format&fit=crop&q=80',
-    previewUrl: 'https://images.unsplash.com/photo-1514316454349-750a7fd3da3a?w=400&auto=format&fit=crop&q=80',
-  },
+export const CHERY_MODELS_DATA = [
+  { name: 'Chery Tiggo 2 Pro Max', category: 'SUV', price: 68900, deposit: 10000 },
+  { name: 'Chery Tiggo 4 Pro', category: 'SUV', price: 78900, deposit: 20000 },
+  { name: 'Chery Tiggo 4 Pro HEV', category: 'Hybride', price: 84900, deposit: 20000 },
+  { name: 'Chery Tiggo 7 Pro Luxe', category: 'SUV', price: 98900, deposit: 30000 },
+  { name: 'Chery Tiggo 7 Pro PHEV', category: 'Hybride', price: 118900, deposit: 30000 },
+  { name: 'Chery Tiggo 8 Pro Max 4WD', category: 'SUV', price: 138900, deposit: 40000 },
+  { name: 'Chery Tiggo 8 Pro PHEV', category: 'Hybride', price: 158900, deposit: 40000 },
+  { name: 'Chery Tiggo 9 Pro PHEV', category: 'Hybride', price: 178900, deposit: 50000 },
+  { name: 'Chery iCar 03 4x2', category: 'Électrique', price: 119900, deposit: 20000 },
+  { name: 'Chery iCar 03 4x4', category: 'Électrique', price: 134900, deposit: 20000 },
+  { name: 'Chery Arrizo 8 PHEV', category: 'Hybride', price: 139900, deposit: 30000 },
+  { name: 'Chery Omoda 5 GT', category: 'Crossover', price: 108900, deposit: 25000 },
+  { name: 'Chery Arrizo 5', category: 'Berline', price: 58900, deposit: 10000 },
+  { name: 'CHERY Himla 4X2 Pick-up', category: 'Pick-up', price: 89900, deposit: 20000 },
+  { name: 'Chery Himla 4X4 Pick-up', category: 'Pick-up', price: 102900, deposit: 20000 }
 ];
 
-export interface AutomotiveThemeDefinition {
-  mode: import('../types').ThemeMode;
-  name: string;
-  subtitle: string;
-  bgHex: string;
-  cardBgHex: string;
-  accentHex: string;
-  badgeTag: string;
-  iconName: string;
-  borderColor: string;
-  gradientBg: string;
-}
-
-export const AUTOMOTIVE_THEME_DEFINITIONS: AutomotiveThemeDefinition[] = [
-  {
-    mode: 'dark',
-    name: 'Nuit Carbone',
-    subtitle: 'Thème Sombre Classique & Bleu Slate',
-    bgHex: '#0B0F17',
-    cardBgHex: '#111827',
-    accentHex: '#3B82F6',
-    badgeTag: 'Sombre Standard',
-    iconName: 'Moon',
-    borderColor: 'border-slate-800',
-    gradientBg: 'from-slate-900 via-slate-950 to-slate-900',
-  },
-  {
-    mode: 'light',
-    name: 'Showroom Épuré',
-    subtitle: 'Thème Clair Lumineux & Éléments Chromés',
-    bgHex: '#F8FAFC',
-    cardBgHex: '#FFFFFF',
-    accentHex: '#2563EB',
-    badgeTag: 'Clair Lumineux',
-    iconName: 'Sun',
-    borderColor: 'border-slate-200',
-    gradientBg: 'from-slate-100 via-white to-slate-100',
-  },
-  {
-    mode: 'red',
-    name: 'Chery Crimson',
-    subtitle: 'Rouge Passion Chery & Finition Nuit',
-    bgHex: '#150507',
-    cardBgHex: '#1F0A0D',
-    accentHex: '#DC2626',
-    badgeTag: 'Chery Identity',
-    iconName: 'Flame',
-    borderColor: 'border-red-900/60',
-    gradientBg: 'from-red-950/90 via-[#150507] to-red-950/70',
-  },
-  {
-    mode: 'carbon',
-    name: 'Fibre de Carbone',
-    subtitle: 'Ambiance Piste Racing & Surpiqûres Rouges',
-    bgHex: '#090a0f',
-    cardBgHex: '#131620',
-    accentHex: '#EF4444',
-    badgeTag: 'Sport & Performance',
-    iconName: 'Gauge',
-    borderColor: 'border-red-500/30',
-    gradientBg: 'from-neutral-950 via-[#0a0d14] to-neutral-950',
-  },
-  {
-    mode: 'electric_cyan',
-    name: 'Omoda EV Cyber',
-    subtitle: 'Électrique / Hybride, Cockpit Neon Cyan',
-    bgHex: '#03131a',
-    cardBgHex: '#08212d',
-    accentHex: '#06B6D4',
-    badgeTag: 'Omoda & EV',
-    iconName: 'Zap',
-    borderColor: 'border-cyan-500/30',
-    gradientBg: 'from-cyan-950/80 via-[#03131a] to-slate-950',
-  },
-  {
-    mode: 'luxury_gold',
-    name: 'Tiggo Executive Gold',
-    subtitle: 'Luxe Executive, Bronze Or & Cuir Nappa',
-    bgHex: '#120e0a',
-    cardBgHex: '#1d1812',
-    accentHex: '#D97706',
-    badgeTag: 'Executive Luxe',
-    iconName: 'Crown',
-    borderColor: 'border-amber-600/30',
-    gradientBg: 'from-amber-950/70 via-[#120e0a] to-stone-950',
-  },
-  {
-    mode: 'titanium',
-    name: 'Titanium High-Tech',
-    subtitle: 'Châssis Métal Brossé & Satiné Silver',
-    bgHex: '#111518',
-    cardBgHex: '#1a2026',
-    accentHex: '#94A3B8',
-    badgeTag: 'Titanium Metal',
-    iconName: 'Shield',
-    borderColor: 'border-slate-700/60',
-    gradientBg: 'from-slate-900 via-[#111518] to-slate-950',
-  },
+export const CHERY_PALETTES = [
+  { name: 'Blanc Okavango / Arctique', hex: '#F8FAFC' },
+  { name: 'Gris Platine / Titanium', hex: '#475569' },
+  { name: 'Noir Onyx / Profond', hex: '#09090B' },
+  { name: 'Bleu Saphir / Électrique', hex: '#1E3A8A' },
+  { name: 'Rouge Rubis / Impérial', hex: '#DC2626' },
+  { name: 'Vert Bivouac / Armée', hex: '#14532D' }
 ];
 
-export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  logoUrl: '/sta_logo_white.svg',
-  siteName: 'CHERY Tunisie',
-  siteSubtitle: 'Système de Réservation, Stocks & Gestion des Accès — Siège STA',
-  headerBadgeText: 'Espace Commercial & Direction',
-  announcementBanner: {
-    enabled: true,
-    text: '⚡ [Super Admin DSI] Système de réservation opérationnel. Mises à jour automatiques des arrivages et personnalisations.',
-    type: 'info',
-  },
-  dsiContact: {
-    phone: '+216 71 800 990',
-    email: 'dsi.support@chery.tn',
-    supportHours: 'Lun - Ven: 08:00 - 17:30',
-    address: 'Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis',
-  },
-  accentColor: '#DC2626',
-  footerLogoUrl: '/sta_logo_white.svg',
-  footerTitle: "STA — Société Tunisienne d'Automobiles",
-  footerSubtitle: "Distributeur Officiel & Réseau Agréé",
-  footerDescription: "Plateforme réservée aux commerciaux & réseau d'agences agréées.",
-  footerCopyright: "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.",
-  homeBackgroundType: 'video',
-  homeBackgroundImageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1920&auto=format&fit=crop&q=80',
-  homeBackgroundVideoUrl: 'https://youtu.be/DdNliUon_Cs',
-  homeBackgroundOverlayOpacity: 0.65,
-  homeBackgroundBlur: false,
+export const CHERY_INTERIORS = [
+  'Cuir Noir Sport & Surpiqûres',
+  'Cuir Marron Cognac Premium',
+  'Cuir Nappa Beige & Bleu Nuit',
+  'Cuir Nappa Vert & Bronze',
+  'Tissu & Simili-Cuir Noir Carbone'
+];
 
-  siteBackgroundType: 'image',
-  siteBackgroundImageUrl: '/chery_icar03_offroad.jpg',
-  siteBackgroundVideoUrl: '',
-  siteBackgroundOverlayOpacity: 0.85,
-  siteBackgroundBlur: false,
-
-  defaultThemeMode: 'dark',
-};
-
-// --- Initial Customization Configurations ---
-export const DEFAULT_DOCUMENT_TEMPLATE: DocumentTemplateConfig = {
-  companyName: "Société Tunisienne d'Automobiles (STA)",
-  logoUrl: '/sta_logo_white.svg',
-  matriculeFiscale: '1489203/A/M/000',
-  address: 'Zone Industrielle Ben Arous, Rue des Entrepreneurs, 2013 Tunis',
-  phone: '+216 71 800 990',
-  email: 'contact@chery.tn',
-  ribBancaire: 'TN59 10 000 0000000000000 12 (BIAT)',
-  tvaPercentage: 19,
-  droitDeTimbreTND: 1.0,
-  validityDays: 30,
-  defaultRegistrationFeeTND: 0,
-  quoteHeaderNote: 'Offre de prix officielle pour véhicules neufs Chery garantie constructeur 7 ans / 200 000 km.',
-  quoteFooterTerms: 'Conditions de paiement : Acompte de 20% à la réservation, le solde avant immatriculation et livraison.',
-};
+export const TUNISIAN_CITIES = [
+  'Tunis (La Charguia / Berges du Lac)',
+  'Ariana / Ennasr',
+  'Ben Arous / Megrine',
+  'Sousse / Kantaoui',
+  'Sfax (Route de Téniour)',
+  'Nabeul / Hammamet',
+  'Bizerte',
+  'Monastir',
+  'Gabès'
+];
 
 export const INITIAL_KNOWLEDGE_BASE: KnowledgeBaseItem[] = [
   {
     id: 'kb-1',
-    title: 'Garantie Constructeur Chery 7 Ans / 200 000 km',
-    category: 'garantie',
-    content: 'Tous les véhicules neufs distribués par STA Chery Tunisie bénéficient de la garantie constructeur de 7 ans ou 200 000 km (au premier des deux termes atteint). La garantie couvre le moteur, la boîte de vitesses, le système électrique et le châssis, à condition de respecter les révisions périodiques dans les ateliers agréés STA.',
-    tags: ['Garantie', 'Service Après-Vente', 'Maintenance', 'Moteur'],
-    updatedAt: '2026-07-30',
-    updatedBy: 'Lamine Abbasi (Directeur Marketing)',
+    category: 'faq',
+    title: 'Documents requis pour commande particulier',
+    content: '1. Copie CIN valide (recto-verso)\n2. Justificatif d\'adresse ou quittance STEG/SONEDE\n3. Preuve de versement ou virement de l\'acompte réglementaire\n4. Bon de commande signé et daté',
+    tags: ['particulier', 'documents', 'acompte', 'cin'],
+    updatedAt: new Date().toISOString(),
     isPublicForAI: true,
   },
   {
     id: 'kb-2',
-    title: 'Procédure & Éligibilité Dossier Leasing (Crédit-Bail)',
-    category: 'financement',
-    content: 'Pour les professionnels et sociétés, nous acceptons les financements Leasing via toutes les compagnies de la place (Tunisie Leasing, Hannibal Lease, Best Lease, etc.). Documents requis : Extrait RNE, Matricule Fiscale, CIN Gérant, 3 derniers relevés bancaires. Acompte recommandé : 10% à 20%.',
-    tags: ['Leasing', 'Financement', 'Société', 'Documents'],
-    updatedAt: '2026-07-29',
-    updatedBy: 'Sami Chaker (Admin)',
+    category: 'faq',
+    title: 'Documents pour leasing / société (personne morale)',
+    content: '1. Extrait du Registre National des Entreprises (RNE / Registre de Commerce récent < 3 mois)\n2. Copie CIN du Gérant ou Mandataire\n3. Matricule Fiscal & Déclaration d\'existence\n4. Accord de principe de la société de Leasing partenaire (si applicable)',
+    tags: ['société', 'leasing', 'rne', 'matricule fiscal'],
+    updatedAt: new Date().toISOString(),
     isPublicForAI: true,
   },
   {
     id: 'kb-3',
-    title: 'Adresses & Contacts des Agences Chery Tunisie (STA)',
-    category: 'agences',
-    content: '• Siège STA & Showroom Ben Arous : Z.I. Ben Arous, Tél: 71 800 990\n• Showroom Lac 2 Tunis : Rue de la Feuille d\'Érable, Tél: 31 300 400\n• Agence Sousse Pearl : Avenue Yasser Arafat, Sahloul, Tél: 73 220 400\n• Agence Sfax : Route Teniour Km 1.5, Tél: 74 400 500\nHoraires : Lundi au Vendredi de 08:00 à 17:30 / Samedi de 08:30 à 13:00.',
-    tags: ['Agences', 'Showrooms', 'Horaires', 'Localisation'],
-    updatedAt: '2026-07-28',
-    updatedBy: 'Lamine Abbasi',
+    category: 'financement',
+    title: 'Modalités d\'acompte et délais de livraison',
+    content: 'L\'acompte officiel de réservation est exigé pour valider et sécuriser le blocage du châssis en stock:\n- SUV Urbains / Berlines: 10 000 à 20 000 TND\n- SUV Luxe / Hybrides PHEV: 30 000 à 50 000 TND\nLe solde doit être versé avant la délivrance de la Carte Grise et de la livraison finale.',
+    tags: ['acompte', 'financement', 'délai', 'livraison'],
+    updatedAt: new Date().toISOString(),
     isPublicForAI: true,
   },
   {
     id: 'kb-4',
-    title: 'Modalités d\'Immatriculation & Carte Grise Tunisie',
-    category: 'faq',
-    content: 'Frais de carte grise et d\'immatriculation applicables selon la puissance fiscale (CV) : \n- 5 à 7 CV : 650 à 850 TND\n- 8 à 10 CV : 950 à 1200 TND\n- 11 CV et plus : 1500 TND.\nSTA s\'occupe des démarches administratives auprès de l\'Agence Technique des Transports Terrestres (ATTT).',
-    tags: ['Immatriculation', 'Carte Grise', 'ATTT', 'Frais'],
-    updatedAt: '2026-07-25',
-    updatedBy: 'Arbi Gharbi (DSI)',
+    category: 'garantie',
+    title: 'Garantie Constructeur Chery Tunisie (STA)',
+    content: 'Tous nos véhicules bénéficient de la garantie constructeur exceptionnelle de 7 ans ou 200 000 km (premier terme échu). Pour les modèles 100% électriques et Hybrides (iCar 03, PHEV), la batterie de traction haute tension est garantie 8 ans ou 160 000 km.',
+    tags: ['garantie', '7 ans', '200000 km', 'batterie', 'sta'],
+    updatedAt: new Date().toISOString(),
     isPublicForAI: true,
-  },
-  {
-    id: 'kb-5',
-    title: 'Offre Spéciale Flotte & Remises Volume Entreprises',
-    category: 'promotions',
-    content: 'Pour les commandes de flottes d\'entreprises (à partir de 3 véhicules), STA accorde une remise tarifaire progressive allant de 2% à 5% sur le prix HT ainsi que la gratuité du premier entretien à 10 000 km.',
-    tags: ['Flotte', 'Remise', 'Promotions', 'Société'],
-    updatedAt: '2026-07-20',
-    updatedBy: 'Lamine Abbasi',
-    isPublicForAI: true,
-  },
+  }
 ];
+
+export const DEFAULT_DOCUMENT_TEMPLATE: DocumentTemplateConfig = {
+  companyName: 'Société Tunisienne d\'Automobiles (STA)',
+  logoUrl: '',
+  matriculeFiscale: '0024925/N',
+  address: 'Z.I Borj Ghorbel, GP1 Km 13, 2013 Ben Arous',
+  phone: '(+216) 31 390 290 / (+216) 71 800 900',
+  email: 'contact@chery-tunisie.tn',
+  ribBancaire: 'BIAT TN59 08 000 0001234567890 45',
+  tvaPercentage: 19,
+  droitDeTimbreTND: 1.0,
+  validityDays: 30,
+  quoteHeaderNote: 'DOCUMENT OFFICIEL STA CHERY',
+  quoteFooterTerms: '1. Le présent bon de commande/réservation constitue un engagement ferme sous réserve de versement de l\'acompte prévu.\n2. Les prix s\'entendent TTC en Dinars Tunisiens (TND).\n3. Garantie constructeur officielle STA : 7 ans ou 200 000 km selon carnet d\'entretien.',
+  defaultRegistrationFeeTND: 0,
+};
 
 export const INITIAL_ACCESSORIES: CarAccessory[] = [
   {
     id: 'acc-1',
-    name: 'Marchepieds Latéraux en Aluminium Brossé',
-    category: 'extérieur',
-    priceTND: 750,
-    description: 'Design robuste et élégant facilitant l\'accès à bord et protégeant la bas de caisse.',
-    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop&q=80',
+    name: 'Tapis de sol 3D All-Weather thermoformés Chery',
+    category: 'intérieur',
+    priceTND: 380,
+    description: 'Protection intégrale du plancher avec rebords surélevés, matériau imperméable et antidérapant.',
   },
   {
     id: 'acc-2',
-    name: 'Tapis de Sol 3D Thermoformés sur-mesure Chery',
-    category: 'intérieur',
-    priceTND: 180,
-    description: 'Protection maximale contre la poussière et l\'eau avec bordures relevées anti-déversement.',
-    imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&auto=format&fit=crop&q=80',
+    name: 'Attelage d\'origine avec faisceau électrique 13 broches',
+    category: 'extérieur',
+    priceTND: 1450,
+    description: 'Attelage homologué constructeur haute résistance pour remorquage sécurisé.',
   },
   {
     id: 'acc-3',
-    name: 'Attelage de Remorquage Amovible d\'Origine',
+    name: 'Barres de toit transversales aérodynamiques en aluminium',
     category: 'extérieur',
-    priceTND: 950,
-    description: 'Capacité de remorquage jusqu\'à 1500 kg avec faisceau électrique 13 broches inclus.',
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&auto=format&fit=crop&q=80',
+    priceTND: 650,
+    description: 'Support verrouillable à clé pour coffre de toit, porte-vélos ou skis.',
   },
   {
     id: 'acc-4',
-    name: 'Films de Protection Solaire Anti-UV & Anti-Carjacking',
-    category: 'protection',
-    priceTND: 320,
-    description: 'Teintage homologué des vitres latérales et lunette arrière. Filtre 99% des rayons UV.',
+    name: 'Borne de recharge murale Wallbox 7.4 kW / 22 kW Type 2',
+    category: 'multimédia',
+    priceTND: 2200,
+    description: 'Chargeur accéléré pour véhicules Hybrides PHEV et 100% Électriques avec câble 5m inclus.',
   },
   {
     id: 'acc-5',
-    name: 'Barres de Toit Longitudinales Alulight',
-    category: 'extérieur',
-    priceTND: 450,
-    description: 'Permet le montage de coffre de toit ou porte-vélos jusqu\'à 75 kg de charge.',
+    name: 'Pack Film teinté solaire anti-UV et anti-chaleur Nano-Céramique',
+    category: 'protection',
+    priceTND: 890,
+    description: 'Isolation thermique supérieure et protection de l\'habitacle contre 99% des rayons UV.',
   },
   {
     id: 'acc-6',
-    name: 'Alarme Volumétrique & Anti-Soulèvement',
-    category: 'sécurité',
-    priceTND: 380,
-    description: 'Système d\'alarme d\'origine connecté à la clé intelligente Keyless avec sirène haute puissance.',
-  },
-  {
-    id: 'acc-7',
-    name: 'Becquet Arrière Sport Aéro',
-    category: 'extérieur',
+    name: 'Bac de coffre thermoformé imperméable',
+    category: 'protection',
     priceTND: 290,
-    description: 'Design sportif affiné peints couleur carrosserie.',
-  },
-  {
-    id: 'acc-8',
-    name: 'Dashcam Caméra de Bord Ultra HD Wi-Fi',
-    category: 'multimédia',
-    priceTND: 350,
-    description: 'Enregistrement continu en 4K avec vision nocturne et capteur de choc en stationnement.',
-  },
+    description: 'Protection sur-mesure lavable contre les saletés, liquides et objets encombrants.',
+  }
 ];
 
-
-export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
-  canCreateReservation: true,
-  canCancelReservation: true,
-  canEditPrices: true,
-  canManageStock: true,
-  canAccessAdminPanel: true,
-  canPrintVouchers: true,
-  canExportReports: true,
-};
-
-export const DEFAULT_COMMERCIAL_PERMISSIONS: UserPermissions = {
-  canCreateReservation: true,
-  canCancelReservation: false,
-  canEditPrices: false,
-  canManageStock: false,
-  canAccessAdminPanel: false,
-  canPrintVouchers: true,
-  canExportReports: true,
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  siteName: 'Société Tunisienne d\'Automobiles (STA)',
+  siteSubtitle: 'Concessionnaire Officiel CHERY en Tunisie - Leader du marché SUV & Hybride',
+  logoUrl: '',
+  accentColor: '#DC2626',
+  defaultThemeMode: 'dark',
+  announcementBanner: {
+    enabled: true,
+    text: '⚡ Stock Châssis officiel STA Tunisie mis à jour en temps réel avec réservation bancaire sécurisée.',
+    type: 'info'
+  },
+  dsiContact: {
+    phone: '+216 31 390 290 / +216 71 800 900',
+    email: 'contact@chery-tunisie.tn',
+    supportHours: '8h30 - 18h00 du Lundi au Vendredi',
+    address: 'Z.I Borj Ghorbel, GP1 Km 13, Ben Arous / Showroom Les Berges du Lac, Tunis'
+  }
 };
 
 export const INITIAL_COMMERCIALS: CommercialUser[] = [
   {
-    id: 'superadmin-arbi',
-    name: 'Arbi Gharbi',
-    title: "Directeur Système d'Informations (DSI)",
-    email: 'arbi.gharbi@chery.tn',
-    phone: '+216 71 800 990',
-    agency: 'Direction Informatique (DSI) - Siège STA',
+    id: 'comm-superadmin',
+    name: 'Mongi Jamaï',
+    email: 'jamaimongi0@gmail.com',
+    password: 'STA@2026+',
     role: 'super_admin',
-    password: '1234',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_ADMIN_PERMISSIONS,
-  },
-  {
-    id: 'superadmin-kamel',
-    name: 'Kamel Belhoula',
-    title: 'Manager IT',
-    email: 'kamel.belhoula@chery.tn',
-    phone: '+216 71 800 991',
-    agency: 'Direction Informatique (DSI) - Siège STA',
-    role: 'super_admin',
-    password: '1234',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_ADMIN_PERMISSIONS,
-  },
-  {
-    id: 'admin-lamine',
-    name: 'Lamine Abbasi',
-    title: 'Directeur Marketing',
-    email: 'lamine.abbasi@chery.tn',
     phone: '+216 71 800 900',
-    agency: 'Direction Générale - Marketing',
+    agency: 'STA Direction Générale - Ben Arous / Tunis',
+    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: true,
+      canEditPrices: true,
+      canManageStock: true,
+      canAccessAdminPanel: true,
+      canPrintVouchers: true,
+      canExportReports: true,
+    }
+  },
+  {
+    id: 'comm-1',
+    name: 'Direction Commerciale STA',
+    email: 'admin@chery-tunisie.tn',
+    password: 'STA@2026+',
     role: 'admin',
-    password: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_ADMIN_PERMISSIONS,
+    phone: '+216 71 800 900',
+    agency: 'STA Siège Ben Arous',
+    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: true,
+      canEditPrices: true,
+      canManageStock: true,
+      canAccessAdminPanel: true,
+      canPrintVouchers: true,
+      canExportReports: true,
+    }
   },
   {
-    id: 'admin-sami',
-    name: 'Sami Chaker',
-    title: 'Administrateur',
-    email: 'sami.chaker@chery.tn',
-    phone: '+216 71 800 901',
-    agency: 'Direction Générale - Administration',
-    role: 'admin',
-    password: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_ADMIN_PERMISSIONS,
-  },
-  {
-    id: 'comm-marwa',
-    name: 'Marwa Frikha',
-    title: 'Commerciale',
-    email: 'marwa.frikha@chery.tn',
-    phone: '+216 22 101 202',
-    agency: 'Chery Agence Lac 2 - Tunis',
+    id: 'comm-2',
+    name: 'Karim Ben Salem',
+    email: 'karim.bensalem@chery-tunisie.tn',
+    password: 'STA@2026+',
     role: 'commercial',
-    password: '123',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_COMMERCIAL_PERMISSIONS,
+    phone: '+216 98 123 456',
+    agency: 'Showroom Les Berges du Lac',
+    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: false,
+      canEditPrices: false,
+      canManageStock: false,
+      canAccessAdminPanel: false,
+      canPrintVouchers: true,
+      canExportReports: true,
+    }
   },
   {
-    id: 'comm-moez',
-    name: 'Moez Ben Naser',
-    title: 'Commercial',
-    email: 'moez.bennaser@chery.tn',
-    phone: '+216 55 303 404',
-    agency: 'Chery Agence Sousse Pearl',
+    id: 'comm-3',
+    name: 'Sarra Mansour',
+    email: 'sarra.mansour@chery-tunisie.tn',
+    password: 'STA@2026+',
     role: 'commercial',
-    password: '123',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_COMMERCIAL_PERMISSIONS,
-  },
-  {
-    id: 'comm-bassem',
-    name: 'Bassem Jerbi',
-    title: 'Commercial',
-    email: 'bassem.jerbi@chery.tn',
-    phone: '+216 98 505 606',
-    agency: 'Chery Agence Sfax Route Teniour',
-    role: 'commercial',
-    password: '123',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_COMMERCIAL_PERMISSIONS,
-  },
-  {
-    id: 'comm-hanen',
-    name: 'Hanen Gharbi',
-    title: 'Commerciale',
-    email: 'hanen.gharbi@chery.tn',
-    phone: '+216 20 707 808',
-    agency: 'Chery Agence Nabeul Cap Bon',
-    role: 'commercial',
-    password: '123',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_COMMERCIAL_PERMISSIONS,
-  },
-  {
-    id: 'comm-ines',
-    name: 'Ines Chaari',
-    title: 'Commerciale',
-    email: 'ines.chaari@chery.tn',
-    phone: '+216 26 909 101',
-    agency: 'Chery Agence Bizerte Port',
-    role: 'commercial',
-    password: '123',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    permissions: DEFAULT_COMMERCIAL_PERMISSIONS,
-  },
+    phone: '+216 98 654 321',
+    agency: 'Agence Sousse Kantaoui',
+    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: false,
+      canEditPrices: false,
+      canManageStock: false,
+      canAccessAdminPanel: false,
+      canPrintVouchers: true,
+      canExportReports: true,
+    }
+  }
 ];
 
-export function getFixedDepositForCar(car?: CarModel | null | string): number {
-  if (!car) return 20000;
-  if (typeof car === 'object' && car.requiredDepositTND && car.requiredDepositTND > 0) {
-    return car.requiredDepositTND;
+export function getRequiredDepositForCar(carNameOrModel?: string | CarModel | null): number {
+  if (!carNameOrModel) return 20000;
+
+  if (typeof carNameOrModel === 'object' && carNameOrModel !== null) {
+    if (carNameOrModel.requiredDepositTND && carNameOrModel.requiredDepositTND > 0) {
+      return carNameOrModel.requiredDepositTND;
+    }
+    carNameOrModel = carNameOrModel.name;
   }
 
-  const name = (typeof car === 'string' ? car : car.name).toLowerCase();
+  const name = String(carNameOrModel).toLowerCase();
 
-  // Rules specified by Chery Tunisie STA:
-  // 1. Chery iCar 03 4x2 -> 20 000 TND
-  // 2. Chery iCar 03 4x4 -> 20 000 TND
-  // 3. Chery Arrizo 8 PHEV -> 30 000 TND
-  // 4. Chery Tiggo 7 PHEV -> 30 000 TND
-  // 5. Chery Tiggo 2 Pro Max -> 10 000 TND
-  // 6. Chery Tiggo 8 PHEV -> 40 000 TND
-  // 7. Chery Tiggo 9 PHEV -> 50 000 TND
-  // 8. Chery Tiggo 4 HEV -> 20 000 TND
-
-  if (name.includes('icar 03 4x2') || name.includes('i03 4x2') || name.includes('icar03 4x2')) return 20000;
-  if (name.includes('icar 03 4x4') || name.includes('i03 4x4') || name.includes('icar03 4x4')) return 20000;
-  if (name.includes('icar 03') || name.includes('i03')) return 20000;
-
-  if (name.includes('arrizo 8')) return 30000;
+  if (name.includes('icar 03')) return 20000;
+  if (name.includes('arrizo 8') && (name.includes('phev') || name.includes('hybride'))) return 30000;
+  if (name.includes('arrizo 8')) return 25000;
 
   if (name.includes('tiggo 7') && (name.includes('phev') || name.includes('hybride'))) return 30000;
   if (name.includes('tiggo 7')) return 30000;
@@ -516,6 +293,8 @@ export function getFixedDepositForCar(car?: CarModel | null | string): number {
   return 20000;
 }
 
+export const getFixedDepositForCar = getRequiredDepositForCar;
+
 export const DEFAULT_REGISTRATION_AND_CARTE_GRISE_FEE = 0;
 
 export function getRegistrationFeeForCar(car?: CarModel | null | string): number {
@@ -534,411 +313,569 @@ export function getFullCarPrice(car?: CarModel | null | string): number {
   return base + regFee;
 }
 
+export function isPickupCar(car?: CarModel | { name?: string; category?: string } | string | null): boolean {
+  if (!car) return false;
+  if (typeof car === 'string') {
+    const lower = car.toLowerCase();
+    return (
+      lower.includes('pick') ||
+      lower.includes('himla') ||
+      lower.includes('grand tiger') ||
+      ((lower.includes('4x4') || lower.includes('4x2')) && (lower.includes('himla') || lower.includes('pick')))
+    );
+  }
+  const nameLower = (car.name || '').toLowerCase();
+  const catLower = (car.category || '').toLowerCase();
+  return (
+    catLower.includes('pick') ||
+    nameLower.includes('himla') ||
+    nameLower.includes('pick') ||
+    nameLower.includes('grand tiger') ||
+    ((nameLower.includes('4x4') || nameLower.includes('4x2')) &&
+      (nameLower.includes('himla') || nameLower.includes('chery himla') || catLower.includes('pick')))
+  );
+}
+
+export function getCarCapacityLabel(car?: CarModel | { name?: string; category?: string } | string | null): string {
+  return isPickupCar(car) ? 'Charge Utile' : 'Volume du Coffre';
+}
+
+export function formatCarCapacityValue(
+  car?: CarModel | { name?: string; category?: string; bootCapacity?: string; payload?: string } | string | null,
+  rawValue?: string
+): string {
+  const isPickup = isPickupCar(car);
+  if (rawValue && rawValue.trim()) return rawValue;
+  if (typeof car === 'object' && car !== null) {
+    if (car.payload && car.payload.trim()) return car.payload;
+    if (car.bootCapacity && car.bootCapacity.trim()) return car.bootCapacity;
+  }
+  return isPickup ? '1050 Kg (Charge Utile)' : '475 Litres';
+}
+
+export const VIRTUAL_CAR_IDS: string[] = [
+  'car-arrizo-5',
+  'car-arrizo-8-phev',
+  'car-icar-03-4x2',
+  'car-icar-03-4x4',
+  'car-omoda-5',
+  'car-tiggo-2-pro',
+  'car-tiggo-2-pro-max',
+  'car-tiggo-4-pro',
+  'car-tiggo-4-pro-hev',
+  'car-tiggo-7-pro',
+  'car-tiggo-7-pro-phev',
+  'car-tiggo-8-pro-max',
+  'car-tiggo-8-pro-phev',
+  'car-tiggo-9-pro-phev'
+];
+
+export const OFFICIAL_CAR_IDS = [
+  "car-1785512735025", // Chery Arrizo 8 PHEV
+  "car-1785512823129", // Chery Arrizo 8
+  "car-1785513071800", // Chery Tiggo 9 PHEV
+  "car-1785513939488", // CHERY Himla 4X2
+  "car-1785514106502", // Chery Himla 4X4
+  "car-1785753010029", // Chery Tiggo 2 Pro Max
+  "car-1785753066750", // Chery Tiggo 4 HEV
+  "car-1785753150277", // Chery I03 4X2
+  "car-1785753208837", // Chery I03 4X4
+  "car-1785753278797", // Chery Tiggo 7 PHEV
+  "car-1785753367152", // Chery Tiggo 8 PHEV
+];
+
+export const OFFICIAL_CAR_NAMES = [
+  "chery arrizo 8 phev",
+  "chery arrizo 8",
+  "chery tiggo 9 phev",
+  "chery himla 4x2",
+  "chery himla 4x4",
+  "chery tiggo 2 pro max",
+  "chery tiggo 4 hev",
+  "chery i03 4x2",
+  "chery i03 4x4",
+  "chery tiggo 7 phev",
+  "chery tiggo 8 phev",
+];
+
+export function isVirtualCar(carOrId: CarModel | string | null | undefined): boolean {
+  if (!carOrId) return false;
+  if (typeof carOrId === 'string') {
+    if (VIRTUAL_CAR_IDS.includes(carOrId)) return true;
+    return !OFFICIAL_CAR_IDS.includes(carOrId);
+  }
+  if (VIRTUAL_CAR_IDS.includes(carOrId.id)) return true;
+  if (carOrId.imageUrl && carOrId.imageUrl.includes('images.unsplash.com')) return true;
+  const nameNorm = (carOrId.name || '').toLowerCase().trim();
+  const isOfficial = OFFICIAL_CAR_NAMES.some((officialName) => nameNorm === officialName || nameNorm.includes(officialName));
+  return !isOfficial;
+}
+
 export const INITIAL_CARS: CarModel[] = [
   {
-    id: 'car-tiggo-2-pro-max',
-    name: 'Chery Tiggo 2 Pro Max',
-    category: 'SUV',
-    priceTND: 68900,
-    requiredDepositTND: 10000,
-    engine: '1.5L VVT 108 ch',
-    transmission: 'Automatique CVT 9',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80',
-    description: 'Le SUV urbain Max avec calandre diamant chromée, écran tactile 10.25", feux LED et toit ouvrant.',
+    id: "car-1785512735025",
+    name: "Chery Arrizo 8 PHEV",
+    category: "Berline",
+    engine: "1.5 T DHT",
+    energy: "Hybride",
+    transmission: "Boîte Automatique",
+    priceTND: 89900,
+    powerHP: "147 ch (8 CV Fiscaux)",
+    acceleration: "0-100 km/h en 8.9s",
+    torque: "210 Nm @ 1750-4000 tr/min",
+    consumption: "6.8 L/100km",
+    maxSpeed: "190 km/h",
+    dimensions: "4780 x 1843 x 1469 mm",
+    bootCapacity: "475 Litres",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47649.webp?t=1782727426",
+    description: "Berline Premium Hybride Rechargeable d'exception alliant raffinement et puissance.",
     features: [
-      'Écran tactile 10.25" HD Apple CarPlay & Android Auto',
-      'Caméra HD de recul + Radars arrière',
-      'Toit ouvrant panoramique électrique',
-      'Jantes alliage 17" bicolores sport',
-      'Volant cuir multifonctions',
-      'Système d\'aide au démarrage en côte (HHC)'
+      "Double écran incurvé HD 24.6\"",
+      "Chargeur rapide par induction 50W",
+      "Toit ouvrant panoramique électrique",
+      "Climatisation Bizone Purifiée N95 & Parfumeur d'ambiance"
+    ],
+    safetyFeatures: [
+      "10 Airbags",
+      "Conduite autonome ADAS Niveau 2+",
+      "Caméra 540° Haute Définition",
+      "Freinage d'urgence autonome (AEB)",
+      "Avertisseur d'angle mort (BSD)"
     ],
     colors: [
-      { id: 'col-t2m-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 8, reserved: 2, interiorColor: 'Cuir Marron Cognac' },
-      { id: 'col-t2m-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 5, reserved: 1, interiorColor: 'Gris Anthracite / Noir' },
-      { id: 'col-t2m-3', name: 'Noir Fantôme', hexCode: '#111827', stock: 4, reserved: 0, interiorColor: 'Noir / Surpiqûres Rouges' },
-      { id: 'col-t2m-4', name: 'Rouge Rubis', hexCode: '#DC2626', stock: 3, reserved: 1, interiorColor: 'Cuir Noir Sport' },
+      { id: "col-1-1785512735025", name: "Blanc Nacré", hexCode: "#F8FAFC", interiorColor: "Gris Clair & Bleu Nappa", stock: 12, reserved: 0 },
+      { id: "col-2-1785512735025", name: "Gris Platine", hexCode: "#475569", interiorColor: "Cuir Noir Surpiqué", stock: 8, reserved: 0 },
+      { id: "col-3-1785512735025", name: "Noir Carbone", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 15, reserved: 0 },
+      { id: "col-4-1785512735025", name: "Bleu Électrique", hexCode: "#1D4ED8", interiorColor: "Cuir Beige & Bleu", stock: 6, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-t2m-1', name: 'Noir Anthracite Surpiqûres Rouge', hexCode: '#1E293B', stock: 12, reserved: 3 },
-    ]
+      { id: "int-1787043676942-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
+      { id: "int-1787043676942-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 10, reserved: 0 },
+      { id: "int-1787043676942-3", name: "Beige Nappa & Bleu", hexCode: "#D4B996", stock: 8, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-icar-03-4x2',
-    name: 'Chery iCar 03 4x2',
-    category: 'Électrique/Hybride',
-    priceTND: 119900,
-    requiredDepositTND: 20000,
-    engine: 'Moteur Électrique 135 kW (184 ch)',
-    transmission: 'Automatique Monorapport',
-    energy: 'Électrique',
-    guarantee: '8 ans / 160 000 km Batterie & 7 ans Véhicule',
-    imageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80',
-    description: 'SUV tout-terrain 100% Électrique au design cubique futuriste. Autonomie jusqu\'à 501 km CLTC.',
+    id: "car-1785512823129",
+    name: "Chery Arrizo 8",
+    category: "Berline",
+    engine: "1.6 T-GDi Luxury BVA",
+    energy: "Essence",
+    transmission: "Boîte Automatique DCT 7 rapports",
+    priceTND: 100000,
+    powerHP: "197 ch (11 CV Fiscaux)",
+    acceleration: "0-100 km/h en 7.8s",
+    torque: "290 Nm @ 2000-4000 tr/min",
+    consumption: "6.5 L/100km",
+    maxSpeed: "205 km/h",
+    dimensions: "4780 x 1843 x 1469 mm",
+    bootCapacity: "475 Litres",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724",
+    description: "Berline grand tourisme d'exception, design dynamique et habitacle ultra connecté.",
     features: [
-      'Batterie LFP CATL 65.6 kWh',
-      'Écran central tactile 15.6" Ultra HD',
-      'Affichage panoramique 360° avec vue châssis',
-      'Processeur Qualcomm Snapdragon 8155',
-      'Chargement rapide DC 30-80% en 30min',
-      'Système audio premium 12 HP'
+      "Système Audio Sony 12 haut-parleurs",
+      "Écran tactile 12.3\" + Combiné numérique 12.3\"",
+      "Sièges avant chauffants & ventilés à mémoire",
+      "Éclairage d'ambiance dynamique 64 couleurs"
+    ],
+    safetyFeatures: [
+      "8 Airbags",
+      "ESP Bosch 9.3",
+      "Régulateur de vitesse adaptatif ACC",
+      "Système de maintien dans la voie (LKA)"
     ],
     colors: [
-      { id: 'col-i03-1', name: 'Gris Armée Cyber', hexCode: '#475569', stock: 6, reserved: 2, interiorColor: 'Cuir Vert Militaire & Gold' },
-      { id: 'col-i03-2', name: 'Blanc Arctique', hexCode: '#FFFFFF', stock: 5, reserved: 1, interiorColor: 'Noir Technologique' },
-      { id: 'col-i03-3', name: 'Noir Carbone', hexCode: '#09090B', stock: 4, reserved: 0, interiorColor: 'Cuir Noir Surpiqûres Vert Cyber' },
+      { id: "col-1-arrizo8-1", name: "Blanc Glacier", hexCode: "#F8FAFC", interiorColor: "Cuir Noir", stock: 10, reserved: 0 },
+      { id: "col-2-arrizo8-2", name: "Gris Anthracite", hexCode: "#475569", interiorColor: "Cuir Cognac", stock: 9, reserved: 0 },
+      { id: "col-3-arrizo8-3", name: "Noir Intense", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
+      { id: "col-4-arrizo8-4", name: "Rouge Rubis", hexCode: "#991B1B", interiorColor: "Cuir Noir & Rouge", stock: 5, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-i03-1', name: 'Cuir Vert Militaire & Gold', hexCode: '#1E293B', stock: 8, reserved: 2 },
-    ]
+      { id: "int-arrizo8-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
+      { id: "int-arrizo8-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 12, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-icar-03-4x4',
-    name: 'Chery iCar 03 4x4',
-    category: 'Électrique/Hybride',
-    priceTND: 134900,
-    requiredDepositTND: 20000,
-    engine: 'Double Moteur Électrique 205 kW (279 ch) 4WD',
-    transmission: 'Automatique Intégrale e-4WD',
-    energy: 'Électrique',
-    guarantee: '8 ans / 160 000 km Batterie & 7 ans Véhicule',
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-    description: 'SUV Électrique 4WD bimoteur iWD tout-terrain extrême. 0-100 km/h en 6.5s et 8 modes de franchissement.',
+    id: "car-1785513071800",
+    name: "Chery Tiggo 9 PHEV",
+    category: "SUV",
+    engine: "1.5 T DHT AWD Super Hybrid",
+    energy: "Hybride",
+    transmission: "Boîte Automatique 3-DHT",
+    priceTND: 129900,
+    powerHP: "326 ch (16 CV Fiscaux)",
+    acceleration: "0-100 km/h en 5.7s",
+    torque: "545 Nm combiné",
+    consumption: "5.2 L/100km (Autonomie +1200km)",
+    maxSpeed: "210 km/h",
+    dimensions: "4820 x 1930 x 1699 mm",
+    bootCapacity: "717 Litres (jusqu'à 2065 L)",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077",
+    description: "Le fleuron SUV 7 places technologique de Chery avec transmission intégrale AWD intelligente.",
     features: [
-      'Transmission Intégrale Intelligente e-4WD (Dual Motor)',
-      'Batterie LFP 69.8 kWh high capacity',
-      'Modes Tout-Terrain (Sable, Boue, Neige, Roches)',
-      'Écran central 15.6" Qualcomm Snapdragon',
-      'Toit panoramique ouvrant géant',
-      'Audio Haute Fidélité 12 Haut-parleurs'
+      "Écran géant 2.5K Ultra HD 15.6\"",
+      "Affichage tête haute HUD Réalité Augmentée",
+      "Suspension pilotée CDC adaptative",
+      "Sièges massants avec repose-mollets zéro gravité"
+    ],
+    safetyFeatures: [
+      "10 Airbags",
+      "Assistance à la conduite intelligente L2.9",
+      "Vision nocturne & Caméra 540°",
+      "Freinage d'urgence autonome multi-zones"
     ],
     colors: [
-      { id: 'col-i034-1', name: 'Gris Armée Cyber', hexCode: '#334155', stock: 4, reserved: 1, interiorColor: 'Cuir Nappa Vert & Bronze' },
-      { id: 'col-i034-2', name: 'Vert Bivouac', hexCode: '#14532D', stock: 3, reserved: 1, interiorColor: 'Cuir Vert Bivouac & Noir' },
-      { id: 'col-i034-3', name: 'Noir Onyx', hexCode: '#000000', stock: 3, reserved: 0, interiorColor: 'Cuir Noir Titanium' },
+      { id: "col-1-1785513071800", name: "White BX", hexCode: "#FCFCFC", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
+      { id: "col-2-1785513071800", name: "Green SJ", hexCode: "#087252", interiorColor: "Cuir Beige & Bleu", stock: 7, reserved: 0 },
+      { id: "col-3-1785513071800", name: "Tech Gray GX", hexCode: "#727783", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
+      { id: "col-1786981421374", name: "Black CM", hexCode: "#030303", interiorColor: "Cuir Beige & Bleu", stock: 16, reserved: 0 },
+      { id: "col-1786981512703", name: "Huanyu Gray", hexCode: "#A1A1A1", interiorColor: "Cuir Noir", stock: 11, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-i034-1', name: 'Cuir Nappa Vert & Surpiqûres Bronze', hexCode: '#022C22', stock: 7, reserved: 2 },
-    ]
+      { id: "int-1787043707010-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
+      { id: "int-1787043707010-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 12, reserved: 0 },
+      { id: "int-1787043707010-3", name: "Beige Nappa & Sable", hexCode: "#D4B996", stock: 10, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-arrizo-8-phev',
-    name: 'Chery Arrizo 8 PHEV',
-    category: 'Électrique/Hybride',
-    priceTND: 139900,
-    requiredDepositTND: 30000,
-    engine: '1.5L Turbo PHEV C-DM (360 ch Cumulés)',
-    transmission: 'Automatique DHT Hybride',
-    energy: 'Hybride',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop&q=80',
-    description: 'Berline de luxe Hybride Rechargeable Plug-in. Autonomie combinée jusqu\'à 1400 km et 100 km en 100% électrique.',
+    id: "car-1785513939488",
+    name: "CHERY Himla 4X2",
+    category: "Pick-up",
+    engine: "2.3 L Turbo Diesel 4x2",
+    energy: "Diesel",
+    transmission: "Boîte Manuelle 6 rapports",
+    priceTND: 89900,
+    powerHP: "161 ch (8 CV Fiscaux)",
+    acceleration: "0-100 km/h en 9.2s",
+    torque: "380 Nm @ 1800-2600 tr/min",
+    consumption: "7.8 L/100km",
+    maxSpeed: "165 km/h",
+    dimensions: "5330 x 1920 x 1825 mm",
+    bootCapacity: "1050 Kg (Charge Utile)",
+    payload: "1050 Kg",
+    guarantee: "5 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+    description: "Pick-up double cabine robuste, polyvalent et ultra résistant pour tous vos trajets professionnels.",
     features: [
-      'Système Hybride C-DM de 5ème génération 360 ch / 530 Nm',
-      'Double écran incurvé 24.6" 2.5K HD',
-      'Sièges chauffants, ventilés & massants Nappa',
-      'Système Audio SONY 12 Haut-parleurs',
-      'Aides ADAS niveau 2+ (Conduite semi-autonome)',
-      'Consommation ultra-basse 4.2 L / 100 km'
+      "Écran Tactile HD 10.25\" avec Apple CarPlay & Android Auto",
+      "Châssis échelle haute résistance renforcé",
+      "Climatisation automatique avec aérateurs arrière",
+      "Caméra de recul et radars de stationnement"
+    ],
+    safetyFeatures: [
+      "4 Airbags",
+      "ABS + EBD + ESP",
+      "Aide au démarrage en côte (HAC)",
+      "Contrôle de descente (HDC)"
     ],
     colors: [
-      { id: 'col-a8p-1', name: 'Bleu Saphir Impérial', hexCode: '#1E3A8A', stock: 5, reserved: 1 },
-      { id: 'col-a8p-2', name: 'Blanc Nacre', hexCode: '#FFFFFF', stock: 4, reserved: 2 },
-      { id: 'col-a8p-3', name: 'Gris Titanium', hexCode: '#475569', stock: 3, reserved: 0 },
+      { id: "col-1-1785513939488", name: "Blanc Pur", hexCode: "#F0F2F4", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
+      { id: "col-2-1785513939488", name: "Gris Argent", hexCode: "#94A3B8", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
+      { id: "col-3-1785513939488", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-a8p-1', name: 'Cuir Nappa Macchiato & Bleu Nuit', hexCode: '#1E293B', stock: 8, reserved: 2 },
-    ]
+      { id: "int-1787041462294-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
+      { id: "int-1787041462294-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 10, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-tiggo-4-pro-hev',
-    name: 'Chery Tiggo 4 Pro HEV',
-    category: 'Électrique/Hybride',
+    id: "car-1785514106502",
+    name: "Chery Himla 4X4",
+    category: "Pick-up",
+    engine: "2.3 L Turbo Diesel 4x4 BVA",
+    energy: "Diesel",
+    transmission: "Boîte Automatique 8 rapports avec sélecteur 4WD",
+    priceTND: 102900,
+    powerHP: "161 ch (8 CV Fiscaux)",
+    acceleration: "0-100 km/h en 8.5s",
+    torque: "420 Nm @ 1800-2400 tr/min",
+    consumption: "8.4 L/100km",
+    maxSpeed: "170 km/h",
+    dimensions: "5330 x 1920 x 1825 mm",
+    bootCapacity: "1100 Kg (Charge Utile)",
+    payload: "1100 Kg",
+    guarantee: "5 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+    description: "Pick-up tout-terrain 4x4 haute puissance avec blocage de différentiel et transmission intégrale.",
+    features: [
+      "Transmission 4x4 électronique (2H / 4H / 4L) avec blocage de différentiel",
+      "Écran tactile 10.25\" & Système de navigation",
+      "Sièges cuir avec réglages électriques",
+      "Protection de benne renforcée & Marchepieds aluminium"
+    ],
+    safetyFeatures: [
+      "6 Airbags",
+      "Contrôle de stabilité de remorque (TSC)",
+      "Système de vision panoramique 360°",
+      "Freinage d'urgence autonome"
+    ],
+    colors: [
+      { id: "col-1-1785514106502", name: "Silver Gray GR", hexCode: "#BFBFBF", interiorColor: "Cuir Marron", stock: 11, reserved: 0 },
+      { id: "col-2-1785514106502", name: "Green SC", hexCode: "#38AD9A", interiorColor: "Cuir Marron", stock: 6, reserved: 0 },
+      { id: "col-3-1785514106502", name: "Orange DU", hexCode: "#FF9500", interiorColor: "Cuir Marron", stock: 5, reserved: 0 },
+      { id: "col-1786981947069", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Marron", stock: 14, reserved: 0 }
+    ],
+    interiorColors: [
+      { id: "int-himla4x4-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
+      { id: "int-himla4x4-2", name: "Cuir Marron", hexCode: "#78350F", stock: 12, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
+  },
+  {
+    id: "car-1785753010029",
+    name: "Chery Tiggo 2 Pro Max",
+    category: "SUV",
+    engine: "1.0 T CVT Turbo",
+    energy: "Essence",
+    transmission: "Boîte Automatique CVT 9 rapports simulés",
+    priceTND: 66990,
+    powerHP: "102 ch (5 CV Fiscaux)",
+    acceleration: "0-100 km/h en 10.5s",
+    torque: "150 Nm @ 1750-4000 tr/min",
+    consumption: "5.8 L/100km",
+    maxSpeed: "175 km/h",
+    dimensions: "4200 x 1760 x 1570 mm",
+    bootCapacity: "420 Litres",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47617.webp?t=1777544465",
+    description: "Le SUV citadin compact le plus accessible et moderne de Tunisie, économique et dynamique.",
+    features: [
+      "Écran tactile 10.25\" HD avec MirrorLink",
+      "Feux avant LED Crystal Diamond",
+      "Climatisation à commandes tactiles",
+      "Jantes alliage 17\" bicolores"
+    ],
+    safetyFeatures: [
+      "4 Airbags",
+      "ABS + EBD + ESP Bosch",
+      "Radar et caméra de recul avec lignes de guidage dynamique",
+      "Régulateur et limiteur de vitesse"
+    ],
+    colors: [
+      { id: "col-1-1785753010029", name: "Rouge Flamme", hexCode: "#DC2626", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
+      { id: "col-2-1785753010029", name: "Gris Météore", hexCode: "#5A626C", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
+      { id: "col-3-1785753010029", name: "Noir Onyx", hexCode: "#161618", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
+      { id: "col-1786983375958", name: "Blanc Glacier", hexCode: "#EDF0F7", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
+    ],
+    interiorColors: [
+      { id: "int-tiggo2-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
+  },
+  {
+    id: "car-1785753066750",
+    name: "Chery Tiggo 4 HEV",
+    category: "SUV",
+    energy: "Hybride",
+    engine: "1.5 L DHT Hybrid",
+    transmission: "Boîte Automatique Hybride DHT",
+    priceTND: 79900,
+    powerHP: "147 ch (6 CV Fiscaux)",
+    acceleration: "0-100 km/h en 8.8s",
+    torque: "210 Nm @ 1750-4000 tr/min",
+    consumption: "4.9 L/100km",
+    maxSpeed: "185 km/h",
+    dimensions: "4358 x 1830 x 1670 mm",
+    bootCapacity: "430 Litres",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731",
+    description: "SUV compact Hybride moderne et sobre, idéal pour la ville et les longs trajets.",
+    features: [
+      "Double combiné digital 10.25\"",
+      "Démarrage sans clé & Clé intelligente avec ouverture automatique",
+      "Chargeur à induction pour smartphone",
+      "Toit ouvrant électrique"
+    ],
+    safetyFeatures: [
+      "6 Airbags",
+      "Frein de stationnement électrique avec Auto-Hold",
+      "Radar de recul & Caméra HD",
+      "Système de contrôle de la pression des pneus (TPMS)"
+    ],
+    colors: [
+      { id: "col-1-1785753066750", name: "Silver KU", hexCode: "#D1CCCC", interiorColor: "Cuir Noir", stock: 10, reserved: 0 },
+      { id: "col-2-1785753066750", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 16, reserved: 0 },
+      { id: "col-3-1785753066750", name: "Gray GV", hexCode: "#6E6F72", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
+      { id: "col-1786982272954", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
+    ],
+    interiorColors: [
+      { id: "int-tiggo4-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 18, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
+  },
+  {
+    id: "car-1785753150277",
+    name: "Chery I03 4X2",
+    category: "SUV",
+    engine: "Électrique 65.7 kWh 4x2",
+    energy: "Électrique",
+    transmission: "Réducteur Automatique 1 rapport",
+    priceTND: 76900,
+    powerHP: "184 ch (7 CV Fiscaux)",
+    acceleration: "0-100 km/h en 7.5s",
+    torque: "275 Nm instantané",
+    consumption: "Autonomie 401 km (CLTC)",
+    maxSpeed: "170 km/h",
+    dimensions: "4406 x 1910 x 1715 mm",
+    bootCapacity: "450 Litres + Frunk 40L",
+    guarantee: "8 ans ou 200 000 km (Batterie)",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
+    description: "SUV 100% Électrique au look baroudeur cybernétique ultra moderne avec châssis tout aluminium.",
+    features: [
+      "Écran central tactile 15.6\" Ultra HD avec processeur Snapdragon 8155",
+      "Recharge rapide DC 30% à 80% en 30 minutes",
+      "Toit panoramique XXL avec store occultant électrique",
+      "Prise 220V V2L pour alimenter vos appareils externes"
+    ],
+    safetyFeatures: [
+      "8 Airbags",
+      "Structure en aluminium haute résistance 100%",
+      "Caméra 360° transparente 3D",
+      "Freinage d'urgence autonome multi-véhicules et piétons"
+    ],
+    colors: [
+      { id: "col-1-1785753150277", name: "Noir Cosmos", hexCode: "#000000", interiorColor: "Cuir Marron", stock: 18, reserved: 0 },
+      { id: "col-2-1785753150277", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
+      { id: "col-3-1785753150277", name: "Vert Émeraude", hexCode: "#0E775C", interiorColor: "Cuir Vert & Marron", stock: 9, reserved: 0 }
+    ],
+    interiorColors: [
+      { id: "int-i03-4x2-1", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 15, reserved: 0 },
+      { id: "int-i03-4x2-2", name: "Noir Carbone", hexCode: "#0F172A", stock: 12, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
+  },
+  {
+    id: "car-1785753208837",
+    name: "Chery I03 4X4",
+    category: "SUV",
+    engine: "Bi-Moteur Électrique 69.8 kWh 4x4",
+    energy: "Électrique",
+    transmission: "Transmission Intégrale e-AWD",
     priceTND: 84900,
-    requiredDepositTND: 20000,
-    engine: '1.5L Hybride Auto-Rechargeable 143 ch',
-    transmission: 'Automatique Hybride Dedicated Transmission',
-    energy: 'Hybride',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80',
-    description: 'SUV compact Hybride sans contrainte de recharge. Économie de carburant exceptionnelle en ville (4.8L/100km).',
+    powerHP: "279 ch (9 CV Fiscaux)",
+    acceleration: "0-100 km/h en 6.5s",
+    torque: "385 Nm instantané",
+    consumption: "Autonomie 501 km (CLTC)",
+    maxSpeed: "180 km/h",
+    dimensions: "4406 x 1910 x 1715 mm",
+    bootCapacity: "450 Litres + Frunk 40L",
+    guarantee: "8 ans ou 200 000 km (Batterie)",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
+    description: "Le baroudeur 100% Électrique 4x4 tout-terrain avec double motorisation et modes de franchissement.",
     features: [
-      'Technologie Hybride Auto-Rechargeable',
-      'Écran tactile 10.25" avec CarPlay / Android Auto',
-      'Caméra 360° HD',
-      'Frein à main électrique Autohold',
-      'Régulateur de vitesse adaptatif',
-      'Climatisation automatique avec filtre N95'
+      "Double motorisation avant/arrière avec gestion de couple intelligente",
+      "8 modes de conduite tout-terrain (Neige, Boue, Sable, Roches, Sport...)",
+      "Système audio Surround Hi-Fi 12 haut-parleurs",
+      "Suspension tout-terrain surélevée à grand débattement"
+    ],
+    safetyFeatures: [
+      "10 Airbags",
+      "Blindage de protection sous châssis pour la batterie",
+      "Pack d'aides à la conduite ADAS complet Niveau 2+",
+      "Assistance de franchissement d'obstacles"
     ],
     colors: [
-      { id: 'col-t4h-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 7, reserved: 2 },
-      { id: 'col-t4h-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 5, reserved: 1 },
-      { id: 'col-t4h-3', name: 'Bleu Électrique', hexCode: '#2563EB', stock: 3, reserved: 0 },
+      { id: "col-1-1785753208837", name: "Noir Cosmos", hexCode: "#000000", interiorColor: "Cuir Marron", stock: 31, reserved: 0 },
+      { id: "col-2-1785753208837", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 23, reserved: 0 },
+      { id: "col-1786454499484", name: "Vert Safari", hexCode: "#0E775C", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
+      { id: "col-1786454514433", name: "Gris Titane", hexCode: "#6F7585", interiorColor: "Cuir Marron", stock: 28, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-t4h-1', name: 'Cuir Synthétique Noir & Bleuté', hexCode: '#0F172A', stock: 10, reserved: 2 },
-    ]
+      { id: "int-i03-4x4-1", name: "Cuir Marron", hexCode: "#78350F", stock: 30, reserved: 0 },
+      { id: "int-i03-4x4-2", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-tiggo-7-pro-phev',
-    name: 'Chery Tiggo 7 Pro PHEV',
-    category: 'Électrique/Hybride',
-    priceTND: 118900,
-    requiredDepositTND: 30000,
-    engine: '1.5L Turbo PHEV Dual-Motor (326 ch / 510 Nm)',
-    transmission: 'Automatique DHT 3 rapports Hybride',
-    energy: 'Hybride',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&auto=format&fit=crop&q=80',
-    description: 'SUV Familial Hybride Rechargeable Plug-in. 80 km 100% électrique, toit panoramique et puissance cumulée de 326 ch.',
+    id: "car-1785753278797",
+    name: "Chery Tiggo 7 PHEV",
+    category: "SUV",
+    engine: "1.5 T DHT Hybrid",
+    energy: "Hybride",
+    transmission: "Boîte Automatique Hybride DHT",
+    priceTND: 88900,
+    powerHP: "245 ch (8 CV Fiscaux)",
+    acceleration: "0-100 km/h en 7.9s",
+    torque: "510 Nm combiné",
+    consumption: "5.5 L/100km (Autonomie +1000km)",
+    maxSpeed: "195 km/h",
+    dimensions: "4500 x 1842 x 1746 mm",
+    bootCapacity: "475 Litres (jusqu'à 1500 L)",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835",
+    description: "SUV familial Hybride rechargeable d'excellence, confort royal et technologies de pointe.",
     features: [
-      'Motorisation Hybride Rechargeable 326 ch',
-      'Autonomie électrique 80 km (1000 km combinés)',
-      'Toit ouvrant panoramique 1.1 m²',
-      'Caméra HD 360° avec châssis transparent',
-      'Régulateur adaptatif ACC + Freinage d\'urgence',
-      'Système audio SONY 8 HP'
+      "Double écran HD 24.6\" incurvé",
+      "Toit panoramique géant 1.13 m²",
+      "Climatisation automatique bizone avec purificateur PM2.5",
+      "Hayon arrière électrique à ouverture mains-libres"
+    ],
+    safetyFeatures: [
+      "8 Airbags",
+      "ESP Bosch 9.3 dernière génération",
+      "Caméra 360° HD panoramique",
+      "Régulateur adaptatif avec maintien au centre de la voie"
     ],
     colors: [
-      { id: 'col-t7p-1', name: 'Blanc Nacre Arctique', hexCode: '#F8FAFC', stock: 6, reserved: 2 },
-      { id: 'col-t7p-2', name: 'Gris Titanium', hexCode: '#475569', stock: 4, reserved: 1 },
-      { id: 'col-t7p-3', name: 'Noir Onyx', hexCode: '#000000', stock: 3, reserved: 1 },
+      { id: "col-1-1785753278797", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 25, reserved: 0 },
+      { id: "col-2-1785753278797", name: "Phantom Gray GV", hexCode: "#939AA5", interiorColor: "Cuir Noir", stock: 35, reserved: 0 },
+      { id: "col-3-1785753278797", name: "Tech Gray GX", hexCode: "#727783", interiorColor: "Cuir Noir", stock: 25, reserved: 0 },
+      { id: "col-1786454139529", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 30, reserved: 0 },
+      { id: "col-1786454192522", name: "Exclusive Blue WE", hexCode: "#217CB5", interiorColor: "Cuir Noir", stock: 20, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-t7p-1', name: 'Cuir Nappa Noir & Surpiqûres Électriques', hexCode: '#111827', stock: 8, reserved: 3 },
-    ]
+      { id: "int-tiggo7-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 30, reserved: 0 },
+      { id: "int-tiggo7-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 25, reserved: 0 }
+    ],
+    ficheTechniqueUrl: ""
   },
   {
-    id: 'car-tiggo-8-pro-phev',
-    name: 'Chery Tiggo 8 Pro PHEV',
-    category: 'Électrique/Hybride',
-    priceTND: 158900,
-    requiredDepositTND: 40000,
-    engine: '1.5L Turbo PHEV C-DM (326 ch / 545 Nm)',
-    transmission: 'Automatique DHT Hybride 3 rapports',
-    energy: 'Hybride',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-    description: 'Le grand SUV 7 places Hybride Rechargeable de prestige. Performance, espace familial et autonomie totale de 1200 km.',
+    id: "car-1785753367152",
+    name: "Chery Tiggo 8 PHEV",
+    category: "SUV",
+    engine: "1.5 T DHT Super Hybrid 7 Places",
+    energy: "Hybride",
+    transmission: "Boîte Automatique 3-DHT",
+    priceTND: 102990,
+    powerHP: "326 ch (10 CV Fiscaux)",
+    acceleration: "0-100 km/h en 7.0s",
+    torque: "545 Nm combiné",
+    consumption: "5.4 L/100km (Autonomie +1100km)",
+    maxSpeed: "200 km/h",
+    dimensions: "4722 x 1860 x 1745 mm",
+    bootCapacity: "7 places modulables / 890 Litres",
+    guarantee: "7 ans ou 200 000 km",
+    imageUrl: "https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403",
+    description: "Le grand SUV 7 places Hybride Premium, spacieux, puissant et ultra économique pour toute la famille.",
     features: [
-      '7 Places modulables en cuir Nappa',
-      'Système Hybride Rechargeable 326 ch',
-      'Double écran HD incurvé 24.6"',
-      'Affichage Tête Haute HUD couleur',
-      'Audio SONY 10 Haut-parleurs',
-      'Recharge rapide DC 30-80% en 25 min'
+      "Configuration 7 places avec sièges rabattables à plat",
+      "Double combiné numérique 24.6\" Ultra HD",
+      "Système de son Sony Premium 8 haut-parleurs",
+      "Sièges cuir chauffants et ventilés avec réglages électriques"
+    ],
+    safetyFeatures: [
+      "10 Airbags",
+      "Freinage d'urgence autonome multi-cibles",
+      "Caméra 540° avec châssis transparent",
+      "Avertisseur de trafic transversal arrière"
     ],
     colors: [
-      { id: 'col-t8p-1', name: 'Noir Onyx Impérial', hexCode: '#000000', stock: 5, reserved: 2 },
-      { id: 'col-t8p-2', name: 'Blanc Nacre', hexCode: '#FFFFFF', stock: 4, reserved: 1 },
-      { id: 'col-t8p-3', name: 'Gris Titane', hexCode: '#374151', stock: 3, reserved: 0 },
+      { id: "col-1-1785753367152", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 15, reserved: 0 },
+      { id: "col-2-1785753367152", name: "Gray UM", hexCode: "#668F88", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
+      { id: "col-3-1785753367152", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 22, reserved: 0 },
+      { id: "col-1786454375127", name: "Green SJ", hexCode: "#087252", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
     ],
     interiorColors: [
-      { id: 'int-t8p-1', name: 'Cuir Nappa Executive Noir & Cognac', hexCode: '#0B0F19', stock: 7, reserved: 2 },
-    ]
-  },
-  {
-    id: 'car-tiggo-9-pro-phev',
-    name: 'Chery Tiggo 9 Pro PHEV',
-    category: 'Électrique/Hybride',
-    priceTND: 178900,
-    requiredDepositTND: 50000,
-    engine: '2.0L Turbo PHEV C-DM Super Hybrid (380 ch / 610 Nm)',
-    transmission: 'Automatique 3-DHT Intégrale 4WD',
-    energy: 'Hybride',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&auto=format&fit=crop&q=80',
-    description: 'Le Flagship Luxe absolu Chery. Suspension pilotée CDC, 380 ch 4WD, massage Nappa et confort 5 étoiles.',
-    features: [
-      'Suspension Électromagnétique Active CDC',
-      'Transmission Intégrale 4WD Super Hybrid 380 ch',
-      'Écran panoramique 24.6" 2.5K + Affichage AR-HUD 50"',
-      'Sièges Zéro-Gravité massants & ventilés',
-      'Système Audio SONY 14 Haut-parleurs avec têtières intégrées',
-      'AD-ADAS Niveau 2.5 (Park Assist 360 & Conduite Autonome)'
+      { id: "int-tiggo8-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 },
+      { id: "int-tiggo8-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 15, reserved: 0 }
     ],
-    colors: [
-      { id: 'col-t9p-1', name: 'Noir Onyx Monarque', hexCode: '#000000', stock: 4, reserved: 1 },
-      { id: 'col-t9p-2', name: 'Gris Métal Satiné', hexCode: '#334155', stock: 3, reserved: 1 },
-      { id: 'col-t9p-3', name: 'Blanc Nacre Alpin', hexCode: '#FFFFFF', stock: 3, reserved: 0 },
-    ],
-    interiorColors: [
-      { id: 'int-t9p-1', name: 'Cuir Nappa Blanc Yatch & Bleu Royal', hexCode: '#1E293B', stock: 6, reserved: 2 },
-    ]
-  },
-  {
-    id: 'car-tiggo-2-pro',
-    name: 'Chery Tiggo 2 Pro',
-    category: 'SUV',
-    priceTND: 64900,
-    requiredDepositTND: 10000,
-    engine: '1.5L VVT 108 ch',
-    transmission: 'Automatique CVT (9 rapports séquentiels)',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80',
-    description: 'Le SUV urbain dynamique et connecté avec calandre diamant, écran tactile 9 pouces et feux LED signature.',
-    features: [
-      'Écran tactile 9" HD Apple CarPlay & Android Auto',
-      'Caméra de recul + Radars arrière',
-      'Régulateur de vitesse',
-      'Jantes alliage 16" bicolores',
-      'Volant cuir multifonctions',
-      'Système d\'aide au démarrage en côte (HHC)'
-    ],
-    colors: [
-      { id: 'col-t2-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 6, reserved: 2 },
-      { id: 'col-t2-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 4, reserved: 1 },
-      { id: 'col-t2-3', name: 'Noir Fantôme', hexCode: '#111827', stock: 3, reserved: 0 },
-      { id: 'col-t2-4', name: 'Rouge Rubis', hexCode: '#DC2626', stock: 2, reserved: 1 },
-    ],
-    interiorColors: [
-      { id: 'int-t2-1', name: 'Noir Anthracite Surpiqûres Orange', hexCode: '#1E293B', stock: 10, reserved: 2 },
-    ]
-  },
-  {
-    id: 'car-tiggo-4-pro',
-    name: 'Chery Tiggo 4 Pro',
-    category: 'SUV',
-    priceTND: 78900,
-    requiredDepositTND: 20000,
-    engine: '1.5L Turbo 147 ch',
-    transmission: 'Automatique CVT 9',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80',
-    description: 'Un SUV polyvalent spacieux offrant un équipement technologique complet, toit ouvrant et chargeur à induction.',
-    features: [
-      'Tableau de bord digital 7" + Écran central 10.25"',
-      'Chargeur Smartphone par induction',
-      'Toit ouvrant électrique',
-      'Frein de stationnement électrique avec Autohold',
-      'Sellerie Simili-Cuir haute qualité',
-      'Accès et démarrage mains libres (Keyless)'
-    ],
-    colors: [
-      { id: 'col-t4-1', name: 'Blanc Okavango', hexCode: '#F8FAFC', stock: 8, reserved: 3 },
-      { id: 'col-t4-2', name: 'Gris Platine Métallisé', hexCode: '#475569', stock: 5, reserved: 2 },
-      { id: 'col-t4-3', name: 'Noir Profond', hexCode: '#09090B', stock: 2, reserved: 1 },
-    ],
-    interiorColors: [
-      { id: 'int-t4-1', name: 'Cuir Synthétique Noir Premium', hexCode: '#0F172A', stock: 12, reserved: 4 },
-    ]
-  },
-  {
-    id: 'car-tiggo-7-pro',
-    name: 'Chery Tiggo 7 Pro Luxe',
-    category: 'SUV',
-    priceTND: 98900,
-    requiredDepositTND: 30000,
-    engine: '1.5L Turbo 147 ch',
-    transmission: 'Automatique CVT9 Séquentiel',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&auto=format&fit=crop&q=80',
-    description: 'Le SUV familial haut de gamme de Chery avec toit panoramique géant, vision 360° et climatisation automatique bizone.',
-    features: [
-      'Toit panoramique ouvrant 1.1 m²',
-      'Caméra de vision panoramique 360° HD',
-      'Hayon arrière électrique mains libres',
-      'Sièges conducteur & passager électriques',
-      'Climatisation automatique bizone avec purificateur N95',
-      'Éclairage d\'ambiance intérieur personnalisable 64 couleurs'
-    ],
-    colors: [
-      { id: 'col-t7-1', name: 'Blanc Nacre', hexCode: '#F1F5F9', stock: 5, reserved: 2 },
-      { id: 'col-t7-2', name: 'Gris Minéral', hexCode: '#334155', stock: 3, reserved: 1 },
-      { id: 'col-t7-3', name: 'Noir Onyx', hexCode: '#18181B', stock: 4, reserved: 0 },
-    ],
-    interiorColors: [
-      { id: 'int-t7-1', name: 'Cuir Nappa Noir Surpiqué', hexCode: '#111827', stock: 8, reserved: 2 },
-    ]
-  },
-  {
-    id: 'car-tiggo-8-pro-max',
-    name: 'Chery Tiggo 8 Pro Max 4WD',
-    category: 'SUV',
-    priceTND: 138900,
-    requiredDepositTND: 40000,
-    engine: '2.0L TGDI 254 ch 4WD',
-    transmission: 'Automatique DCT 7 rapports',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-    description: 'Le vaisseau amiral 7 places. Transmission intégrale intelligente 4WD, système audio Sony 10 haut-parleurs et aides ADAS niveau 2.',
-    features: [
-      '7 Vraies places en cuir perforé Nappa',
-      'Double écran panoramique incurvé 24.6"',
-      'Système Audio premium SONY 10 HP',
-      'Affichage tête haute HUD couleur',
-      'Aides à la conduite ADAS (Freinage d\'urgence, Maintien de voie, Blind Spot)',
-      'Transmission 4WD intégrale avec 6 modes de conduite'
-    ],
-    colors: [
-      { id: 'col-t8-1', name: 'Noir Onyx Impérial', hexCode: '#000000', stock: 3, reserved: 1 },
-      { id: 'col-t8-2', name: 'Blanc Nacre Arctique', hexCode: '#FFFFFF', stock: 4, reserved: 2 },
-    ],
-    interiorColors: [
-      { id: 'int-t8-1', name: 'Cuir Nappa Royal Noir Executive', hexCode: '#0B0F19', stock: 6, reserved: 2 },
-    ]
-  },
-  {
-    id: 'car-arrizo-5',
-    name: 'Chery Arrizo 5',
-    category: 'Berline',
-    priceTND: 58900,
-    requiredDepositTND: 10000,
-    engine: '1.5L DVVT 115 ch',
-    transmission: 'Manuelle 5 rapports / CVT',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop&q=80',
-    description: 'Berline tricorps spacieuse et économique, idéale pour les déplacements professionnels et les flottes d\'entreprises.',
-    features: [
-      'Écran tactile 8" Multimédia',
-      'Radar de recul sonore',
-      'Rétroviseurs électriques dégivrants',
-      'Système de freinage ABS + EBD + ESP',
-      'Jantes alu 16"',
-      'Grand coffre de 430 Litres'
-    ],
-    colors: [
-      { id: 'col-arr-1', name: 'Blanc Okavango', hexCode: '#FFFFFF', stock: 7, reserved: 2 },
-      { id: 'col-arr-2', name: 'Gris Platine', hexCode: '#6B7280', stock: 5, reserved: 1 },
-    ],
-    interiorColors: [
-      { id: 'int-arr-1', name: 'Tissu & Simili-Cuir Noir Carbone', hexCode: '#1E293B', stock: 12, reserved: 3 },
-    ]
-  },
-  {
-    id: 'car-omoda-5',
-    name: 'Chery Omoda 5 GT',
-    category: 'Crossover',
-    priceTND: 108900,
-    requiredDepositTND: 25000,
-    engine: '1.6L TGDI Turbo 197 ch',
-    transmission: 'Automatique DCT 7',
-    energy: 'Essence',
-    guarantee: '7 ans / 200 000 km',
-    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-    description: 'Design futuriste Fastback, feux à effet matrice, sièges sport baquets chauffants et technologie de cockpit intelligent.',
-    features: [
-      'Design Fastback avec calandre matricielle',
-      'Sièges sport baquets en cuir bicolore',
-      'Écran double dalle 20.5"',
-      'Caméra HD 360° avec vue châssis transparent',
-      'Commande vocale intelligente',
-      'Jantes Sport 18" finition diamant'
-    ],
-    colors: [
-      { id: 'col-om-1', name: 'Gris Mat Technologique', hexCode: '#475569', stock: 3, reserved: 1 },
-      { id: 'col-om-2', name: 'Blanc Bicolore Toit Noir', hexCode: '#E2E8F0', stock: 4, reserved: 1 },
-    ],
-    interiorColors: [
-      { id: 'int-om-1', name: 'Sièges Baquets Cuir Noir Sport & Surpiqûres Bleues', hexCode: '#0F172A', stock: 6, reserved: 1 },
-    ]
+    ficheTechniqueUrl: ""
   }
 ];
 
@@ -1054,7 +991,6 @@ export function saveStoredQuotes(quotes: CustomQuote[]): void {
   safeLocalStorageSet(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
 }
 
-
 export function getStoredSiteSettings(): SiteSettings {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.SITE_SETTINGS);
@@ -1076,13 +1012,17 @@ export function getStoredCars(): CarModel[] {
     const data = localStorage.getItem(STORAGE_KEYS.CARS);
     if (data) {
       const parsed: CarModel[] = JSON.parse(data);
-      return parsed.map((car) => ({
-        ...car,
-        colors: (car.colors || []).map((c) => ({
-          ...c,
-          interiorColor: c.interiorColor === 'Noir Cuir' ? 'Noir' : c.interiorColor,
-        })),
-      }));
+      // Filter out any virtual mock cars from localStorage
+      const filtered = parsed.filter((car) => !isVirtualCar(car));
+      if (filtered.length > 0) {
+        return filtered.map((car) => ({
+          ...car,
+          colors: (car.colors || []).map((c) => ({
+            ...c,
+            interiorColor: c.interiorColor === 'Noir Cuir' ? 'Noir' : c.interiorColor,
+          })),
+        }));
+      }
     }
   } catch (e) {
     console.error('Error loading cars from storage', e);
@@ -1091,7 +1031,9 @@ export function getStoredCars(): CarModel[] {
 }
 
 export function saveStoredCars(cars: CarModel[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.CARS, JSON.stringify(cars));
+  // Ensure we never persist virtual cars to local storage
+  const cleanCars = (cars || []).filter((car) => !isVirtualCar(car));
+  safeLocalStorageSet(STORAGE_KEYS.CARS, JSON.stringify(cleanCars));
 }
 
 export function getStoredReservations(): Reservation[] {
@@ -1158,3 +1100,180 @@ export function getStoredStockRequests(): StockRequest[] {
 export function saveStoredStockRequests(requests: StockRequest[]): void {
   safeLocalStorageSet('chery_tn_stock_requests_v1', JSON.stringify(requests));
 }
+
+export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
+  canCreateReservation: true,
+  canCancelReservation: true,
+  canEditPrices: true,
+  canManageStock: true,
+  canAccessAdminPanel: true,
+  canPrintVouchers: true,
+  canExportReports: true,
+};
+
+export const DEFAULT_COMMERCIAL_PERMISSIONS: UserPermissions = {
+  canCreateReservation: true,
+  canCancelReservation: false,
+  canEditPrices: false,
+  canManageStock: false,
+  canAccessAdminPanel: false,
+  canPrintVouchers: true,
+  canExportReports: true,
+};
+
+export interface AutomotiveWallpaper {
+  id: string;
+  title: string;
+  category: string;
+  previewUrl: string;
+  url: string;
+}
+
+export const PRESET_AUTOMOTIVE_WALLPAPERS: AutomotiveWallpaper[] = [
+  {
+    id: 'wall-1',
+    title: 'Showroom Chery Premium',
+    category: 'Showroom',
+    previewUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1920&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'wall-2',
+    title: 'SUV Night Drive',
+    category: 'Urban',
+    previewUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'wall-3',
+    title: 'Luxe Cockpit Futuriste',
+    category: 'Intérieur',
+    previewUrl: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=1920&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'wall-4',
+    title: 'Berline Performance',
+    category: 'Prestige',
+    previewUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=1920&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'wall-5',
+    title: 'Design Dynamic Crossover',
+    category: 'Design',
+    previewUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'wall-6',
+    title: 'Chery Cyber Night',
+    category: 'High-Tech',
+    previewUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&auto=format&fit=crop&q=80',
+    url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1920&auto=format&fit=crop&q=80',
+  },
+];
+
+export interface AutomotiveThemeDef {
+  mode: ThemeMode;
+  name: string;
+  subtitle: string;
+  badgeTag: string;
+  bgHex: string;
+  cardBgHex: string;
+  accentHex: string;
+}
+
+export const AUTOMOTIVE_THEME_DEFINITIONS: AutomotiveThemeDef[] = [
+  {
+    mode: 'light',
+    name: 'Showroom Blanc Pur & Platine',
+    subtitle: 'Thème ultra clair moderne, contraste éclatant et haute lisibilité professionnelle',
+    badgeTag: 'Recommandé Clair',
+    bgHex: '#F8FAFC',
+    cardBgHex: '#FFFFFF',
+    accentHex: '#DC2626',
+  },
+  {
+    mode: 'nordic_clean',
+    name: 'Blanc Polaire & Cobalt Pro',
+    subtitle: 'Design moderne épuré, fond blanc neige lumineux et bleu cobalt précision',
+    badgeTag: 'Moderne Pro',
+    bgHex: '#F1F5F9',
+    cardBgHex: '#FFFFFF',
+    accentHex: '#2563EB',
+  },
+  {
+    mode: 'pearl_luxury',
+    name: 'Perle Blanche & Or Champagne',
+    subtitle: 'Ambiance showroom prestige lumineuse, reflets perle et finitions ambre doré',
+    badgeTag: 'Luxe Clair',
+    bgHex: '#FAFAF9',
+    cardBgHex: '#FFFFFF',
+    accentHex: '#D97706',
+  },
+  {
+    mode: 'crystal_cyan',
+    name: 'Blanc Cristal & Cyan Tech',
+    subtitle: 'Pureté cristalline claire et fraîche avec accents cyan dynamiques Hybride & EV',
+    badgeTag: 'EV Tech Clair',
+    bgHex: '#F0FDFA',
+    cardBgHex: '#FFFFFF',
+    accentHex: '#0D9488',
+  },
+  {
+    mode: 'dark',
+    name: 'Nuit Carbone',
+    subtitle: 'Contraste sombre profond & finitions anthracite',
+    badgeTag: 'Sombre Défaut',
+    bgHex: '#0B0F19',
+    cardBgHex: '#1E293B',
+    accentHex: '#F59E0B',
+  },
+  {
+    mode: 'red',
+    name: 'Chery Crimson Sport',
+    subtitle: 'Rouge passion officiel Chery Racing & accents sportifs',
+    badgeTag: 'Sport',
+    bgHex: '#180B0D',
+    cardBgHex: '#2A1116',
+    accentHex: '#EF4444',
+  },
+  {
+    mode: 'carbon',
+    name: 'Fibre de Carbone',
+    subtitle: 'Texture composite haute performance & noir graphite',
+    badgeTag: 'Pro Sombre',
+    bgHex: '#090D16',
+    cardBgHex: '#131B2E',
+    accentHex: '#38BDF8',
+  },
+  {
+    mode: 'electric_cyan',
+    name: 'Omoda EV Cyber',
+    subtitle: 'Cyan électrique futuriste pour gammes Hybrides & EV',
+    badgeTag: 'EV Sombre',
+    bgHex: '#041724',
+    cardBgHex: '#082F49',
+    accentHex: '#06B6D4',
+  },
+  {
+    mode: 'luxury_gold',
+    name: 'Tiggo Gold Prestige',
+    subtitle: 'Or impérial et finitions somptueuses pour VIP',
+    badgeTag: 'Luxe VIP',
+    bgHex: '#141008',
+    cardBgHex: '#281E10',
+    accentHex: '#EAB308',
+  },
+  {
+    mode: 'titanium',
+    name: 'Titanium High-Tech',
+    subtitle: 'Gris titane brossé & ambiance technologique épurée',
+    badgeTag: 'High-Tech',
+    bgHex: '#0F172A',
+    cardBgHex: '#1E293B',
+    accentHex: '#94A3B8',
+  },
+];
+

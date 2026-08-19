@@ -150,16 +150,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const currentColor = currentCar?.colors.find((c) => c.id === selectedColorId) || currentCar?.colors[0];
   const currentInteriorColor = currentCar?.interiorColors?.find((c) => c.id === selectedInteriorColorId) || currentCar?.interiorColors?.[0];
 
-  // Commercial session model quota calculation (quota = 5 by default per model per commercial)
-  const quotaPerModel = currentCommercial?.quotaPerModel || 5;
-  const currentCarReservationsCount = (reservations || []).filter(
-    (r) =>
-      (r.commercialId === currentCommercial.id || r.commercialName === currentCommercial.name) &&
-      r.carId === currentCar?.id &&
-      r.status !== 'Annulée'
-  ).length;
-  const isQuotaReached = currentCarReservationsCount >= quotaPerModel;
-
   // Handle file uploads (Base64 reader + API upload)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -216,7 +206,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
     if (!currentCar) errs.car = 'Veuillez sélectionner un véhicule Chery';
     if (!currentColor || currentColor.stock === 0) errs.color = 'Cette couleur est actuellement en rupture de stock';
-    if (isQuotaReached) errs.quota = `Quota atteint (${currentCarReservationsCount}/${quotaPerModel}) : Limite de 5 réservations atteinte pour ce modèle.`;
 
     if (clientType === 'personne_physique') {
       if (!physiqueNom.trim()) errs.physiqueNom = 'Le nom est obligatoire';
@@ -370,146 +359,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               </h4>
               {errors.car && <span className="text-xs text-red-400 font-medium">{errors.car}</span>}
               {errors.color && <span className="text-xs text-red-400 font-medium">{errors.color}</span>}
-              {errors.quota && <span className="text-xs text-rose-400 font-bold">{errors.quota}</span>}
             </div>
-
-            {/* Quota Indicator Banner for Commercial Session */}
-            <div className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs transition-colors ${
-              isQuotaReached
-                ? 'bg-rose-950/60 border-rose-500/60 text-rose-200'
-                : currentCarReservationsCount >= quotaPerModel - 1
-                ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
-                : 'bg-blue-950/40 border-blue-500/30 text-blue-200'
-            }`}>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>
-                  <strong>Quota Session Commercial :</strong> Limite de <strong>{quotaPerModel} véhicules</strong> par modèle pour <em>{currentCommercial.name}</em>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-300">Réservations effectuées :</span>
-                <span className={`px-2.5 py-0.5 rounded-full font-bold text-xs ${
-                  isQuotaReached
-                    ? 'bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-600/40'
-                    : 'bg-slate-800 text-slate-100 border border-slate-700'
-                }`}>
-                  {currentCarReservationsCount} / {quotaPerModel}
-                </span>
-              </div>
-            </div>
-
-            {isQuotaReached && (() => {
-              const pendingCarRequest = stockRequests.find(
-                (sr) =>
-                  sr.commercialId === currentCommercial.id &&
-                  sr.carId === currentCar?.id &&
-                  sr.status === 'En attente'
-              );
-
-              return (
-                <div className="p-4 bg-rose-950/80 border border-rose-500/70 rounded-2xl text-rose-200 text-xs space-y-3 shadow-lg">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <span className="font-bold block text-sm text-rose-300">⛔ Quota de {quotaPerModel} réservations atteint !</span>
-                      <p className="text-slate-300">
-                        Vous avez atteint la limite maximale de <strong className="text-white">{quotaPerModel} réservations</strong> pour le modèle <strong className="text-white">{currentCar?.name}</strong> dans votre session commerciale.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Pending Request Indicator or Action Button */}
-                  {pendingCarRequest ? (
-                    <div className="p-3 bg-amber-950/80 border border-amber-500/50 rounded-xl text-amber-200 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-spin" />
-                        <span>
-                          <strong>Demande transmise :</strong> Demande de quota pour <strong>+{pendingCarRequest.requestedQuantity} unités</strong> en attente de validation par la Direction.
-                        </span>
-                      </div>
-                      <span className="px-2 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded font-bold text-[10px] shrink-0">
-                        En attente
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="pt-2 border-t border-rose-900/60">
-                      {!showStockRequestForm ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowStockRequestForm(true)}
-                          className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-                        >
-                          <Send className="w-4 h-4" />
-                          <span>Faire une demande de stock / extension de quota à l'Administrateur</span>
-                        </button>
-                      ) : (
-                        <div className="p-3 bg-slate-900 border border-amber-500/40 rounded-xl space-y-3 text-slate-200">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-amber-400 text-xs flex items-center gap-1.5">
-                              <Send className="w-3.5 h-3.5" /> Formulaire de Demande de Quota/Stock
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setShowStockRequestForm(false)}
-                              className="text-slate-400 hover:text-white text-xs"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Quantité souhaitée :</label>
-                              <select
-                                value={requestQty}
-                                onChange={(e) => setRequestQty(Number(e.target.value))}
-                                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                              >
-                                <option value={2}>+2 Réservations</option>
-                                <option value={5}>+5 Réservations (Standard)</option>
-                                <option value={10}>+10 Réservations</option>
-                              </select>
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Motif / Commentaire (optionnel) :</label>
-                              <input
-                                type="text"
-                                value={requestReason}
-                                onChange={(e) => setRequestReason(e.target.value)}
-                                placeholder="Ex: Client VIP intéressé, besoin de quota supplémentaire..."
-                                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                              />
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (currentCar && onRequestStockQuota) {
-                                onRequestStockQuota(currentCar.id, currentCar.name, requestQty, requestReason);
-                                setRequestSuccessMessage(`Demande de quota (+${requestQty}) transmise avec succès à l'administration !`);
-                                setShowStockRequestForm(false);
-                                setRequestReason('');
-                              }
-                            }}
-                            className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Envoyer la Demande à l'Administrateur</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {requestSuccessMessage && (
-                    <div className="p-2.5 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-200 text-xs flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>{requestSuccessMessage}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Choose Car Model */}
@@ -660,7 +510,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div className="flex items-center gap-2 bg-slate-900 p-1 border border-slate-800 rounded-xl w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setClientType('personne_physique')}
+                  onClick={() => {
+                    setClientType('personne_physique');
+                    setDocCategory('cin_recto');
+                  }}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                     clientType === 'personne_physique'
                       ? 'bg-red-600 text-white shadow'
@@ -672,7 +525,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setClientType('societe')}
+                  onClick={() => {
+                    setClientType('societe');
+                    setDocCategory('matricule_fiscale');
+                  }}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                     clientType === 'societe'
                       ? 'bg-red-600 text-white shadow'
@@ -680,7 +536,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   }`}
                 >
                   <Building className="w-3.5 h-3.5" />
-                  <span>Société / Personne Morale</span>
+                  <span>Personne Morale (Société)</span>
                 </button>
               </div>
             </div>
@@ -926,14 +782,211 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
           {/* SECTION 3: UPLOAD DES DOCUMENTS ET IMAGES */}
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
-            <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Upload className="w-4 h-4 text-red-500" />
-                <span>3. Case d'Upload des Documents & Photos du Client</span>
-              </h4>
-              <p className="text-xs text-slate-400">
-                Joignez les copies numérisées (CIN Recto/Verso, Matricule Fiscale, Bon d'acompte, Permis)
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-red-500" />
+                  <span>
+                    3. Case d'Upload des Documents & Photos du Client{' '}
+                    <span className="text-red-400 font-medium">
+                      ({clientType === 'personne_physique' ? 'Dossier Personne Physique' : 'Dossier Personne Morale / Société'})
+                    </span>
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-400">
+                  {clientType === 'personne_physique'
+                    ? "Joignez les pièces justificatives spécifiques pour particulier (CIN Recto/Verso, Permis, Quittance/Chèque d'acompte, etc.)"
+                    : "Joignez les pièces légales et fiscales de la société (Patente / Matricule Fiscale, Extrait RNE, CIN Gérant, etc.)"}
+                </p>
+              </div>
+
+              <span
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border shrink-0 flex items-center gap-1.5 ${
+                  clientType === 'personne_physique'
+                    ? 'bg-blue-950/40 text-blue-300 border-blue-800/60'
+                    : 'bg-amber-950/40 text-amber-300 border-amber-800/60'
+                }`}
+              >
+                {clientType === 'personne_physique' ? <User className="w-3.5 h-3.5" /> : <Building className="w-3.5 h-3.5" />}
+                <span>{clientType === 'personne_physique' ? 'Documents Particulier' : 'Documents Société'}</span>
+              </span>
+            </div>
+
+            {/* Checklist Guide Badges of Required/Provided Documents */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {clientType === 'personne_physique' ? (
+                <>
+                  <div
+                    onClick={() => setDocCategory('cin_recto')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => d.category === 'cin_recto')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold">🪪 CIN Recto</span>
+                      {documents.some((d) => d.category === 'cin_recto') ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <span className="text-[9px] text-red-400 font-bold">Requis</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => d.category === 'cin_recto') ? 'Pièce fournie' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('cin_verso')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => d.category === 'cin_verso')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold">🪪 CIN Verso</span>
+                      {documents.some((d) => d.category === 'cin_verso') ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <span className="text-[9px] text-red-400 font-bold">Requis</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => d.category === 'cin_verso') ? 'Pièce fournie' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('permis_conduire')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => d.category === 'permis_conduire')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold">🚗 Permis</span>
+                      {documents.some((d) => d.category === 'permis_conduire') ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <span className="text-[9px] text-slate-500">Optionnel</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => d.category === 'permis_conduire') ? 'Pièce fournie' : 'À ajouter'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('quittance_acompte')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => ['quittance_acompte', 'cheque_reservation', 'virement_bancaire'].includes(d.category))
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold">🧾 Acompte</span>
+                      {documents.some((d) => ['quittance_acompte', 'cheque_reservation', 'virement_bancaire'].includes(d.category)) ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <span className="text-[9px] text-amber-400 font-bold">Recommandé</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => ['quittance_acompte', 'cheque_reservation', 'virement_bancaire'].includes(d.category)) ? 'Fourni' : 'Reçu / Chèque'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div
+                    onClick={() => setDocCategory('matricule_fiscale')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => d.category === 'matricule_fiscale')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold truncate">📄 Patente / M.F.</span>
+                      {documents.some((d) => d.category === 'matricule_fiscale') ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <span className="text-[9px] text-red-400 font-bold shrink-0">Requis</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => d.category === 'matricule_fiscale') ? 'Pièce fournie' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('registre_commerce')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => d.category === 'registre_commerce')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold truncate">🏢 Extrait RNE</span>
+                      {documents.some((d) => d.category === 'registre_commerce') ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <span className="text-[9px] text-red-400 font-bold shrink-0">Requis</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => d.category === 'registre_commerce') ? 'Pièce fournie' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('cin_recto')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => ['cin_recto', 'cin_verso'].includes(d.category))
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold truncate">🪪 CIN Gérant</span>
+                      {documents.some((d) => ['cin_recto', 'cin_verso'].includes(d.category)) ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <span className="text-[9px] text-red-400 font-bold shrink-0">Requis</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => ['cin_recto', 'cin_verso'].includes(d.category)) ? 'Pièce fournie' : 'En attente'}
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={() => setDocCategory('bon_commande')}
+                    className={`p-2 rounded-xl border text-xs cursor-pointer transition-all ${
+                      documents.some((d) => ['bon_commande', 'quittance_acompte', 'cheque_reservation', 'accord_leasing'].includes(d.category))
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold truncate">📄 Bon Commande / Chèque</span>
+                      {documents.some((d) => ['bon_commande', 'quittance_acompte', 'cheque_reservation', 'accord_leasing'].includes(d.category)) ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <span className="text-[9px] text-amber-400 font-bold shrink-0">Recommandé</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">
+                      {documents.some((d) => ['bon_commande', 'quittance_acompte', 'cheque_reservation', 'accord_leasing'].includes(d.category)) ? 'Fourni' : 'À joindre'}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Upload Selector Box */}
@@ -947,17 +1000,33 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   onChange={(e) => setDocCategory(e.target.value as any)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
                 >
-                  <option value="cin_recto">🪪 CIN (Face Recto)</option>
-                  <option value="cin_verso">🪪 CIN (Face Verso)</option>
-                  <option value="matricule_fiscale">📄 Patente / Matricule Fiscale (Société)</option>
-                  <option value="registre_commerce">🏢 Extrait RNE Registre Commerce</option>
-                  <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance</option>
-                  <option value="cheque_reservation">💳 Copie du Chèque de Réservation</option>
-                  <option value="virement_bancaire">🏛️ Attestation / Ordre de Virement</option>
-                  <option value="accord_leasing">💼 Accord / Dossier de Leasing</option>
-                  <option value="bon_commande">📄 Bon de Commande Financier</option>
-                  <option value="permis_conduire">🚗 Permis de Conduire Client</option>
-                  <option value="autre">📎 Autre pièce justificative</option>
+                  {clientType === 'personne_physique' ? (
+                    <>
+                      <option value="cin_recto">🪪 CIN Client (Face Recto)</option>
+                      <option value="cin_verso">🪪 CIN Client (Face Verso)</option>
+                      <option value="permis_conduire">🚗 Permis de Conduire Client</option>
+                      <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance de Paiement</option>
+                      <option value="cheque_reservation">💳 Copie du Chèque de Réservation</option>
+                      <option value="virement_bancaire">🏛️ Attestation / Ordre de Virement Bancaire</option>
+                      <option value="accord_leasing">💼 Accord / Dossier Leasing Particulier</option>
+                      <option value="bon_commande">📄 Bon de Commande Particulier</option>
+                      <option value="autre">📎 Autre pièce justificative (Particulier)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="matricule_fiscale">📄 Patente / Matricule Fiscale (Société)</option>
+                      <option value="registre_commerce">🏢 Extrait RNE / Registre National des Entreprises</option>
+                      <option value="cin_recto">🪪 CIN Gérant / Représentant Légal (Face Recto)</option>
+                      <option value="cin_verso">🪪 CIN Gérant / Représentant Légal (Face Verso)</option>
+                      <option value="permis_conduire">🚗 Permis de Conduire Conducteur / Mandataire</option>
+                      <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance Société</option>
+                      <option value="cheque_reservation">💳 Copie du Chèque Société</option>
+                      <option value="virement_bancaire">🏛️ Attestation / Ordre de Virement Entreprise</option>
+                      <option value="accord_leasing">💼 Dossier / Accord de Leasing Entreprise</option>
+                      <option value="bon_commande">📄 Bon de Commande Officiel Société</option>
+                      <option value="autre">📎 Autre document Société</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -1255,19 +1324,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
             <button
               type="submit"
-              disabled={isQuotaReached}
-              className={`px-6 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all shadow-lg ${
-                isQuotaReached
-                  ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-70'
-                  : 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30 cursor-pointer'
-              }`}
+              className="px-6 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all shadow-lg bg-red-600 hover:bg-red-500 text-white shadow-red-600/30 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>
-                {isQuotaReached
-                  ? `Quota Atteint (${currentCarReservationsCount}/${quotaPerModel})`
-                  : 'Valider le Bon de Réservation & Déduire le Stock'}
-              </span>
+              <span>Valider le Bon de Réservation & Déduire le Stock</span>
             </button>
           </div>
         </form>
