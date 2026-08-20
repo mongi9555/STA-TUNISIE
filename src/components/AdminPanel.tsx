@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote } from '../types';
 import { TechSpecModal } from './TechSpecModal';
-import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
-import { UserPhotoUploadModal } from './UserPhotoUploadModal';
+import { compressImageDataUrl } from '../utils/imageCompressor';
 import { StaLogo } from './StaLogo';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
@@ -418,10 +417,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('+216 ');
   const [newUserPassword, setNewUserPassword] = useState('123');
-  const [newUserQuota, setNewUserQuota] = useState<number>(5);
-  const [newUserAvatar, setNewUserAvatar] = useState<string>('');
-  const [userForPhotoModal, setUserForPhotoModal] = useState<CommercialUser | null>(null);
-  const newAvatarInputRef = useRef<HTMLInputElement>(null);
+  const [userToDeleteConfirm, setUserToDeleteConfirm] = useState<CommercialUser | null>(null);
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
 
   const togglePasswordVisibility = (userId: string) => {
     setVisiblePasswords((prev) => ({
@@ -562,15 +568,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
 
-    const avatarUrls = [
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    ];
-    const randomAvatar = avatarUrls[Math.floor(Math.random() * avatarUrls.length)];
-
     const newUser: CommercialUser = {
       id: `user-${Date.now()}`,
       name: newUserName.trim(),
@@ -580,8 +577,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       email: newUserEmail.trim(),
       phone: newUserPhone.trim(),
       password: newUserPassword.trim(),
-      quotaPerModel: newUserQuota || 5,
-      avatar: newUserAvatar.trim() || randomAvatar,
     };
 
     onAddCommercial(newUser);
@@ -593,11 +588,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewUserEmail('');
     setNewUserPhone('+216 ');
     setNewUserPassword('123');
-    setNewUserAvatar('');
   };
 
+  const superAdminsList = commercials.filter((u) => u.role === 'super_admin');
   const adminsList = commercials.filter((u) => u.role === 'admin');
-  const salesList = commercials.filter((u) => u.role === 'commercial');
+  const salesList = commercials.filter((u) => u.role === 'commercial' || (!u.role && u.role !== 'admin' && u.role !== 'super_admin'));
+
+  const handleDeleteUserWithConfirm = (targetUser: CommercialUser) => {
+    setUserToDeleteConfirm(targetUser);
+  };
 
   const handleExportJSON = () => {
     const payload = {
@@ -1061,6 +1060,132 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </button>
           </div>
 
+          {/* Section 0: Super Administrateurs (DSI & Direction Générale) */}
+          <div className="bg-slate-900 border border-purple-500/40 rounded-2xl p-6 shadow-md space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></span>
+                <h4 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                  Sessions Super Administrateur & DSI ({superAdminsList.length})
+                </h4>
+              </div>
+              <span className="text-xs text-purple-300 font-mono font-semibold bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                Mongi Jamaï (Super Admin DSI) & Direction Générale
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {superAdminsList.map((sAdmin) => {
+                const isPassVisible = !!visiblePasswords[sAdmin.id];
+                const displayPassword = sAdmin.password || 'STA@2026+';
+                const isCurrentSelf = currentUser.id === sAdmin.id;
+
+                return (
+                  <div
+                    key={sAdmin.id}
+                    className="bg-slate-950 border border-purple-500/40 rounded-xl p-4 space-y-3 shadow relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg font-mono tracking-wider shadow">
+                      SUPER ADMIN / DSI
+                    </div>
+
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-purple-600 border-2 border-purple-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
+                          {getUserInitials(sAdmin.name)}
+                        </div>
+                        <div>
+                          <h5 className="font-extrabold text-white text-sm flex items-center gap-1.5">
+                            <span>{sAdmin.name}</span>
+                            {isCurrentSelf && (
+                              <span className="text-[10px] text-purple-300 font-normal bg-purple-500/20 px-1.5 py-0.2 rounded border border-purple-500/30">
+                                Vous
+                              </span>
+                            )}
+                          </h5>
+                          <p className="text-xs font-semibold text-purple-300">{sAdmin.title || 'Super Administrateur DSI'}</p>
+                          <p className="text-[11px] text-slate-400">{sAdmin.agency}</p>
+                        </div>
+                      </div>
+
+                      {currentUser.role === 'super_admin' && (
+                        <div>
+                          {!isCurrentSelf ? (
+                            <button
+                              onClick={() => handleDeleteUserWithConfirm(sAdmin)}
+                              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-500/30 rounded-lg transition-colors cursor-pointer"
+                              title="Supprimer ce profil Super Admin (Privilège Mongi Jamaï)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-mono italic">Session active</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-purple-400" /> {sAdmin.email}
+                        </span>
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-purple-400" /> {sAdmin.phone}
+                        </span>
+                      </div>
+
+                      {/* Password Field with Eye Toggle & Edit */}
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          <span className="text-slate-400 text-[11px] font-medium">Mot de passe :</span>
+                          <span className="font-mono font-bold text-white tracking-wider text-xs">
+                            {isPassVisible ? displayPassword : '••••••••'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => togglePasswordVisibility(sAdmin.id)}
+                            className="p-1 text-slate-400 hover:text-white rounded transition-colors cursor-pointer"
+                            title={isPassVisible ? 'Masquer' : 'Afficher'}
+                          >
+                            {isPassVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingPasswordUser({ id: sAdmin.id, name: sAdmin.name, current: displayPassword });
+                              setInputNewPassword(displayPassword);
+                            }}
+                            className="px-2 py-1 bg-purple-500/20 hover:bg-purple-600 text-purple-200 hover:text-white text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 border border-purple-500/30"
+                            title="Réinitialiser / Changer le mot de passe"
+                          >
+                            <Key className="w-3 h-3" /> Pass
+                          </button>
+                          <button
+                            onClick={() => setEditingUserSession(sAdmin)}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                            title="Modifier les informations de la session"
+                          >
+                            <Edit2 className="w-3 h-3 text-purple-400" /> Profil
+                          </button>
+                          <button
+                            onClick={() => setEditingUserPermissions(sAdmin)}
+                            className="px-2 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                            title="Gérer les permissions et droits d'accès"
+                          >
+                            <Shield className="w-3 h-3 text-purple-400" /> Droits
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Section 1: Administrateurs */}
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-md space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1071,7 +1196,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </h4>
               </div>
               <span className="text-xs text-amber-400 font-mono font-semibold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
-                Lamine Abbasi (Directeur) & Sami Chaker
+                Direction Commerciale STA & Responsables Réseau
               </span>
             </div>
 
@@ -1089,25 +1214,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       ADMIN / DIRECTION
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(admin)}>
-                        <img
-                          src={admin.avatar}
-                          alt={admin.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-amber-500 shadow group-hover:brightness-75 transition-all"
-                        />
-                        <div
-                          title="Changer la photo de profil / login"
-                          className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                        >
-                          <Camera className="w-4 h-4 text-amber-400" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-amber-600 border-2 border-amber-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
+                          {getUserInitials(admin.name)}
+                        </div>
+                        <div>
+                          <h5 className="font-extrabold text-white text-sm">{admin.name}</h5>
+                          <p className="text-xs font-semibold text-amber-300">{admin.title || 'Administrateur'}</p>
+                          <p className="text-[11px] text-slate-400">{admin.agency}</p>
                         </div>
                       </div>
-                      <div>
-                        <h5 className="font-extrabold text-white text-sm">{admin.name}</h5>
-                        <p className="text-xs font-semibold text-amber-300">{admin.title || 'Administrateur'}</p>
-                        <p className="text-[11px] text-slate-400">{admin.agency}</p>
-                      </div>
+
+                      {/* Admin/Super Admin can delete admin profiles (excluding self) */}
+                      {(currentUser.role === 'super_admin' || currentUser.role === 'admin') && (
+                        <button
+                          onClick={() => handleDeleteUserWithConfirm(admin)}
+                          className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-500/30 rounded-lg transition-colors cursor-pointer"
+                          title="Supprimer ce profil Administrateur"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                     <div className="pt-2 border-t border-slate-800 space-y-2 text-xs">
@@ -1144,6 +1272,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               setInputNewPassword(displayPassword);
                             }}
                             className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                            title="Réinitialiser / Changer le mot de passe"
                           >
                             <Key className="w-3 h-3" /> Pass
                           </button>
@@ -1180,7 +1309,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </h4>
               </div>
               <span className="text-xs text-slate-400">
-                Marwa Frikha, Moez Ben Naser, Bassem Jerbi, Hanen Gharbi, Ines Chaari
+                Conseillers commerciaux showroom & agences agréées Chery Tunisie
               </span>
             </div>
 
@@ -1198,18 +1327,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(comm)}>
-                            <img
-                              src={comm.avatar}
-                              alt={comm.name}
-                              className="w-12 h-12 rounded-full object-cover border-2 border-red-500/60 shadow group-hover:brightness-75 transition-all"
-                            />
-                            <div
-                              title="Changer la photo de login du commercial"
-                              className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                            >
-                              <Camera className="w-4 h-4 text-red-400" />
-                            </div>
+                          <div className="w-12 h-12 rounded-full bg-red-600 border-2 border-red-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
+                            {getUserInitials(comm.name)}
                           </div>
                           <div>
                             <h5 className="font-extrabold text-white text-sm">{comm.name}</h5>
@@ -1221,9 +1340,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
 
                         <button
-                          onClick={() => onDeleteCommercial(comm.id)}
+                          onClick={() => handleDeleteUserWithConfirm(comm)}
                           className="p-1 text-slate-500 hover:text-red-400 rounded transition-colors cursor-pointer"
-                          title="Supprimer la session"
+                          title="Supprimer la session commerciale"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1239,89 +1358,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="pt-1 font-bold text-emerald-400 flex justify-between items-center bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800">
                           <span className="text-[11px] text-slate-300">Réservations actives :</span>
                           <span className="font-mono text-xs">{commReservations.length} dossier(s)</span>
-                        </div>
-
-                        {/* Case / Bloc de gestion du Quota par Commercial */}
-                        <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-2.5 space-y-2 shadow-inner">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                              <PackageCheck className="w-3.5 h-3.5 text-amber-400" /> Quota par Modèle :
-                            </span>
-                            <span className="font-mono font-black text-amber-400 text-xs bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/40">
-                              {comm.quotaPerModel || 5} rés. / modèle
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 pt-0.5">
-                            <div className="flex-1 flex items-center bg-slate-950 border border-amber-500/30 rounded-lg overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const current = comm.quotaPerModel || 5;
-                                  if (current > 1 && onUpdateCommercial) {
-                                    onUpdateCommercial({ ...comm, quotaPerModel: current - 1 });
-                                  }
-                                }}
-                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 font-black hover:text-white cursor-pointer transition-colors"
-                                title="Diminuer le quota (-1)"
-                              >
-                                -
-                              </button>
-                              <input
-                                type="number"
-                                min={1}
-                                max={100}
-                                value={comm.quotaPerModel || 5}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value, 10);
-                                  if (!isNaN(val) && val >= 1 && onUpdateCommercial) {
-                                    onUpdateCommercial({ ...comm, quotaPerModel: val });
-                                  }
-                                }}
-                                className="w-full text-center bg-transparent font-mono font-bold text-xs text-amber-300 focus:outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const current = comm.quotaPerModel || 5;
-                                  if (onUpdateCommercial) {
-                                    onUpdateCommercial({ ...comm, quotaPerModel: current + 1 });
-                                  }
-                                }}
-                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 font-black hover:text-white cursor-pointer transition-colors"
-                                title="Augmenter le quota (+1)"
-                              >
-                                +
-                              </button>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const current = comm.quotaPerModel || 5;
-                                if (onUpdateCommercial) {
-                                  onUpdateCommercial({ ...comm, quotaPerModel: current + 5 });
-                                }
-                              }}
-                              className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer shadow shrink-0"
-                              title="Ajouter +5 au quota actuel"
-                            >
-                              +5
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const current = comm.quotaPerModel || 5;
-                                if (onUpdateCommercial) {
-                                  onUpdateCommercial({ ...comm, quotaPerModel: current + 10 });
-                                }
-                              }}
-                              className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] rounded-lg transition-all cursor-pointer shadow shrink-0"
-                              title="Ajouter +10 au quota actuel"
-                            >
-                              +10
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -1350,6 +1386,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               setInputNewPassword(displayPassword);
                             }}
                             className="px-2 py-1 bg-slate-800 hover:bg-red-600 text-slate-200 hover:text-white text-[10px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1"
+                            title="Réinitialiser / Changer le mot de passe"
                           >
                             <Key className="w-3 h-3" /> Pass
                           </button>
@@ -2588,7 +2625,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-400" />
-                <h4 className="font-extrabold text-white text-base">Modifier le Mot de Passe</h4>
+                <h4 className="font-extrabold text-white text-base">Réinitialiser le Mot de Passe</h4>
               </div>
               <button
                 onClick={() => setEditingPasswordUser(null)}
@@ -2598,35 +2635,51 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             </div>
 
-            <div>
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
               <p className="text-xs text-slate-300">
-                Changement du code d'accès pour : <strong className="text-white font-bold">{editingPasswordUser.name}</strong>
+                Changement immédiat du code d'accès pour : <strong className="text-white font-bold">{editingPasswordUser.name}</strong>
+              </p>
+              <p className="text-[11px] text-amber-400 font-mono">
+                Privilège Super Admin & Direction — Synchronisé en direct avec Firestore.
               </p>
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block">Nouveau Mot de Passe :</label>
               <input
-                type="password"
+                type="text"
                 autoComplete="new-password"
                 data-lpignore="true"
                 value={inputNewPassword}
                 onChange={(e) => setInputNewPassword(e.target.value)}
                 placeholder="Entrez le nouveau mot de passe"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-400 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-medium">Raccourcis :</span>
+                {['STA@2026+', 'Chery2026!', 'STA#Admin1', '123456'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setInputNewPassword(preset)}
+                    className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono font-semibold rounded border border-slate-700 cursor-pointer"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 onClick={() => setEditingPasswordUser(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 onClick={handleSavePassword}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Enregistrer Mot de Passe
               </button>
@@ -2678,6 +2731,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <option value="commercial">Commercial Agence</option>
                   <option value="admin">Administrateur / Direction</option>
+                  {currentUser.role === 'super_admin' && (
+                    <option value="super_admin">Super Administrateur (DSI)</option>
+                  )}
                 </select>
               </div>
 
@@ -2728,47 +2784,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* Avatar Upload Field for New User */}
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={newUserAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=320&auto=format&fit=crop&q=80'}
-                  alt="Avatar preview"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
-                />
-                <div>
-                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
-                  <p className="text-[10px] text-slate-400">Téléversez une photo personnalisée pour l'utilisateur</p>
-                </div>
-              </div>
-              <input
-                ref={newAvatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    try {
-                      const compressed = await fileToCompressedAvatarDataUrl(file, 320, 0.88);
-                      setNewUserAvatar(compressed);
-                    } catch (err) {
-                      console.error('Error compressing new user avatar:', err);
-                    }
-                  }
-                }}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => newAvatarInputRef.current?.click()}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Camera className="w-3.5 h-3.5 text-red-400" />
-                <span>Uploader Photo</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="pt-1">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 text-xs block">Mot de Passe d'Accès *</label>
                 <input
@@ -2776,23 +2792,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   autoComplete="new-password"
                   data-lpignore="true"
-                  placeholder="Entrez le mot de passe"
+                  placeholder="Entrez le mot de passe de la session"
                   value={newUserPassword}
                   onChange={(e) => setNewUserPassword(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono font-bold text-amber-400 focus:outline-none focus:ring-1 focus:ring-red-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-amber-300 text-xs block">Quota Réservation (par modèle) *</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  required
-                  value={newUserQuota}
-                  onChange={(e) => setNewUserQuota(parseInt(e.target.value, 10) || 5)}
-                  className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-xs font-mono font-black text-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
               </div>
             </div>
@@ -3557,28 +3560,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Avatar Row in Edit User Modal */}
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={editingUserSession.avatar}
-                  alt={editingUserSession.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
-                />
-                <div>
-                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
-                  <p className="text-[10px] text-slate-400">Photo utilisée sur l'écran d'accueil et les fiches</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setUserForPhotoModal(editingUserSession)}
-                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Changer la photo</span>
-              </button>
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 block">Nom & Prénom *</label>
@@ -3610,6 +3591,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <option value="commercial">Commercial Agence</option>
                   <option value="admin">Administrateur / Direction</option>
+                  {currentUser.role === 'super_admin' && (
+                    <option value="super_admin">Super Administrateur (DSI)</option>
+                  )}
                 </select>
               </div>
 
@@ -3656,24 +3640,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   value={editingUserSession.password || ''}
                   onChange={(e) => setEditingUserSession({ ...editingUserSession, password: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-mono font-bold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-amber-300 block">Quota Réservation (par modèle) *</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  required
-                  value={editingUserSession.quotaPerModel || 5}
-                  onChange={(e) =>
-                    setEditingUserSession({
-                      ...editingUserSession,
-                      quotaPerModel: parseInt(e.target.value, 10) || 5,
-                    })
-                  }
-                  className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-400 font-mono font-black"
                 />
               </div>
             </div>
@@ -3950,23 +3916,95 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onClose={() => setSelectedSpecCarAdmin(null)}
       />
 
-      {/* User Photo Upload Modal */}
-      {userForPhotoModal && (
-        <UserPhotoUploadModal
-          user={userForPhotoModal}
-          isOpen={true}
-          onClose={() => setUserForPhotoModal(null)}
-          onSaveAvatar={(newAvatar) => {
-            const updated = { ...userForPhotoModal, avatar: newAvatar };
-            if (onUpdateCommercial) {
-              onUpdateCommercial(updated);
-            }
-            if (editingUserSession && editingUserSession.id === userForPhotoModal.id) {
-              setEditingUserSession(updated);
-            }
-            setUserForPhotoModal(null);
-          }}
-        />
+      {/* Modal: Confirmation de Suppression de Session */}
+      {userToDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-red-500/20 text-red-400 rounded-xl border border-red-500/30">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-white text-base">Supprimer la Session</h4>
+                  <p className="text-xs text-slate-400">Confirmation de suppression utilisateur</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUserToDeleteConfirm(null)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {currentUser.id === userToDeleteConfirm.id ? (
+              <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Action Impossible</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Vous êtes actuellement connecté avec le profil de <strong className="text-white">{userToDeleteConfirm.name}</strong>. Vous ne pouvez pas supprimer votre propre session en cours d'utilisation.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-2 ${
+                    userToDeleteConfirm.role === 'super_admin'
+                      ? 'bg-purple-600 text-white border-purple-400'
+                      : userToDeleteConfirm.role === 'admin'
+                      ? 'bg-amber-600 text-white border-amber-400'
+                      : 'bg-red-600 text-white border-red-400'
+                  }`}>
+                    {getUserInitials(userToDeleteConfirm.name)}
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-white text-sm">{userToDeleteConfirm.name}</h5>
+                    <p className="text-xs text-slate-400">{userToDeleteConfirm.agency}</p>
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-red-500/20 text-red-300 font-mono text-[10px] rounded border border-red-500/30 uppercase font-bold">
+                      {userToDeleteConfirm.role === 'super_admin'
+                        ? 'Super Admin DSI'
+                        : userToDeleteConfirm.role === 'admin'
+                        ? 'Administrateur / Direction'
+                        : 'Commercial Agence'}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Êtes-vous sûr de vouloir supprimer définitivement la session de <strong className="text-white">{userToDeleteConfirm.name}</strong> ? Cette action est irréversible et supprimera le profil de la base de données.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setUserToDeleteConfirm(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              >
+                Annuler
+              </button>
+              {currentUser.id !== userToDeleteConfirm.id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onDeleteCommercial) {
+                      onDeleteCommercial(userToDeleteConfirm.id);
+                    }
+                    setUserToDeleteConfirm(null);
+                  }}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" /> Supprimer Définitivement
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

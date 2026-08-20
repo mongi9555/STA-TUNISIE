@@ -42,6 +42,7 @@ import {
   INITIAL_CARS,
   DEFAULT_SITE_SETTINGS,
   isVirtualCar,
+  isDeprecatedCommercialUser,
 } from './data/cheryData';
 import {
   db,
@@ -322,17 +323,10 @@ export default function App() {
     }, (err) => console.warn('StockRequests snapshot listener warning:', err));
 
     const unsubscribeCommercials = onSnapshot(commercialsCollection, (snapshot) => {
-      if (!snapshot.empty) {
-        const fetched = snapshot.docs.map((doc) => doc.data() as CommercialUser);
-        const merged = [...fetched];
-        INITIAL_COMMERCIALS.forEach((initUser) => {
-          if (!merged.some((u) => u.id === initUser.id)) {
-            merged.unshift(initUser);
-            saveCommercialToFirestore(initUser);
-          }
-        });
-        setCommercials(merged);
-      }
+      const fetched = snapshot.docs.map((doc) => doc.data() as CommercialUser);
+      const cleanList = fetched.filter((u) => !isDeprecatedCommercialUser(u));
+      setCommercials(cleanList);
+      saveStoredCommercials(cleanList);
     }, (err) => console.warn('Commercials snapshot listener warning:', err));
 
     const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'site_settings'), (docSnap) => {
@@ -647,14 +641,16 @@ export default function App() {
     showToast(`Mot de passe mis à jour avec succès dans la base !`);
   };
 
-  const handleDeleteCommercial = (userId: string) => {
+  const handleDeleteCommercial = async (userId: string) => {
     const userToDelete = commercials.find((u) => u.id === userId);
-    setCommercials((prev) => prev.filter((u) => u.id !== userId));
-    deleteCommercialFromFirestore(userId);
+    const updated = commercials.filter((u) => u.id !== userId);
+    setCommercials(updated);
+    saveStoredCommercials(updated);
+    await deleteCommercialFromFirestore(userId);
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(null);
     }
-    showToast(`Session de ${userToDelete?.name || 'l\'utilisateur'} supprimée`);
+    showToast(`Session de ${userToDelete?.name || 'l\'utilisateur'} supprimée définitivement`);
   };
 
   const handleImportDatabase = async (importedData: any) => {
@@ -974,6 +970,7 @@ export default function App() {
             }
           }}
           onUpdateUser={handleUpdateCommercial}
+          onUpdatePassword={handleUpdateCommercialPassword}
           onLogout={() => {
             setCurrentUser(null);
             showToast('Déconnexion réussie. À bientôt !');

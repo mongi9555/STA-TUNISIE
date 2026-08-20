@@ -1,12 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CommercialUser, UserRole, SiteSettings } from '../types';
 import { INITIAL_COMMERCIALS } from '../data/cheryData';
-import { Shield, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles, Key, Car, Building2, Briefcase, ArrowLeft, ChevronRight, ShieldCheck, Cpu, Server, ShieldAlert, Phone, Mail, Camera, Upload } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Cpu, ChevronRight, ShieldCheck, Briefcase, ArrowLeft, User } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import cheryHeadquarters from '../assets/images/chery_headquarters_1785419893098.jpg';
 import { BackgroundMediaRender } from './BackgroundMediaRender';
-import { UserPhotoUploadModal } from './UserPhotoUploadModal';
-import { fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
 
 interface LoginScreenProps {
   users: CommercialUser[];
@@ -15,24 +13,19 @@ interface LoginScreenProps {
   siteSettings?: SiteSettings;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpdateUser, siteSettings }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSettings }) => {
   const [selectedRoleChoice, setSelectedRoleChoice] = useState<UserRole | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [userForPhotoModal, setUserForPhotoModal] = useState<CommercialUser | null>(null);
-  const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Guarantee that all initial users (including super_admins) are present in allUsers
+  // Use the loaded users list, with INITIAL_COMMERCIALS fallback only if list is empty
   const allUsers = useMemo(() => {
-    const list = [...(users || [])];
-    INITIAL_COMMERCIALS.forEach((initUser) => {
-      if (!list.some((u) => u.id === initUser.id)) {
-        list.unshift(initUser);
-      }
-    });
-    return list;
+    if (users && users.length > 0) {
+      return users;
+    }
+    return INITIAL_COMMERCIALS;
   }, [users]);
 
   // Filter users based on selected role choice or show all
@@ -71,24 +64,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
     setError(null);
   };
 
-  const handleUpdateUserAvatar = (userToUpdate: CommercialUser, newAvatarUrl: string) => {
-    const updated = { ...userToUpdate, avatar: newAvatarUrl };
-    if (onUpdateUser) {
-      onUpdateUser(updated);
-    }
-  };
-
-  const handleQuickUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedUser) return;
-    try {
-      const compressed = await fileToCompressedAvatarDataUrl(file, 320, 0.88);
-      handleUpdateUserAvatar(selectedUser, compressed);
-    } catch (err) {
-      console.error('Failed to compress avatar:', err);
-    }
-  };
-
   const getRoleLabel = (role: UserRole) => {
     switch (role) {
       case 'super_admin':
@@ -100,6 +75,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
       default:
         return role;
     }
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
   };
 
   const effectiveLogoUrl = siteSettings?.logoUrl || cheryLogo;
@@ -242,7 +227,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                   <ul className="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Gestion des stocks & ajouts teintes</span>
+                      <span>Gestion des stocks & disponibilités modèles</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
@@ -289,15 +274,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                   <ul className="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Création des bons de réservation</span>
+                      <span>Création des réservations client</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Consultation catalogue & disponibilités</span>
+                      <span>Consultation des disponibilités modèles</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Impression des reçus d'acompte client</span>
+                      <span>Gestion des demandes de stock agence</span>
                     </li>
                   </ul>
                 </div>
@@ -374,70 +359,42 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                   </select>
                 </div>
 
-                {/* Selected User Preview */}
+                {/* Selected User Identity Card */}
                 {selectedUser && (
-                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
-                    <input
-                      ref={quickFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleQuickUploadFile}
-                      className="hidden"
-                    />
-
-                    <div className="flex items-center gap-3.5 w-full sm:w-auto">
-                      <div className="relative group shrink-0">
-                        <img
-                          src={selectedUser.avatar}
-                          alt={selectedUser.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow-md group-hover:brightness-75 transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setUserForPhotoModal(selectedUser)}
-                          title="Changer ou téléverser votre photo de login"
-                          className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white cursor-pointer"
-                        >
-                          <Camera className="w-5 h-5 text-red-400" />
-                        </button>
-                      </div>
-
-                      <div className="text-left text-xs flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-white truncate">{selectedUser.name}</p>
-                          <span
-                            className={`text-[9px] font-bold font-mono px-2 py-0.2 rounded border uppercase ${
-                              selectedUser.role === 'super_admin'
-                                ? 'bg-purple-950 text-purple-300 border-purple-700'
-                                : selectedUser.role === 'admin'
-                                ? 'bg-amber-950 text-amber-300 border-amber-700'
-                                : 'bg-blue-950 text-blue-300 border-blue-700'
-                            }`}
-                          >
-                            {selectedUser.role}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate">{selectedUser.agency}</p>
-                      </div>
+                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center gap-3.5 shadow-inner">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow shrink-0 ${
+                      selectedUser.role === 'super_admin'
+                        ? 'bg-purple-600 text-white border-2 border-purple-400'
+                        : selectedUser.role === 'admin'
+                        ? 'bg-amber-600 text-white border-2 border-amber-400'
+                        : 'bg-red-600 text-white border-2 border-red-400'
+                    }`}>
+                      {getUserInitials(selectedUser.name)}
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
-                      <button
-                        type="button"
-                        onClick={() => setUserForPhotoModal(selectedUser)}
-                        className="px-2.5 py-1.5 bg-red-600/15 hover:bg-red-600/30 text-red-400 border border-red-500/40 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Uploader ou choisir une nouvelle photo de login"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>Changer photo</span>
-                      </button>
+                    <div className="text-left text-xs flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-white truncate">{selectedUser.name}</p>
+                        <span
+                          className={`text-[9px] font-bold font-mono px-2 py-0.2 rounded border uppercase ${
+                            selectedUser.role === 'super_admin'
+                              ? 'bg-purple-950 text-purple-300 border-purple-700'
+                              : selectedUser.role === 'admin'
+                              ? 'bg-amber-950 text-amber-300 border-amber-700'
+                              : 'bg-blue-950 text-blue-300 border-blue-700'
+                          }`}
+                        >
+                          {selectedUser.role}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate">{selectedUser.agency}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Password Field */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">Mot de Passe :</label>
+                  <label className="text-xs font-bold text-slate-300 block">Mot de Passe d'Accès :</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -472,43 +429,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
               {/* Quick Select demo chips */}
               <div className="pt-2 border-t border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold text-slate-400">Comptes disponibles ({selectedRoleChoice}) :</p>
-                  <span className="text-[10px] text-slate-500">Cliquez pour basculer de compte</span>
+                  <p className="text-[11px] font-bold text-slate-400">Comptes configurés ({selectedRoleChoice}) :</p>
+                  <span className="text-[10px] text-slate-500">Sélection rapide</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {filteredUsers.map((u) => (
-                    <div
+                    <button
                       key={u.id}
-                      className={`p-2 rounded-xl border text-left transition-all flex items-center justify-between gap-1.5 ${
+                      type="button"
+                      onClick={() => handleQuickSelectUser(u)}
+                      className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 cursor-pointer truncate ${
                         selectedUserId === u.id
                           ? 'bg-red-950/40 border-red-500/60 text-white shadow'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleQuickSelectUser(u)}
-                        className="flex items-center gap-2 truncate flex-1 cursor-pointer text-left"
-                      >
-                        <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-slate-700" />
-                        <div className="truncate">
-                          <p className="font-bold text-[11px] truncate">{u.name}</p>
-                          <p className="text-[9px] text-slate-500 font-mono uppercase">{u.role}</p>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setUserForPhotoModal(u);
-                        }}
-                        title="Changer la photo de ce compte"
-                        className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer shrink-0"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                        u.role === 'super_admin'
+                          ? 'bg-purple-700 text-white'
+                          : u.role === 'admin'
+                          ? 'bg-amber-700 text-white'
+                          : 'bg-red-700 text-white'
+                      }`}>
+                        {getUserInitials(u.name)}
+                      </div>
+                      <div className="truncate flex-1">
+                        <p className="font-bold text-[11px] truncate">{u.name}</p>
+                        <p className="text-[9px] text-slate-500 font-mono uppercase truncate">{u.title || u.agency.split('-')[1]?.trim() || u.agency}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -516,18 +465,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
           </div>
         )}
       </main>
-
-      {/* User Photo Upload Modal */}
-      {userForPhotoModal && (
-        <UserPhotoUploadModal
-          user={userForPhotoModal}
-          isOpen={true}
-          onClose={() => setUserForPhotoModal(null)}
-          onSaveAvatar={(newAvatar) => {
-            handleUpdateUserAvatar(userForPhotoModal, newAvatar);
-          }}
-        />
-      )}
 
       {/* Footer info */}
       <footer className="relative z-10 text-center text-slate-400 text-[11px] py-2 space-y-0.5">

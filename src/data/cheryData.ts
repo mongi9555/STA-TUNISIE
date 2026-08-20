@@ -198,63 +198,6 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
       canPrintVouchers: true,
       canExportReports: true,
     }
-  },
-  {
-    id: 'comm-1',
-    name: 'Direction Commerciale STA',
-    email: 'admin@chery-tunisie.tn',
-    password: 'STA@2026+',
-    role: 'admin',
-    phone: '+216 71 800 900',
-    agency: 'STA Siège Ben Arous',
-    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
-    permissions: {
-      canCreateReservation: true,
-      canCancelReservation: true,
-      canEditPrices: true,
-      canManageStock: true,
-      canAccessAdminPanel: true,
-      canPrintVouchers: true,
-      canExportReports: true,
-    }
-  },
-  {
-    id: 'comm-2',
-    name: 'Karim Ben Salem',
-    email: 'karim.bensalem@chery-tunisie.tn',
-    password: 'STA@2026+',
-    role: 'commercial',
-    phone: '+216 98 123 456',
-    agency: 'Showroom Les Berges du Lac',
-    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
-    permissions: {
-      canCreateReservation: true,
-      canCancelReservation: false,
-      canEditPrices: false,
-      canManageStock: false,
-      canAccessAdminPanel: false,
-      canPrintVouchers: true,
-      canExportReports: true,
-    }
-  },
-  {
-    id: 'comm-3',
-    name: 'Sarra Mansour',
-    email: 'sarra.mansour@chery-tunisie.tn',
-    password: 'STA@2026+',
-    role: 'commercial',
-    phone: '+216 98 654 321',
-    agency: 'Agence Sousse Kantaoui',
-    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
-    permissions: {
-      canCreateReservation: true,
-      canCancelReservation: false,
-      canEditPrices: false,
-      canManageStock: false,
-      canAccessAdminPanel: false,
-      canPrintVouchers: true,
-      canExportReports: true,
-    }
   }
 ];
 
@@ -1050,18 +993,29 @@ export function saveStoredReservations(reservations: Reservation[]): void {
   safeLocalStorageSet(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
 }
 
+export function isDeprecatedCommercialUser(u: { id?: string; name?: string; email?: string }): boolean {
+  if (!u) return false;
+  const deprecatedIds = ['comm-1', 'comm-2', 'comm-3'];
+  if (u.id && deprecatedIds.includes(u.id)) return true;
+  const name = (u.name || '').toLowerCase();
+  if (name.includes('direction commerciale') || name.includes('karim ben salem') || name.includes('sarra mansour')) {
+    return true;
+  }
+  const email = (u.email || '').toLowerCase();
+  if (email.includes('admin@chery-tunisie.tn') || email.includes('karim.bensalem') || email.includes('sarra.mansour')) {
+    return true;
+  }
+  return false;
+}
+
 export function getStoredCommercials(): CommercialUser[] {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.COMMERCIALS);
-    if (data) {
+    if (data !== null) {
       const parsed: CommercialUser[] = JSON.parse(data);
-      const merged = [...parsed];
-      INITIAL_COMMERCIALS.forEach((initUser) => {
-        if (!merged.some((u) => u.id === initUser.id)) {
-          merged.unshift(initUser);
-        }
-      });
-      return merged;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((u) => !isDeprecatedCommercialUser(u));
+      }
     }
   } catch (e) {
     console.error('Error loading commercials from storage', e);

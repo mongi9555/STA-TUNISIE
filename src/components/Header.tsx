@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { CommercialUser, ThemeMode, SiteSettings, CarModel, StockRequest } from '../types';
-import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, Camera } from 'lucide-react';
+import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
-export type AppTab = 'dashboard' | 'catalog' | 'reservations' | 'test_drives' | 'knowledge_base' | 'documents_devis' | 'admin';
+export type AppTab = 'dashboard' | 'reservations' | 'test_drives' | 'knowledge_base' | 'admin';
 
 interface HeaderProps {
   currentUser: CommercialUser;
   allUsers: CommercialUser[];
   onSelectUser: (user: CommercialUser) => void;
   onUpdateUser?: (user: CommercialUser) => void;
+  onUpdatePassword?: (userId: string, newPassword: string) => void;
   onLogout: () => void;
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
@@ -30,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   allUsers,
   onSelectUser,
   onUpdateUser,
+  onUpdatePassword,
   onLogout,
   activeTab,
   setActiveTab,
@@ -42,7 +43,17 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   // Notification Drawer State
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
-  const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
+
+  // Self Password Change Modal State
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
+  const [currentPassInput, setCurrentPassInput] = useState<string>('');
+  const [newPassInput, setNewPassInput] = useState<string>('');
+  const [confirmPassInput, setConfirmPassInput] = useState<string>('');
+  const [showCurrentPass, setShowCurrentPass] = useState<boolean>(false);
+  const [showNewPass, setShowNewPass] = useState<boolean>(false);
+  const [showConfirmPass, setShowConfirmPass] = useState<boolean>(false);
+  const [passError, setPassError] = useState<string | null>(null);
+  const [passSuccess, setPassSuccess] = useState<boolean>(false);
 
   // Session Switch Password Verification Modal
   const [pendingUserToSwitch, setPendingUserToSwitch] = useState<CommercialUser | null>(null);
@@ -86,6 +97,47 @@ export const Header: React.FC<HeaderProps> = ({
     } else {
       setAuthError(`Mot de passe incorrect pour ${pendingUserToSwitch.name}`);
     }
+  };
+
+  const handleSaveSelfPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError(null);
+
+    const expectedCurrent = currentUser.password || (currentUser.role === 'super_admin' ? '1234' : currentUser.role === 'admin' ? 'admin' : '123');
+
+    // Verify current password unless it's first setup or user is super_admin
+    if (currentPassInput.trim() !== expectedCurrent && currentUser.role !== 'super_admin') {
+      setPassError('⚠️ Le mot de passe actuel saisi est incorrect.');
+      return;
+    }
+
+    if (newPassInput.trim().length < 4) {
+      setPassError('⚠️ Le nouveau mot de passe doit contenir au moins 4 caractères.');
+      return;
+    }
+
+    if (newPassInput !== confirmPassInput) {
+      setPassError('⚠️ La confirmation ne correspond pas au nouveau mot de passe.');
+      return;
+    }
+
+    // Save to Firestore and state
+    if (onUpdatePassword) {
+      onUpdatePassword(currentUser.id, newPassInput.trim());
+    }
+    if (onUpdateUser) {
+      onUpdateUser({ ...currentUser, password: newPassInput.trim() });
+    }
+
+    setPassSuccess(true);
+    setTimeout(() => {
+      setIsChangePasswordOpen(false);
+      setPassSuccess(false);
+      setCurrentPassInput('');
+      setNewPassInput('');
+      setConfirmPassInput('');
+      setPassError(null);
+    }, 1800);
   };
 
   // Dynamic Header CSS according to active theme
@@ -272,15 +324,34 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className={`text-[11px] truncate max-w-[150px] ${isLightTheme ? 'text-slate-500' : 'text-slate-400'}`}>
                     {currentUser.agency}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowAvatarModal(true)}
-                    className="text-[10px] text-red-500 hover:text-red-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
-                    title="Changer ma photo de profil"
-                  >
-                    <Camera className="w-2.5 h-2.5" />
-                    <span>Photo</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarModal(true)}
+                      className="text-[10px] text-red-500 hover:text-red-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                      title="Changer ma photo de profil"
+                    >
+                      <Camera className="w-2.5 h-2.5" />
+                      <span>Photo</span>
+                    </button>
+                    <span className="text-slate-500 text-[10px]">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsChangePasswordOpen(true);
+                        setCurrentPassInput('');
+                        setNewPassInput('');
+                        setConfirmPassInput('');
+                        setPassError(null);
+                        setPassSuccess(false);
+                      }}
+                      className="text-[10px] text-amber-500 hover:text-amber-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                      title="Modifier mon mot de passe de session"
+                    >
+                      <Key className="w-2.5 h-2.5" />
+                      <span>Mot de passe</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -542,11 +613,21 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div className={`flex items-center gap-3 p-3 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                <img
-                  src={pendingUserToSwitch.avatar}
-                  alt={pendingUserToSwitch.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500"
-                />
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow shrink-0 ${
+                  pendingUserToSwitch.role === 'super_admin'
+                    ? 'bg-purple-600 text-white border-2 border-purple-400'
+                    : pendingUserToSwitch.role === 'admin'
+                    ? 'bg-amber-600 text-white border-2 border-amber-400'
+                    : 'bg-red-600 text-white border-2 border-red-400'
+                }`}>
+                  {pendingUserToSwitch.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()}
+                </div>
                 <div>
                   <h4 className="font-extrabold text-sm">{pendingUserToSwitch.name}</h4>
                   <p className="text-xs text-slate-400">{pendingUserToSwitch.agency}</p>
@@ -767,19 +848,206 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </AnimatePresence>
-      {/* User Photo Upload Modal */}
-      {showAvatarModal && (
-        <UserPhotoUploadModal
-          user={currentUser}
-          isOpen={true}
-          onClose={() => setShowAvatarModal(false)}
-          onSaveAvatar={(newAvatar) => {
-            if (onUpdateUser) {
-              onUpdateUser({ ...currentUser, avatar: newAvatar });
-            }
-          }}
-        />
-      )}
+      {/* Self Password Change Modal for all users (Super Admin, Admin, Commercial) */}
+      <AnimatePresence>
+        {isChangePasswordOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 text-white"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-white text-base">Modifier mon Mot de Passe</h3>
+                    <p className="text-[11px] text-slate-400">Changement sécurisé de vos identifiants</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User Identity Info Box */}
+              <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs shadow shrink-0 ${
+                  currentUser.role === 'super_admin'
+                    ? 'bg-purple-600 text-white border-2 border-purple-400'
+                    : currentUser.role === 'admin'
+                    ? 'bg-amber-600 text-white border-2 border-amber-400'
+                    : 'bg-red-600 text-white border-2 border-red-400'
+                }`}>
+                  {currentUser.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-white text-xs truncate">{currentUser.name}</h4>
+                    <span
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded uppercase border ${
+                        currentUser.role === 'super_admin'
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : currentUser.role === 'admin'
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      }`}
+                    >
+                      {currentUser.role === 'super_admin' ? 'SUPER ADMIN' : currentUser.role === 'admin' ? 'ADMIN' : 'COMMERCIAL'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 truncate">{currentUser.agency}</p>
+                </div>
+              </div>
+
+              {/* Feedback messages */}
+              {passError && (
+                <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-2xl text-red-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{passError}</span>
+                </div>
+              )}
+
+              {passSuccess && (
+                <div className="p-3.5 bg-emerald-950/90 border border-emerald-500/70 rounded-2xl text-emerald-200 text-xs flex items-center gap-2.5 shadow-lg animate-pulse">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-white">Mot de passe modifié avec succès !</p>
+                    <p className="text-[11px] text-emerald-300">Synchronisé en temps réel avec la base de données.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Password Form */}
+              <form onSubmit={handleSaveSelfPassword} className="space-y-4">
+                {/* Current Password Field */}
+                {currentUser.role !== 'super_admin' && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300 block">
+                      Mot de passe actuel :
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        required
+                        value={currentPassInput}
+                        onChange={(e) => setCurrentPassInput(e.target.value)}
+                        placeholder="Saisissez votre mot de passe actuel..."
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-10 py-2.5 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* New Password Field */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Nouveau mot de passe :
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      required
+                      value={newPassInput}
+                      onChange={(e) => setNewPassInput(e.target.value)}
+                      placeholder="Entrez votre nouveau mot de passe (min. 4 caractères)..."
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-10 py-2.5 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Preset Shortcuts */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400">Raccourcis suggérés :</span>
+                    {['STA@2026+', 'Chery2026!', 'Tiggo#2026', 'STA#Vente1'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setNewPassInput(preset);
+                          setConfirmPassInput(preset);
+                        }}
+                        className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono rounded border border-slate-700 cursor-pointer"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Confirm New Password Field */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Confirmer le nouveau mot de passe :
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPass ? 'text' : 'password'}
+                      required
+                      value={confirmPassInput}
+                      onChange={(e) => setConfirmPassInput(e.target.value)}
+                      placeholder="Répétez le nouveau mot de passe..."
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-10 py-2.5 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordOpen(false)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-950 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Enregistrer mon Mot de Passe</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };

@@ -114,12 +114,52 @@ export async function cleanupVirtualCarsFromFirestore() {
 }
 
 /**
+ * Clean up deprecated demo commercials from Firestore if present
+ */
+export async function cleanupDeprecatedCommercialsFromFirestore() {
+  try {
+    const deprecatedIds = ['comm-1', 'comm-2', 'comm-3'];
+    for (const id of deprecatedIds) {
+      const docRef = doc(db, 'commercials', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        await deleteDoc(docRef);
+        console.log(`[Firestore Cleanup] Deleted obsolete commercial doc by ID: ${id}`);
+      }
+    }
+
+    // Also scan existing commercials in Firestore to delete any matching deprecated profiles
+    const snap = await getDocs(commercialsCollection);
+    for (const d of snap.docs) {
+      const data = d.data() as any;
+      const name = (data.name || '').toLowerCase();
+      const email = (data.email || '').toLowerCase();
+      if (
+        deprecatedIds.includes(d.id) ||
+        name.includes('direction commerciale') ||
+        name.includes('karim ben salem') ||
+        name.includes('sarra mansour') ||
+        email.includes('admin@chery-tunisie.tn') ||
+        email.includes('karim.bensalem') ||
+        email.includes('sarra.mansour')
+      ) {
+        await deleteDoc(doc(db, 'commercials', d.id));
+        console.log(`[Firestore Cleanup] Purged deprecated commercial document: ${d.id} (${data.name})`);
+      }
+    }
+  } catch (err) {
+    console.warn('Note on commercial cleanup from Firestore:', err);
+  }
+}
+
+/**
  * Seed initial data to Firestore if collections are empty.
  */
 export async function seedInitialDataIfEmpty() {
   try {
-    // First, purge any leftover virtual cars from Firestore
+    // First, purge any leftover virtual cars & deprecated commercial sessions
     await cleanupVirtualCarsFromFirestore();
+    await cleanupDeprecatedCommercialsFromFirestore();
 
     const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
     const validCars = carsSnap.docs.filter((d) => !isVirtualCar(d.data() as CarModel));
