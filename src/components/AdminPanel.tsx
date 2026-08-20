@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote } from '../types';
 import { TechSpecModal } from './TechSpecModal';
-import { compressImageDataUrl } from '../utils/imageCompressor';
+import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
+import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 import { StaLogo } from './StaLogo';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
@@ -417,17 +418,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('+216 ');
   const [newUserPassword, setNewUserPassword] = useState('123');
+  const [newUserAvatar, setNewUserAvatar] = useState<string>('');
   const [userToDeleteConfirm, setUserToDeleteConfirm] = useState<CommercialUser | null>(null);
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
+  const [userForPhotoModal, setUserForPhotoModal] = useState<CommercialUser | null>(null);
+  const newAvatarInputRef = useRef<HTMLInputElement>(null);
 
   const togglePasswordVisibility = (userId: string) => {
     setVisiblePasswords((prev) => ({
@@ -568,6 +562,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
 
+    const avatarUrls = [
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    ];
+    const randomAvatar = avatarUrls[Math.floor(Math.random() * avatarUrls.length)];
+
     const newUser: CommercialUser = {
       id: `user-${Date.now()}`,
       name: newUserName.trim(),
@@ -577,6 +580,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       email: newUserEmail.trim(),
       phone: newUserPhone.trim(),
       password: newUserPassword.trim(),
+      avatar: newUserAvatar.trim() || randomAvatar,
     };
 
     onAddCommercial(newUser);
@@ -588,6 +592,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewUserEmail('');
     setNewUserPhone('+216 ');
     setNewUserPassword('123');
+    setNewUserAvatar('');
   };
 
   const superAdminsList = commercials.filter((u) => u.role === 'super_admin');
@@ -1091,8 +1096,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-purple-600 border-2 border-purple-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
-                          {getUserInitials(sAdmin.name)}
+                        <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(sAdmin)}>
+                          <img
+                            src={sAdmin.avatar}
+                            alt={sAdmin.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow group-hover:brightness-75 transition-all"
+                          />
+                          <div
+                            title="Changer la photo de profil / login"
+                            className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                          >
+                            <Camera className="w-4 h-4 text-purple-400" />
+                          </div>
                         </div>
                         <div>
                           <h5 className="font-extrabold text-white text-sm flex items-center gap-1.5">
@@ -1216,8 +1231,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-amber-600 border-2 border-amber-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
-                          {getUserInitials(admin.name)}
+                        <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(admin)}>
+                          <img
+                            src={admin.avatar}
+                            alt={admin.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-amber-500 shadow group-hover:brightness-75 transition-all"
+                          />
+                          <div
+                            title="Changer la photo de profil / login"
+                            className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                          >
+                            <Camera className="w-4 h-4 text-amber-400" />
+                          </div>
                         </div>
                         <div>
                           <h5 className="font-extrabold text-white text-sm">{admin.name}</h5>
@@ -1327,8 +1352,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-red-600 border-2 border-red-400 text-white font-bold text-sm flex items-center justify-center shadow shrink-0">
-                            {getUserInitials(comm.name)}
+                          <div className="relative group cursor-pointer" onClick={() => setUserForPhotoModal(comm)}>
+                            <img
+                              src={comm.avatar}
+                              alt={comm.name}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-red-500/60 shadow group-hover:brightness-75 transition-all"
+                            />
+                            <div
+                              title="Changer la photo de login du commercial"
+                              className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                            >
+                              <Camera className="w-4 h-4 text-red-400" />
+                            </div>
                           </div>
                           <div>
                             <h5 className="font-extrabold text-white text-sm">{comm.name}</h5>
@@ -2784,6 +2819,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* Avatar Upload Field for New User */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={newUserAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=320&auto=format&fit=crop&q=80'}
+                  alt="Avatar preview"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
+                />
+                <div>
+                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
+                  <p className="text-[10px] text-slate-400">Téléversez une photo personnalisée pour l'utilisateur</p>
+                </div>
+              </div>
+              <input
+                ref={newAvatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    try {
+                      const compressed = await fileToCompressedAvatarDataUrl(file, 320, 0.88);
+                      setNewUserAvatar(compressed);
+                    } catch (err) {
+                      console.error('Error compressing new user avatar:', err);
+                    }
+                  }
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => newAvatarInputRef.current?.click()}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5 text-red-400" />
+                <span>Uploader Photo</span>
+              </button>
+            </div>
+
             <div className="pt-1">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 text-xs block">Mot de Passe d'Accès *</label>
@@ -3560,6 +3635,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Avatar Row in Edit User Modal */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={editingUserSession.avatar}
+                  alt={editingUserSession.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow"
+                />
+                <div>
+                  <p className="text-xs font-bold text-white">Photo de Profil / Login</p>
+                  <p className="text-[10px] text-slate-400">Photo utilisée sur l'écran d'accueil et les fiches</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUserForPhotoModal(editingUserSession)}
+                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Changer la photo</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-300 block">Nom & Prénom *</label>
@@ -3916,6 +4013,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onClose={() => setSelectedSpecCarAdmin(null)}
       />
 
+      {/* User Photo Upload Modal */}
+      {userForPhotoModal && (
+        <UserPhotoUploadModal
+          user={userForPhotoModal}
+          isOpen={true}
+          onClose={() => setUserForPhotoModal(null)}
+          onSaveAvatar={(newAvatar) => {
+            const updated = { ...userForPhotoModal, avatar: newAvatar };
+            if (onUpdateCommercial) {
+              onUpdateCommercial(updated);
+            }
+            if (editingUserSession && editingUserSession.id === userForPhotoModal.id) {
+              setEditingUserSession(updated);
+            }
+            setUserForPhotoModal(null);
+          }}
+        />
+      )}
+
       {/* Modal: Confirmation de Suppression de Session */}
       {userToDeleteConfirm && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
@@ -3952,15 +4068,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             ) : (
               <div className="space-y-3">
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm border-2 ${
-                    userToDeleteConfirm.role === 'super_admin'
-                      ? 'bg-purple-600 text-white border-purple-400'
-                      : userToDeleteConfirm.role === 'admin'
-                      ? 'bg-amber-600 text-white border-amber-400'
-                      : 'bg-red-600 text-white border-red-400'
-                  }`}>
-                    {getUserInitials(userToDeleteConfirm.name)}
-                  </div>
+                  <img
+                    src={userToDeleteConfirm.avatar || 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724'}
+                    alt={userToDeleteConfirm.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-red-500/60"
+                  />
                   <div>
                     <h5 className="font-bold text-white text-sm">{userToDeleteConfirm.name}</h5>
                     <p className="text-xs text-slate-400">{userToDeleteConfirm.agency}</p>

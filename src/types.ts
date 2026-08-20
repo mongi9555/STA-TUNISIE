@@ -91,7 +91,7 @@ export interface CommercialUser {
   phone: string;
   agency: string;
   role: UserRole;
-  avatar?: string;
+  avatar: string;
   password?: string;
   title?: string;
   quotaPerModel?: number; // Quota max de réservations par modèle par session commerciale (défaut 5)

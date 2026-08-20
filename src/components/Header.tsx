@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { CommercialUser, ThemeMode, SiteSettings, CarModel, StockRequest } from '../types';
-import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, User } from 'lucide-react';
+import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
-export type AppTab = 'dashboard' | 'reservations' | 'test_drives' | 'knowledge_base' | 'admin';
+export type AppTab = 'dashboard' | 'catalog' | 'reservations' | 'test_drives' | 'knowledge_base' | 'documents_devis' | 'admin';
 
 interface HeaderProps {
   currentUser: CommercialUser;
@@ -43,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   // Notification Drawer State
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
 
   // Self Password Change Modal State
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
@@ -613,21 +615,11 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               <div className={`flex items-center gap-3 p-3 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow shrink-0 ${
-                  pendingUserToSwitch.role === 'super_admin'
-                    ? 'bg-purple-600 text-white border-2 border-purple-400'
-                    : pendingUserToSwitch.role === 'admin'
-                    ? 'bg-amber-600 text-white border-2 border-amber-400'
-                    : 'bg-red-600 text-white border-2 border-red-400'
-                }`}>
-                  {pendingUserToSwitch.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()}
-                </div>
+                <img
+                  src={pendingUserToSwitch.avatar}
+                  alt={pendingUserToSwitch.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-red-500"
+                />
                 <div>
                   <h4 className="font-extrabold text-sm">{pendingUserToSwitch.name}</h4>
                   <p className="text-xs text-slate-400">{pendingUserToSwitch.agency}</p>
@@ -848,6 +840,20 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </AnimatePresence>
+      {/* User Photo Upload Modal */}
+      {showAvatarModal && (
+        <UserPhotoUploadModal
+          user={currentUser}
+          isOpen={true}
+          onClose={() => setShowAvatarModal(false)}
+          onSaveAvatar={(newAvatar) => {
+            if (onUpdateUser) {
+              onUpdateUser({ ...currentUser, avatar: newAvatar });
+            }
+          }}
+        />
+      )}
+
       {/* Self Password Change Modal for all users (Super Admin, Admin, Commercial) */}
       <AnimatePresence>
         {isChangePasswordOpen && (
@@ -880,21 +886,11 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* User Identity Info Box */}
               <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs shadow shrink-0 ${
-                  currentUser.role === 'super_admin'
-                    ? 'bg-purple-600 text-white border-2 border-purple-400'
-                    : currentUser.role === 'admin'
-                    ? 'bg-amber-600 text-white border-2 border-amber-400'
-                    : 'bg-red-600 text-white border-2 border-red-400'
-                }`}>
-                  {currentUser.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()}
-                </div>
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-11 h-11 rounded-full object-cover border-2 border-amber-500/70 shrink-0 shadow"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-extrabold text-white text-xs truncate">{currentUser.name}</h4>
