@@ -1,12 +1,25 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CommercialUser, UserRole, SiteSettings } from '../types';
 import { INITIAL_COMMERCIALS } from '../data/cheryData';
-import { Shield, Lock, User, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles, Key, Car, Building2, Briefcase, ArrowLeft, ChevronRight, ShieldCheck, Cpu, Server, ShieldAlert, Phone, Mail, Camera, Upload } from 'lucide-react';
+import {
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+  Briefcase,
+  ArrowLeft,
+  ChevronRight,
+  ShieldCheck,
+  Cpu,
+  KeyRound,
+  Building,
+  UserCheck,
+} from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import cheryHeadquarters from '../assets/images/chery_headquarters_1785419893098.jpg';
 import { BackgroundMediaRender } from './BackgroundMediaRender';
-import { UserPhotoUploadModal } from './UserPhotoUploadModal';
-import { fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
 
 interface LoginScreenProps {
   users: CommercialUser[];
@@ -15,16 +28,17 @@ interface LoginScreenProps {
   siteSettings?: SiteSettings;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpdateUser, siteSettings }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSettings }) => {
   const [selectedRoleChoice, setSelectedRoleChoice] = useState<UserRole | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  
+  // Nom, Prénom, Mot de passe
+  const [nomInput, setNomInput] = useState<string>('');
+  const [prenomInput, setPrenomInput] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [userForPhotoModal, setUserForPhotoModal] = useState<CommercialUser | null>(null);
-  const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use the loaded users list, with INITIAL_COMMERCIALS fallback only if list is empty
+  // Loaded users list with fallback
   const allUsers = useMemo(() => {
     if (users && users.length > 0) {
       return users;
@@ -33,69 +47,108 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
   }, [users]);
 
   // Filter users based on selected role choice or show all
-  const filteredUsers = selectedRoleChoice
-    ? allUsers.filter((u) => u.role === selectedRoleChoice)
-    : allUsers;
+  const filteredUsers = useMemo(() => {
+    return selectedRoleChoice
+      ? allUsers.filter((u) => u.role === selectedRoleChoice)
+      : allUsers;
+  }, [allUsers, selectedRoleChoice]);
 
-  const selectedUser = allUsers.find((u) => u.id === selectedUserId) || filteredUsers[0];
+  // Helper to split a user's full name into Prénom and Nom
+  const parseUserNames = (fullName: string) => {
+    const parts = (fullName || '').trim().split(/\s+/);
+    if (parts.length === 1) {
+      return { prenom: parts[0], nom: parts[0] };
+    }
+    const prenom = parts[0];
+    const nom = parts.slice(1).join(' ');
+    return { prenom, nom };
+  };
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRoleChoice(role);
     const firstRoleUser = allUsers.find((u) => u.role === role);
     if (firstRoleUser) {
-      setSelectedUserId(firstRoleUser.id);
+      const { prenom, nom } = parseUserNames(firstRoleUser.name);
+      setPrenomInput(prenom);
+      setNomInput(nom);
+    } else {
+      setPrenomInput('');
+      setNomInput('');
     }
+    setPassword('');
+    setError(null);
+  };
+
+  const handleSelectUserQuick = (u: CommercialUser) => {
+    const { prenom, nom } = parseUserNames(u.name);
+    setPrenomInput(prenom);
+    setNomInput(nom);
     setPassword('');
     setError(null);
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser) return;
+    setError(null);
 
-    const expectedPass = selectedUser.password || (selectedUser.role === 'super_admin' ? '1234' : selectedUser.role === 'admin' ? 'admin' : '123');
+    const normPrenom = prenomInput.trim().toLowerCase();
+    const normNom = nomInput.trim().toLowerCase();
+    const fullTyped = `${normPrenom} ${normNom}`.trim();
+    const fullTypedReverse = `${normNom} ${normPrenom}`.trim();
+
+    if (!normNom && !normPrenom) {
+      setError('Veuillez saisir votre Nom et votre Prénom.');
+      return;
+    }
+
+    // Find user in matching role or across all users
+    const pool = selectedRoleChoice ? filteredUsers : allUsers;
+    
+    let matchedUser = pool.find((u) => {
+      const uNameNorm = (u.name || '').trim().toLowerCase();
+      if (uNameNorm === fullTyped || uNameNorm === fullTypedReverse) return true;
+      
+      const { prenom: uPrenom, nom: uNom } = parseUserNames(u.name);
+      const uPrenomNorm = uPrenom.toLowerCase();
+      const uNomNorm = uNom.toLowerCase();
+
+      if (normNom && normPrenom) {
+        return (
+          (uNomNorm.includes(normNom) && uPrenomNorm.includes(normPrenom)) ||
+          (uNomNorm.includes(normPrenom) && uPrenomNorm.includes(normNom)) ||
+          uNameNorm.includes(normNom) && uNameNorm.includes(normPrenom)
+        );
+      } else if (normNom) {
+        return uNomNorm.includes(normNom) || uNameNorm.includes(normNom);
+      } else {
+        return uPrenomNorm.includes(normPrenom) || uNameNorm.includes(normPrenom);
+      }
+    });
+
+    if (!matchedUser) {
+      // Fallback search in all users if role was selected
+      matchedUser = allUsers.find((u) => {
+        const uNameNorm = (u.name || '').trim().toLowerCase();
+        return (
+          uNameNorm.includes(normNom) ||
+          uNameNorm.includes(normPrenom) ||
+          uNameNorm === fullTyped ||
+          uNameNorm === fullTypedReverse
+        );
+      });
+    }
+
+    if (!matchedUser) {
+      setError(`Aucun compte trouvé pour "${prenomInput} ${nomInput}". Veuillez vérifier l'orthographe.`);
+      return;
+    }
+
+    const expectedPass = matchedUser.password || (matchedUser.role === 'super_admin' ? '1234' : matchedUser.role === 'admin' ? 'admin' : '123');
     if (password.trim() === expectedPass) {
       setError(null);
-      onLogin(selectedUser);
+      onLogin(matchedUser);
     } else {
-      setError(`Mot de passe incorrect pour ${selectedUser.name}.`);
-    }
-  };
-
-  const handleQuickSelectUser = (u: CommercialUser) => {
-    setSelectedUserId(u.id);
-    setPassword('');
-    setError(null);
-  };
-
-  const handleUpdateUserAvatar = (userToUpdate: CommercialUser, newAvatarUrl: string) => {
-    const updated = { ...userToUpdate, avatar: newAvatarUrl };
-    if (onUpdateUser) {
-      onUpdateUser(updated);
-    }
-  };
-
-  const handleQuickUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedUser) return;
-    try {
-      const compressed = await fileToCompressedAvatarDataUrl(file, 320, 0.88);
-      handleUpdateUserAvatar(selectedUser, compressed);
-    } catch (err) {
-      console.error('Failed to compress avatar:', err);
-    }
-  };
-
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case 'super_admin':
-        return 'Super Admin (Direction Informatique - DSI)';
-      case 'admin':
-        return 'Administrateur (Direction / Marketing)';
-      case 'commercial':
-        return 'Commercial (Conseiller Vente)';
-      default:
-        return role;
+      setError(`Mot de passe incorrect pour ${matchedUser.name}.`);
     }
   };
 
@@ -104,7 +157,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-between p-4 sm:p-8 relative overflow-hidden font-sans selection:bg-red-500 selection:text-white">
-      {/* Background Media (Image / Vidéo) */}
+      {/* Background Media */}
       <BackgroundMediaRender
         type={siteSettings?.homeBackgroundType || 'video'}
         imageUrl={siteSettings?.homeBackgroundImageUrl}
@@ -114,7 +167,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
         defaultFallbackImage={cheryHeadquarters}
       />
 
-      {/* Decorative Light Glow Blobs */}
+      {/* Decorative Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-red-600/15 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0" />
 
@@ -145,7 +198,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
       {/* Main Content Body */}
       <main className="relative z-10 w-full max-w-6xl mx-auto my-auto py-8">
         {selectedRoleChoice === null ? (
-          /* STEP 1: PAGE D'ACCUEIL — CHOIX SUPER ADMIN, ADMINISTRATEUR OU COMMERCIAL */
+          /* STEP 1: PAGE D'ACCUEIL — CHOIX DU PROFIL */
           <div className="space-y-8 text-center max-w-5xl mx-auto">
             <div className="space-y-3">
               <span className="px-3 py-1 bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-extrabold uppercase tracking-widest rounded-full inline-block">
@@ -158,13 +211,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                 </span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto font-medium">
-                Veuillez choisir votre profil d'accès pour continuer vers la connexion :
+                Veuillez sélectionner votre profil pour vous identifier avec votre <strong>Nom</strong>, <strong>Prénom</strong> et <strong>Mot de passe</strong> :
               </p>
             </div>
 
             {/* 3 Main Choice Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 text-left">
-              {/* Option 1: Super Admin (Direction Informatique DSI) */}
+              {/* Option 1: Super Admin */}
               <button
                 type="button"
                 onClick={() => handleSelectRole('super_admin')}
@@ -185,33 +238,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                       Direction Informatique
                     </h2>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Accès Haute Sécurité : <strong>Arbi Gharbi</strong> (DSI) & <strong>Kamel Belhoula</strong> (Manager IT).
+                      Accès DSI : <strong>Arbi Gharbi</strong> & <strong>Kamel Belhoula</strong>.
                     </p>
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                      <span>Contrôle & sécurité système complet</span>
+                      <span>Contrôle & sécurité système global</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                      <span>Gestion base de données & serveurs</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                      <span>Supervision réseau & accès utilisateurs</span>
+                      <span>Gestion des accès & base de données</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="pt-2 flex items-center justify-between text-purple-400 font-bold text-xs group-hover:translate-x-1 transition-transform">
-                  <span>Accès Super Admin (DSI)</span>
+                  <span>Connexion DSI</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
               </button>
 
-              {/* Option 2: Administrateur (Direction General / Marketing) */}
+              {/* Option 2: Administrateur */}
               <button
                 type="button"
                 onClick={() => handleSelectRole('admin')}
@@ -232,28 +281,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                       Espace Administrateur
                     </h2>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Direction Générale & Marketing : <strong>Lamine Abbasi</strong> & <strong>Sami Chaker</strong>.
+                      Direction Générale & Vente : <strong>Lamine Abbasi</strong> & <strong>Sami Chaker</strong>.
                     </p>
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Gestion des stocks & ajouts teintes</span>
+                      <span>Gestion des stocks & attributions</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Modification des prix catalogue TTC</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Gestion des comptes commerciaux</span>
+                      <span>Pilotage des prix & utilisateurs</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="pt-2 flex items-center justify-between text-amber-400 font-bold text-xs group-hover:translate-x-1 transition-transform">
-                  <span>Accès Administrateur</span>
+                  <span>Connexion Administration</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
               </button>
@@ -279,36 +324,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                       Espace Commercial
                     </h2>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Conseillers commerciaux en agences & vendeurs en showroom.
+                      Conseillers commerciaux en agence & vendeurs showroom.
                     </p>
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Création des bons de réservation</span>
+                      <span>Réservations de véhicules & dossiers</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Consultation catalogue & disponibilités</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      <span>Impression des reçus d'acompte client</span>
+                      <span>Check-lists administratives & bons</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="pt-2 flex items-center justify-between text-red-400 font-bold text-xs group-hover:translate-x-1 transition-transform">
-                  <span>Accès Conseillers Vente</span>
+                  <span>Connexion Conseillers Vente</span>
                   <ChevronRight className="w-5 h-5" />
                 </div>
               </button>
             </div>
           </div>
         ) : (
-          /* STEP 2: FORMULAIRE DE CONNEXION AVEC RETOUR ACCUEIL */
-          <div className="max-w-md mx-auto space-y-4">
+          /* STEP 2: FORMULAIRE DE CONNEXION : NOM + PRÉNOM + MOT DE PASSE */
+          <div className="max-w-lg mx-auto space-y-4">
             {/* Back Button */}
             <button
               type="button"
@@ -316,20 +357,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
               className="inline-flex items-center gap-2 text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 text-xs font-bold transition-all cursor-pointer shadow"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Retour à la page d'accueil (Choix du rôle)</span>
+              <span>Retour au choix du profil</span>
             </button>
 
-            {/* Login Form Card */}
-            <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-5">
+            {/* Login Card */}
+            <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
               <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-red-500" />
-                  <h2 className="font-extrabold text-white text-base">
-                    Connexion — {selectedRoleChoice === 'super_admin' ? 'Super Admin DSI' : selectedRoleChoice === 'admin' ? 'Espace Administrateur' : 'Espace Commercial'}
-                  </h2>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-extrabold text-white text-base">
+                      Authentification Collaborateur
+                    </h2>
+                    <p className="text-[11px] text-slate-400">Connexion sécurisée par Nom, Prénom & Mot de passe</p>
+                  </div>
                 </div>
                 <span
-                  className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase border ${
+                  className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase border ${
                     selectedRoleChoice === 'super_admin'
                       ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                       : selectedRoleChoice === 'admin'
@@ -337,7 +383,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                       : 'bg-red-500/10 text-red-400 border-red-500/30'
                   }`}
                 >
-                  {selectedRoleChoice}
+                  {selectedRoleChoice === 'super_admin' ? 'SUPER ADMIN' : selectedRoleChoice === 'admin' ? 'ADMIN' : 'COMMERCIAL'}
                 </span>
               </div>
 
@@ -349,88 +395,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
               )}
 
               <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
-                {/* User Dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 block">
-                    Sélectionner un compte ({getRoleLabel(selectedRoleChoice)}) :
-                  </label>
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => {
-                      setSelectedUserId(e.target.value);
-                      setPassword('');
-                      setError(null);
-                    }}
-                    className="w-full bg-slate-950 text-slate-100 text-xs border border-slate-700 rounded-xl px-3.5 py-3 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
-                  >
-                    {filteredUsers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} — {u.title || u.agency}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Selected User Preview */}
-                {selectedUser && (
-                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
-                    <input
-                      ref={quickFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleQuickUploadFile}
-                      className="hidden"
-                    />
-
-                    <div className="flex items-center gap-3.5 w-full sm:w-auto">
-                      <div className="relative group shrink-0">
-                        <img
-                          src={selectedUser.avatar}
-                          alt={selectedUser.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow-md group-hover:brightness-75 transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setUserForPhotoModal(selectedUser)}
-                          title="Changer ou téléverser votre photo de login"
-                          className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white cursor-pointer"
-                        >
-                          <Camera className="w-5 h-5 text-red-400" />
-                        </button>
-                      </div>
-
-                      <div className="text-left text-xs flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-white truncate">{selectedUser.name}</p>
-                          <span
-                            className={`text-[9px] font-bold font-mono px-2 py-0.2 rounded border uppercase ${
-                              selectedUser.role === 'super_admin'
-                                ? 'bg-purple-950 text-purple-300 border-purple-700'
-                                : selectedUser.role === 'admin'
-                                ? 'bg-amber-950 text-amber-300 border-amber-700'
-                                : 'bg-blue-950 text-blue-300 border-blue-700'
-                            }`}
-                          >
-                            {selectedUser.role}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate">{selectedUser.agency}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
-                      <button
-                        type="button"
-                        onClick={() => setUserForPhotoModal(selectedUser)}
-                        className="px-2.5 py-1.5 bg-red-600/15 hover:bg-red-600/30 text-red-400 border border-red-500/40 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Uploader ou choisir une nouvelle photo de login"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>Changer photo</span>
-                      </button>
+                {/* 2-column Nom & Prénom */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 block">
+                      Nom de famille :
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Gharbi, Abbasi..."
+                        value={nomInput}
+                        onChange={(e) => setNomInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-slate-500"
+                      />
                     </div>
                   </div>
-                )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 block">
+                      Prénom :
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Arbi, Lamine..."
+                        value={prenomInput}
+                        onChange={(e) => setPrenomInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-slate-500"
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Password Field */}
                 <div className="space-y-1.5">
@@ -444,12 +442,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                       placeholder="Saisissez votre mot de passe..."
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-10 py-3 text-sm text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-slate-600"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -459,54 +457,55 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Ouvrir la Session {selectedRoleChoice === 'super_admin' ? 'Super Admin (DSI)' : selectedRoleChoice === 'admin' ? 'Administrateur' : 'Commerciale'}</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Valider et Ouvrir la Session</span>
                 </button>
               </form>
 
-              {/* Quick Select demo chips */}
-              <div className="pt-2 border-t border-slate-800 space-y-2">
+              {/* Quick Select Directory Chips for rapid access */}
+              <div className="pt-3 border-t border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold text-slate-400">Comptes disponibles ({selectedRoleChoice}) :</p>
-                  <span className="text-[10px] text-slate-500">Cliquez pour basculer de compte</span>
+                  <p className="text-[11px] font-bold text-slate-400">
+                    Annuaire des collaborateurs ({selectedRoleChoice}) :
+                  </p>
+                  <span className="text-[10px] text-slate-500">Sélection rapide</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {filteredUsers.map((u) => (
-                    <div
-                      key={u.id}
-                      className={`p-2 rounded-xl border text-left transition-all flex items-center justify-between gap-1.5 ${
-                        selectedUserId === u.id
-                          ? 'bg-red-950/40 border-red-500/60 text-white shadow'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                      }`}
-                    >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {filteredUsers.map((u) => {
+                    const initials = (u.name || '')
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+                    const isSelected =
+                      (nomInput && u.name.toLowerCase().includes(nomInput.toLowerCase())) ||
+                      (prenomInput && u.name.toLowerCase().includes(prenomInput.toLowerCase()));
+
+                    return (
                       <button
+                        key={u.id}
                         type="button"
-                        onClick={() => handleQuickSelectUser(u)}
-                        className="flex items-center gap-2 truncate flex-1 cursor-pointer text-left"
+                        onClick={() => handleSelectUserQuick(u)}
+                        className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-2.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-red-950/40 border-red-500/60 text-white shadow'
+                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+                        }`}
                       >
-                        <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-slate-700" />
-                        <div className="truncate">
-                          <p className="font-bold text-[11px] truncate">{u.name}</p>
-                          <p className="text-[9px] text-slate-500 font-mono uppercase">{u.role}</p>
+                        <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-red-400 font-extrabold text-xs flex items-center justify-center shrink-0">
+                          {initials}
+                        </div>
+                        <div className="truncate flex-1">
+                          <p className="font-bold text-[11px] text-white truncate">{u.name}</p>
+                          <p className="text-[9px] text-slate-400 truncate">{u.title || u.agency}</p>
                         </div>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setUserForPhotoModal(u);
-                        }}
-                        title="Changer la photo de ce compte"
-                        className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer shrink-0"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -514,19 +513,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
         )}
       </main>
 
-      {/* User Photo Upload Modal */}
-      {userForPhotoModal && (
-        <UserPhotoUploadModal
-          user={userForPhotoModal}
-          isOpen={true}
-          onClose={() => setUserForPhotoModal(null)}
-          onSaveAvatar={(newAvatar) => {
-            handleUpdateUserAvatar(userForPhotoModal, newAvatar);
-          }}
-        />
-      )}
-
-      {/* Footer info */}
+      {/* Footer */}
       <footer className="relative z-10 text-center text-slate-400 text-[11px] py-2 space-y-0.5">
         <p>{siteSettings?.footerTitle || "STA — Société Tunisienne d'Automobiles"}</p>
         <p className="text-slate-400 font-medium">
@@ -540,4 +527,3 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, onUpda
     </div>
   );
 };
-

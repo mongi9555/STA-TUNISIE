@@ -16,6 +16,7 @@ import {
   TestDriveStatus,
   StockRequest,
   StockRequestStatus,
+  AdministrativeDocument,
 } from './types';
 import {
   getStoredCars,
@@ -38,6 +39,8 @@ import {
   saveStoredTestDrives,
   getStoredStockRequests,
   saveStoredStockRequests,
+  getStoredAdminDocuments,
+  saveStoredAdminDocuments,
   INITIAL_COMMERCIALS,
   INITIAL_CARS,
   DEFAULT_SITE_SETTINGS,
@@ -54,6 +57,7 @@ import {
   stockRequestsCollection,
   accessoriesCollection,
   quotesCollection,
+  adminDocsCollection,
   seedInitialDataIfEmpty,
   cleanupVirtualCarsFromFirestore,
   saveCarToFirestore,
@@ -72,6 +76,8 @@ import {
   deleteAccessoryFromFirestore,
   saveQuoteToFirestore,
   deleteQuoteFromFirestore,
+  saveAdminDocToFirestore,
+  deleteAdminDocFromFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -87,6 +93,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { BackgroundMediaRender } from './components/BackgroundMediaRender';
 import { KnowledgeBaseManager } from './components/KnowledgeBaseManager';
 import { DocumentQuoteCustomizer } from './components/DocumentQuoteCustomizer';
+import { AdministrativeDocuments } from './components/AdministrativeDocuments';
 import { TestDriveList } from './components/TestDriveList';
 import { TestDriveModal } from './components/TestDriveModal';
 import { StaLogo } from './components/StaLogo';
@@ -151,6 +158,7 @@ export default function App() {
   const [quotes, setQuotes] = useState<CustomQuote[]>(() => getStoredQuotes());
   const [testDrives, setTestDrives] = useState<TestDriveAppointment[]>(() => getStoredTestDrives());
   const [stockRequests, setStockRequests] = useState<StockRequest[]>(() => getStoredStockRequests());
+  const [adminDocs, setAdminDocs] = useState<AdministrativeDocument[]>(() => getStoredAdminDocuments());
 
   const [isDbSynced, setIsDbSynced] = useState<boolean>(false);
 
@@ -351,6 +359,14 @@ export default function App() {
       }
     }, (err) => console.warn('Quotes snapshot listener warning:', err));
 
+    const unsubscribeAdminDocs = onSnapshot(adminDocsCollection, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map((doc) => doc.data() as AdministrativeDocument);
+        setAdminDocs(fetched);
+        saveStoredAdminDocuments(fetched);
+      }
+    }, (err) => console.warn('Admin docs snapshot listener warning:', err));
+
     return () => {
       isMounted = false;
       unsubscribeCars();
@@ -361,6 +377,7 @@ export default function App() {
       unsubscribeSettings();
       unsubscribeAccessories();
       unsubscribeQuotes();
+      unsubscribeAdminDocs();
     };
   }, []);
 
@@ -388,6 +405,31 @@ export default function App() {
   useEffect(() => {
     saveStoredSiteSettings(siteSettings);
   }, [siteSettings]);
+
+  useEffect(() => {
+    saveStoredAdminDocuments(adminDocs);
+  }, [adminDocs]);
+
+  // Admin Documents Handlers
+  const handleAddAdminDocument = (newDoc: AdministrativeDocument) => {
+    setAdminDocs((prev) => {
+      const updated = [newDoc, ...prev.filter((d) => d.id !== newDoc.id)];
+      saveStoredAdminDocuments(updated);
+      return updated;
+    });
+    saveAdminDocToFirestore(newDoc);
+    showToast(`Document "${newDoc.title}" ajouté avec succès !`);
+  };
+
+  const handleDeleteAdminDocument = (docId: string) => {
+    setAdminDocs((prev) => {
+      const updated = prev.filter((d) => d.id !== docId);
+      saveStoredAdminDocuments(updated);
+      return updated;
+    });
+    deleteAdminDocFromFirestore(docId);
+    showToast('Document administratif supprimé.');
+  };
 
   const isDbLoadedRef = useRef(false);
 
@@ -1032,27 +1074,6 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'catalog' && (
-              <CarCatalog
-                cars={cars}
-                currentUser={currentUser}
-                reservations={reservations}
-                onOpenReservationModal={handleOpenReservationModal}
-                onOpenTestDriveModal={handleOpenTestDriveModal}
-              />
-            )}
-
-            {activeTab === 'test_drives' && (
-              <TestDriveList
-                testDrives={testDrives}
-                cars={cars}
-                currentUser={currentUser}
-                onOpenTestDriveModal={handleOpenTestDriveModal}
-                onUpdateStatus={handleUpdateTestDriveStatus}
-                onDeleteTestDrive={handleDeleteTestDrive}
-              />
-            )}
-
             {activeTab === 'reservations' && (
               <ReservationList
                 reservations={reservations}
@@ -1063,6 +1084,15 @@ export default function App() {
                 onAddDocument={handleAddDocumentToReservation}
                 onViewVoucher={(res) => setActiveVoucher(res)}
                 onViewDocument={(doc) => setActiveDocument(doc)}
+              />
+            )}
+
+            {activeTab === 'admin_docs' && (
+              <AdministrativeDocuments
+                documents={adminDocs}
+                currentUser={currentUser}
+                onAddDocument={handleAddAdminDocument}
+                onDeleteDocument={handleDeleteAdminDocument}
               />
             )}
 

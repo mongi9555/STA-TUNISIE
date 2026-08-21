@@ -339,3 +339,33 @@ export interface CustomQuote {
   notes?: string;
 }
 
+// --- 4. Documents Administratifs & Check-lists ---
+export type AdminDocCategory =
+  | 'leasing'
+  | 'particulier'
+  | 'societe'
+  | 'immatriculation'
+  | 'livraison'
+  | 'conformite'
+  | 'credit'
+  | 'general';
+
+export interface AdministrativeDocument {
+  id: string;
+  title: string;
+  category: AdminDocCategory;
+  categoryLabel: string;
+  fileFormat: 'pdf' | 'docx' | 'doc';
+  fileName: string;
+  fileUrl: string; // Base64 or URL
+  fileSizeFormatted: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  description?: string;
+  applicableModels?: string;
+  isOfficialSTA?: boolean;
+  itemCount?: number; // Number of items in checklist if structured
+  checklistItems?: string[];
+}
+
+

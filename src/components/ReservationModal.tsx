@@ -104,6 +104,27 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>('Chèque Certifié');
   const [notes, setNotes] = useState('');
 
+  const isLeasingParticulier = clientType === 'personne_physique' && paymentMethod === 'Leasing';
+
+  // Handle payment method or client type changes affecting leasing particulier deposit
+  const handleClientTypeChange = (type: ClientType) => {
+    setClientType(type);
+    if (type === 'personne_physique' && paymentMethod === 'Leasing') {
+      setDepositAmount(0);
+    } else if (depositAmount === 0 && currentCar) {
+      setDepositAmount(getFixedDepositForCar(currentCar));
+    }
+  };
+
+  const handlePaymentMethodChange = (method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing') => {
+    setPaymentMethod(method);
+    if (clientType === 'personne_physique' && method === 'Leasing') {
+      setDepositAmount(0);
+    } else if (depositAmount === 0 && currentCar) {
+      setDepositAmount(getFixedDepositForCar(currentCar));
+    }
+  };
+
   // Form Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -220,7 +241,9 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       if (!societeTel.trim()) errs.societeTel = 'Numéro de téléphone requis';
     }
 
-    if (depositAmount <= 0) errs.depositAmount = "L'acompte doit être supérieur à 0 TND";
+    if (!isLeasingParticulier && depositAmount <= 0) {
+      errs.depositAmount = "L'acompte doit être supérieur à 0 TND";
+    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -511,7 +534,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setClientType('personne_physique');
+                    handleClientTypeChange('personne_physique');
                     setDocCategory('cin_recto');
                   }}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -526,7 +549,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setClientType('societe');
+                    handleClientTypeChange('societe');
                     setDocCategory('matricule_fiscale');
                   }}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -1131,9 +1154,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Acompte Versé (TND) <span className="text-red-400">*</span>
+                    Acompte Versé (TND) {!isLeasingParticulier && <span className="text-red-400">*</span>}
                   </label>
-                  {currentCar && (
+                  {isLeasingParticulier ? (
+                    <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
+                      Acompte désactivé (Leasing Particulier)
+                    </span>
+                  ) : currentCar && (
                     <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">
                       Acompte Fixe: {getFixedDepositForCar(currentCar).toLocaleString()} TND
                     </span>
@@ -1141,14 +1168,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
                 <input
                   type="number"
-                  required
+                  required={!isLeasingParticulier}
+                  disabled={isLeasingParticulier}
                   step="1000"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className={`w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                    isLeasingParticulier
+                      ? 'bg-slate-900/60 border-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-900 border-slate-800 text-amber-400'
+                  }`}
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Fixé automatiquement selon le modèle sélectionné ({currentCar?.name || 'Chery'}).
+                  {isLeasingParticulier
+                    ? 'Acompte fixe désactivé automatiquement pour dossier leasing particulier.'
+                    : `Fixé automatiquement selon le modèle sélectionné (${currentCar?.name || 'Chery'}).`}
                 </p>
                 {errors.depositAmount && <p className="text-[11px] text-red-400 mt-1">{errors.depositAmount}</p>}
               </div>
@@ -1157,7 +1191,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Mode de Règlement Acompte :</label>
                 <select
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as any)}
+                  onChange={(e) => handlePaymentMethodChange(e.target.value as any)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
                 >
                   <option value="Chèque Certifié">Chèque Certifié</option>

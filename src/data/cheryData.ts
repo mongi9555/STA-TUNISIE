@@ -11,6 +11,7 @@ import {
   StockRequest,
   UserPermissions,
   ThemeMode,
+  AdministrativeDocument,
 } from '../types';
 
 export const CHERY_MODELS_DATA = [
@@ -188,7 +189,7 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     role: 'super_admin',
     phone: '+216 71 800 900',
     agency: 'STA Direction Générale - Ben Arous / Tunis',
-    avatar: 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+    avatar: '',
     permissions: {
       canCreateReservation: true,
       canCancelReservation: true,
@@ -198,8 +199,239 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
       canPrintVouchers: true,
       canExportReports: true,
     }
+  },
+  {
+    id: 'comm-admin',
+    name: 'Arbi Gharbi',
+    email: 'arbi.gharbi@chery-tunisie.tn',
+    password: 'STA@2026+',
+    role: 'admin',
+    phone: '+216 71 800 901',
+    agency: 'STA Showroom Les Berges du Lac - Tunis',
+    avatar: '',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: true,
+      canEditPrices: true,
+      canManageStock: true,
+      canAccessAdminPanel: true,
+      canPrintVouchers: true,
+      canExportReports: true,
+    }
+  },
+  {
+    id: 'comm-lamine',
+    name: 'Lamine Abbasi',
+    email: 'lamine.abbasi@chery-tunisie.tn',
+    password: 'STA@2026+',
+    role: 'commercial',
+    phone: '+216 71 800 902',
+    agency: 'STA Showroom Ariana / Ennasr',
+    avatar: '',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: false,
+      canEditPrices: false,
+      canManageStock: false,
+      canAccessAdminPanel: false,
+      canPrintVouchers: true,
+      canExportReports: false,
+    }
+  },
+  {
+    id: 'comm-sami',
+    name: 'Sami Chaker',
+    email: 'sami.chaker@chery-tunisie.tn',
+    password: 'STA@2026+',
+    role: 'commercial',
+    phone: '+216 73 800 903',
+    agency: 'STA Agence Sousse / Kantaoui',
+    avatar: '',
+    permissions: {
+      canCreateReservation: true,
+      canCancelReservation: false,
+      canEditPrices: false,
+      canManageStock: false,
+      canAccessAdminPanel: false,
+      canPrintVouchers: true,
+      canExportReports: false,
+    }
   }
 ];
+
+export const INITIAL_ADMIN_DOCUMENTS: AdministrativeDocument[] = [
+  {
+    id: 'doc-adm-1',
+    title: 'Check-list Dossier Leasing Particulier & Professionnel (STA Chery)',
+    category: 'leasing',
+    categoryLabel: 'Dossier Leasing',
+    fileFormat: 'pdf',
+    fileName: 'Checklist_Dossier_Leasing_STA_Chery.pdf',
+    fileUrl: '',
+    fileSizeFormatted: '185 KB',
+    uploadedAt: '2026-03-01T09:00:00.000Z',
+    uploadedBy: 'Direction Commerciale STA',
+    description: 'Check-list complète des pièces à fournir pour validation immédiate ou accord provisoire de leasing particulier et professionnel.',
+    applicableModels: 'Tous modèles (Tiggo, Arrizo, Omoda, iCar, Himla)',
+    isOfficialSTA: true,
+    itemCount: 7,
+    checklistItems: [
+      'Devis / Facture Proforma officielle STA en cours de validité',
+      'Accord de principe formel ou Bon de commande de l\'organisme de Leasing',
+      'Copie CIN du bénéficiaire ou du gérant (Recto/Verso)',
+      '3 dernières fiches de paie ou Déclarations fiscales récentes',
+      'Relevés bancaires des 6 derniers mois visés par la banque',
+      'Extrait RNE / Registre de Commerce datant de moins de 3 mois (si professionnel)',
+      'Attestation de non-engagement ou quittance d\'acompte si demandée par le loueur'
+    ]
+  },
+  {
+    id: 'doc-adm-2',
+    title: 'Check-list Dossier Particulier & Vente Comptant',
+    category: 'particulier',
+    categoryLabel: 'Dossier Particulier',
+    fileFormat: 'pdf',
+    fileName: 'Checklist_Vente_Particulier_STA.pdf',
+    fileUrl: '',
+    fileSizeFormatted: '142 KB',
+    uploadedAt: '2026-03-01T09:30:00.000Z',
+    uploadedBy: 'Direction Commerciale STA',
+    description: 'Procédure et pièces justificatives obligatoires pour l\'achat d\'un véhicule neuf par une personne physique.',
+    applicableModels: 'Tous modèles particuliers',
+    isOfficialSTA: true,
+    itemCount: 6,
+    checklistItems: [
+      'Bon de réservation officiel STA dûment signé et paraphé',
+      'Copie certifiée conforme de la CIN du titulaire (8 chiffres)',
+      'Permis de conduire valide du conducteur principal',
+      'Justificatif de domicile récent (Facture STEG ou SONEDE)',
+      'Preuve de versement de l\'acompte fixe réglementaire (Quittance ou Chèque certifié)',
+      'Fiche d\'engagement signée pour l\'immatriculation et la remise de la carte grise'
+    ]
+  },
+  {
+    id: 'doc-adm-3',
+    title: 'Check-list Dossier Société & Personne Morale (Flottes & Entreprises)',
+    category: 'societe',
+    categoryLabel: 'Dossier Société',
+    fileFormat: 'docx',
+    fileName: 'Checklist_Dossier_Societe_Flottes_Chery.docx',
+    fileUrl: '',
+    fileSizeFormatted: '96 KB',
+    uploadedAt: '2026-03-02T10:15:00.000Z',
+    uploadedBy: 'Service Entreprises STA',
+    description: 'Dossier légal et fiscal pour l\'acquisition de véhicules par les sociétés (SARL, SUARL, SA) et professionnels libéraux.',
+    applicableModels: 'Tous modèles (y compris Pick-up Himla 4X2 / 4X4)',
+    isOfficialSTA: true,
+    itemCount: 7,
+    checklistItems: [
+      'Extrait récent du Registre National des Entreprises (RNE) de moins de 3 mois',
+      'Copie de la Déclaration d\'existence / Patente / Matricule Fiscale en cours',
+      'Statuts de la société enregistrés à la recette des finances',
+      'Procès-verbal de nomination du Gérant ou Mandataire légal',
+      'Copie CIN du gérant / mandataire habilité à signer',
+      'Bon de commande officiel sur papier à en-tête avec cachet et signature',
+      'Chèque de réservation ou ordre de virement bancaire au nom de la société'
+    ]
+  },
+  {
+    id: 'doc-adm-4',
+    title: 'Procédure Immatriculation & Dépôt Dossier Cartes Grises STA',
+    category: 'immatriculation',
+    categoryLabel: 'Immatriculation & Carte Grise',
+    fileFormat: 'pdf',
+    fileName: 'Procedure_Immatriculation_Cartes_Grises_STA.pdf',
+    fileUrl: '',
+    fileSizeFormatted: '210 KB',
+    uploadedAt: '2026-03-03T11:00:00.000Z',
+    uploadedBy: 'Service Homologation & Immatriculation STA',
+    description: 'Procédure officielle auprès de l\'Agence Technique des Transports Terrestres (ATTT) pour délivrance des cartes grises.',
+    applicableModels: 'Tous modèles',
+    isOfficialSTA: true,
+    itemCount: 5,
+    checklistItems: [
+      'Certificat de conformité constructeur original visé par les mines',
+      'Facture d\'achat définitive acquittée',
+      'Quittance de paiement de la taxe de circulation et timbre fiscal',
+      'Formulaire de demande de certificat d\'immatriculation ATTT signé par le client',
+      'Bordereau de dépôt collectif transmis au service immatriculation'
+    ]
+  },
+  {
+    id: 'doc-adm-5',
+    title: 'Fiche de Contrôle Qualité & Check-list Pré-Livraison Showroom (PDI)',
+    category: 'livraison',
+    categoryLabel: 'Livraison & PDI',
+    fileFormat: 'docx',
+    fileName: 'Fiche_Controle_Pre_Livraison_PDI_Chery.docx',
+    fileUrl: '',
+    fileSizeFormatted: '115 KB',
+    uploadedAt: '2026-03-04T14:20:00.000Z',
+    uploadedBy: 'Service Qualité & Préparation Véhicules STA',
+    description: 'Grille d\'inspection 50 points avant remise des clés au client (carrosserie, électronique, niveaux, accessoires, propreté).',
+    applicableModels: 'Tous modèles',
+    isOfficialSTA: true,
+    itemCount: 8,
+    checklistItems: [
+      'Vérification esthétique carrosserie, alignement panneaux et peinture',
+      'Contrôle pression pneumatiques et serrage écrous de roues',
+      'Vérification des niveaux : huile moteur, liquide de refroidissement, lave-glace',
+      'Test systèmes multimédia, combiné numérique, caméra 360° et climatisation',
+      'Présence du kit de sécurité (triangle, gilet, extincteur)',
+      'Présence roue de secours ou kit anti-crevaison, cric et manivelle',
+      'Double des clés programmées et fonctionnelles',
+      'Carnet de garantie 7 ans / 200 000 km et manuel d\'utilisation en français/arabe'
+    ]
+  },
+  {
+    id: 'doc-adm-6',
+    title: 'Check-list Dossier Crédit Bancaire Direct Client Particulier',
+    category: 'credit',
+    categoryLabel: 'Crédit Bancaire',
+    fileFormat: 'pdf',
+    fileName: 'Checklist_Credit_Bancaire_Client_Chery.pdf',
+    fileUrl: '',
+    fileSizeFormatted: '160 KB',
+    uploadedAt: '2026-03-05T08:45:00.000Z',
+    uploadedBy: 'Pôle Financement & Crédit STA',
+    description: 'Ensemble des pièces requises pour les dossiers de crédit auto bancaire avec domiciliation de salaire.',
+    applicableModels: 'Tous modèles particuliers',
+    isOfficialSTA: true,
+    itemCount: 6,
+    checklistItems: [
+      'Facture Proforma avec mention du taux de TVA et frais d\'immatriculation',
+      'Accord définitif de crédit émis par l\'établissement bancaire',
+      'Attestation de domiciliation irrévocable de salaire',
+      'Engagement de subrogation de gage au profit de la banque prêteuse',
+      'Reçu de versement de l\'apport personnel minimum',
+      'Attestation d\'assurance tous risques avec délégation au profit de la banque'
+    ]
+  },
+  {
+    id: 'doc-adm-7',
+    title: 'Formulaire Décharge & Procès-Verbal de Réception Véhicule Neuf',
+    category: 'livraison',
+    categoryLabel: 'Livraison & PDI',
+    fileFormat: 'docx',
+    fileName: 'PV_Reception_Decharge_Vehicule_Neuf_STA.docx',
+    fileUrl: '',
+    fileSizeFormatted: '88 KB',
+    uploadedAt: '2026-03-05T15:00:00.000Z',
+    uploadedBy: 'Service Livraison STA',
+    description: 'Document officiel à faire signer par le client lors de la remise des clés en showroom attestant de la conformité du véhicule.',
+    applicableModels: 'Tous modèles',
+    isOfficialSTA: true,
+    itemCount: 5,
+    checklistItems: [
+      'Contrôle visuel contradictoire de la carrosserie et de l\'habitacle',
+      'Vérification du kilométrage de livraison (< 20 km)',
+      'Remise du carnet de garantie STA 7 ans / 200 000 km',
+      'Remise de la carte grise / attestation provisoire et des 2 clés',
+      'Signature et cachet du procès-verbal de livraison'
+    ]
+  }
+];
+
 
 export function getRequiredDepositForCar(carNameOrModel?: string | CarModel | null): number {
   if (!carNameOrModel) return 20000;
@@ -876,7 +1108,22 @@ const STORAGE_KEYS = {
   DOC_TEMPLATE: 'chery_tn_doc_template_v1',
   ACCESSORIES: 'chery_tn_accessories_v1',
   QUOTES: 'chery_tn_quotes_v1',
+  ADMIN_DOCS: 'chery_tn_admin_docs_v1',
 };
+
+export function getStoredAdminDocuments(): AdministrativeDocument[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.ADMIN_DOCS);
+    if (data) return JSON.parse(data);
+  } catch (e) {
+    console.error('Error loading admin documents from storage', e);
+  }
+  return INITIAL_ADMIN_DOCUMENTS;
+}
+
+export function saveStoredAdminDocuments(docs: AdministrativeDocument[]): void {
+  safeLocalStorageSet(STORAGE_KEYS.ADMIN_DOCS, JSON.stringify(docs));
+}
 
 export function getStoredKnowledgeBase(): KnowledgeBaseItem[] {
   try {

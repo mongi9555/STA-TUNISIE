@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { CommercialUser, ThemeMode, SiteSettings, CarModel, StockRequest } from '../types';
-import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, Camera } from 'lucide-react';
+import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, KeyRound, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
-export type AppTab = 'dashboard' | 'catalog' | 'reservations' | 'test_drives' | 'knowledge_base' | 'documents_devis' | 'admin';
+export type AppTab = 'dashboard' | 'reservations' | 'admin_docs' | 'knowledge_base' | 'admin';
 
 interface HeaderProps {
   currentUser: CommercialUser;
@@ -44,7 +43,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   // Notification Drawer State
   const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
-  const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
 
   // Self Password Change Modal State
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
@@ -291,19 +289,15 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className={`flex items-center gap-3 p-1.5 px-3 rounded-xl border ${isLightTheme ? 'bg-white border-slate-300 shadow-sm' : 'bg-slate-800/80 border-slate-700'}`}>
-            <div className="flex items-center gap-2">
-              <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-red-500 shadow group-hover:brightness-75 transition-all"
-                />
-                <div
-                  title="Changer ma photo de login / profil"
-                  className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                >
-                  <Camera className="w-4 h-4 text-red-400" />
-                </div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 to-rose-800 text-white font-black text-xs flex items-center justify-center shadow-md border border-red-500/40 select-none shrink-0">
+                {(currentUser.name || '')
+                  .split(' ')
+                  .filter(Boolean)
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || 'U'}
               </div>
               <div className="text-left text-xs">
                 <div className={`font-semibold flex items-center gap-1.5 ${isLightTheme ? 'text-slate-900' : 'text-slate-100'}`}>
@@ -327,16 +321,6 @@ export const Header: React.FC<HeaderProps> = ({
                     {currentUser.agency}
                   </p>
                   <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowAvatarModal(true)}
-                      className="text-[10px] text-red-500 hover:text-red-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
-                      title="Changer ma photo de profil"
-                    >
-                      <Camera className="w-2.5 h-2.5" />
-                      <span>Photo</span>
-                    </button>
-                    <span className="text-slate-500 text-[10px]">•</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -443,27 +427,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('catalog')}
-              className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'catalog'
-                  ? 'text-white font-bold'
-                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              {activeTab === 'catalog' && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute inset-0 bg-red-600 rounded-lg shadow-md shadow-red-600/30"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <Car className="w-4 h-4" />
-                <span>Catalogue & Couleurs</span>
-              </span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('reservations')}
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                 activeTab === 'reservations'
@@ -487,14 +450,14 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('documents_devis')}
+              onClick={() => setActiveTab('admin_docs')}
               className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'documents_devis'
+                activeTab === 'admin_docs'
                   ? 'text-white font-bold'
                   : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              {activeTab === 'documents_devis' && (
+              {activeTab === 'admin_docs' && (
                 <motion.div
                   layoutId="activeTabIndicator"
                   className="absolute inset-0 bg-red-600 rounded-lg shadow-md shadow-red-600/30"
@@ -503,7 +466,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
               <span className="relative z-10 flex items-center gap-2">
                 <FileCheck className="w-4 h-4" />
-                <span>Devis & Documents STA</span>
+                <span>Documents Administratifs (Check-lists)</span>
               </span>
             </button>
 
@@ -527,28 +490,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Base de Connaissances</span>
               </span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('test_drives')}
-              className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'test_drives'
-                  ? 'text-white font-bold'
-                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              {activeTab === 'test_drives' && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute inset-0 bg-red-600 rounded-lg shadow-md shadow-red-600/30"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>Rendez-vous Test Drive</span>
-              </span>
-            </button>
-
 
             {(currentUser.role === 'admin' || currentUser.role === 'super_admin') && (
               <button
@@ -840,45 +781,27 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </AnimatePresence>
-      {/* User Photo Upload Modal */}
-      {showAvatarModal && (
-        <UserPhotoUploadModal
-          user={currentUser}
-          isOpen={true}
-          onClose={() => setShowAvatarModal(false)}
-          onSaveAvatar={(newAvatar) => {
-            if (onUpdateUser) {
-              onUpdateUser({ ...currentUser, avatar: newAvatar });
-            }
-          }}
-        />
-      )}
 
-      {/* Self Password Change Modal for all users (Super Admin, Admin, Commercial) */}
+      {/* Self Password Change Modal */}
       <AnimatePresence>
         {isChangePasswordOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 text-white"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-slate-900 border border-amber-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    <Key className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-white text-base">Modifier mon Mot de Passe</h3>
-                    <p className="text-[11px] text-slate-400">Changement sécurisé de vos identifiants</p>
-                  </div>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <KeyRound className="w-5 h-5" />
+                  <h3 className="font-extrabold text-white text-base">Modifier mon Mot de Passe</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsChangePasswordOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -886,11 +809,15 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* User Identity Info Box */}
               <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-2xl flex items-center gap-3">
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-11 h-11 rounded-full object-cover border-2 border-amber-500/70 shrink-0 shadow"
-                />
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600 to-rose-800 text-white font-black text-sm flex items-center justify-center border-2 border-amber-500/70 shrink-0 shadow">
+                  {(currentUser.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((part) => part[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() || 'U'}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-extrabold text-white text-xs truncate">{currentUser.name}</h4>

@@ -13,8 +13,8 @@ import {
   Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest } from './types';
-import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar } from './data/cheryData';
+import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest, AdministrativeDocument } from './types';
+import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar, INITIAL_ADMIN_DOCUMENTS } from './data/cheryData';
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
@@ -46,6 +46,7 @@ export const settingsCollection = collection(db, 'settings');
 export const accessoriesCollection = collection(db, 'accessories');
 export const quotesCollection = collection(db, 'quotes');
 export const stockRequestsCollection = collection(db, 'stock_requests');
+export const adminDocsCollection = collection(db, 'admin_documents');
 
 /**
  * Helper to recursively sanitize objects before saving to Firestore.
@@ -189,6 +190,17 @@ export async function seedInitialDataIfEmpty() {
     if (!siteSettingsDoc.exists()) {
       console.log('Seeding initial site settings to Firestore...');
       await withTimeout(setDoc(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(DEFAULT_SITE_SETTINGS)), 4000);
+    }
+
+    const adminDocsSnap = await withTimeout(getDocs(adminDocsCollection), 4000);
+    if (adminDocsSnap.empty) {
+      console.log('Seeding initial administrative documents to Firestore...');
+      const batch = writeBatch(db);
+      INITIAL_ADMIN_DOCUMENTS.forEach((docItem) => {
+        const docRef = doc(db, 'admin_documents', docItem.id);
+        batch.set(docRef, sanitizeForFirestore(docItem));
+      });
+      await withTimeout(batch.commit(), 4000);
     }
   } catch (error) {
     console.warn('Note on seeding initial Firestore data (operating with local state or offline fallback):', error);
@@ -391,3 +403,26 @@ export async function deleteStockRequestFromFirestore(reqId: string) {
     console.error('Error deleting stock request from Firestore:', e);
   }
 }
+
+/**
+ * Save administrative document to Firestore
+ */
+export async function saveAdminDocToFirestore(adminDoc: AdministrativeDocument) {
+  try {
+    await setDoc(doc(db, 'admin_documents', adminDoc.id), sanitizeForFirestore(adminDoc));
+  } catch (e) {
+    console.error('Error saving administrative document to Firestore:', e);
+  }
+}
+
+/**
+ * Delete administrative document from Firestore
+ */
+export async function deleteAdminDocFromFirestore(docId: string) {
+  try {
+    await deleteDoc(doc(db, 'admin_documents', docId));
+  } catch (e) {
+    console.error('Error deleting administrative document from Firestore:', e);
+  }
+}
+
