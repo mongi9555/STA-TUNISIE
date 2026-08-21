@@ -506,14 +506,11 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 </div>
 
                 {/* Reservation Action Button for whole car */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">
-                    Acompte standard: <strong className="text-slate-200 font-mono">{(car.requiredDepositTND || 20000).toLocaleString()} TND</strong>
-                  </span>
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-end">
                   <button
                     onClick={() => onOpenReservationModal(car)}
                     disabled={totalCarStock === 0}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow ${
+                    className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow ${
                       totalCarStock > 0
                         ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/20 cursor-pointer'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
