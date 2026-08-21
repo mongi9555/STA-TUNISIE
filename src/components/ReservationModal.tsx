@@ -104,12 +104,12 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>('Chèque Certifié');
   const [notes, setNotes] = useState('');
 
-  const isLeasingParticulier = clientType === 'personne_physique' && paymentMethod === 'Leasing';
+  const isLeasing = paymentMethod === 'Leasing';
 
-  // Handle payment method or client type changes affecting leasing particulier deposit
+  // Handle payment method or client type changes affecting leasing deposit
   const handleClientTypeChange = (type: ClientType) => {
     setClientType(type);
-    if (type === 'personne_physique' && paymentMethod === 'Leasing') {
+    if (paymentMethod === 'Leasing') {
       setDepositAmount(0);
     } else if (depositAmount === 0 && currentCar) {
       setDepositAmount(getFixedDepositForCar(currentCar));
@@ -118,7 +118,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   const handlePaymentMethodChange = (method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing') => {
     setPaymentMethod(method);
-    if (clientType === 'personne_physique' && method === 'Leasing') {
+    if (method === 'Leasing') {
       setDepositAmount(0);
     } else if (depositAmount === 0 && currentCar) {
       setDepositAmount(getFixedDepositForCar(currentCar));
@@ -241,7 +241,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       if (!societeTel.trim()) errs.societeTel = 'Numéro de téléphone requis';
     }
 
-    if (!isLeasingParticulier && depositAmount <= 0) {
+    if (!isLeasing && depositAmount <= 0) {
       errs.depositAmount = "L'acompte doit être supérieur à 0 TND";
     }
 
@@ -1154,11 +1154,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Acompte Versé (TND) {!isLeasingParticulier && <span className="text-red-400">*</span>}
+                    Acompte Versé (TND) {!isLeasing && <span className="text-red-400">*</span>}
                   </label>
-                  {isLeasingParticulier ? (
+                  {isLeasing ? (
                     <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
-                      Acompte désactivé (Leasing Particulier)
+                      Acompte désactivé (Dossier Leasing)
                     </span>
                   ) : currentCar && (
                     <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">
@@ -1168,20 +1168,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
                 <input
                   type="number"
-                  required={!isLeasingParticulier}
-                  disabled={isLeasingParticulier}
+                  required={!isLeasing}
+                  disabled={isLeasing}
                   step="1000"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(Number(e.target.value))}
                   className={`w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                    isLeasingParticulier
+                    isLeasing
                       ? 'bg-slate-900/60 border-slate-800 text-slate-500 cursor-not-allowed'
                       : 'bg-slate-900 border-slate-800 text-amber-400'
                   }`}
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  {isLeasingParticulier
-                    ? 'Acompte fixe désactivé automatiquement pour dossier leasing particulier.'
+                  {isLeasing
+                    ? 'Acompte fixe désactivé automatiquement pour dossier leasing (Particulier ou Société).'
                     : `Fixé automatiquement selon le modèle sélectionné (${currentCar?.name || 'Chery'}).`}
                 </p>
                 {errors.depositAmount && <p className="text-[11px] text-red-400 mt-1">{errors.depositAmount}</p>}

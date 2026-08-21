@@ -548,6 +548,48 @@ export default function App() {
     showToast(`Statut de la réservation mis à jour: ${newStatus}`);
   };
 
+  // Handler: Edit Existing Reservation
+  const handleEditReservation = (updatedReservation: Reservation) => {
+    const oldReservation = reservations.find((r) => r.id === updatedReservation.id);
+
+    // If color changed, update stock counts for old and new colors
+    if (oldReservation && oldReservation.colorChosen?.id !== updatedReservation.colorChosen?.id) {
+      setCars((prevCars) =>
+        prevCars.map((car) => {
+          if (car.id === updatedReservation.carId) {
+            const updatedColors = car.colors.map((col) => {
+              if (col.id === oldReservation.colorChosen?.id) {
+                return {
+                  ...col,
+                  stock: col.stock + 1,
+                  reserved: Math.max(0, col.reserved - 1),
+                };
+              }
+              if (col.id === updatedReservation.colorChosen?.id) {
+                return {
+                  ...col,
+                  stock: Math.max(0, col.stock - 1),
+                  reserved: col.reserved + 1,
+                };
+              }
+              return col;
+            });
+            const updatedCar = { ...car, colors: updatedColors };
+            saveCarToFirestore(updatedCar);
+            return updatedCar;
+          }
+          return car;
+        })
+      );
+    }
+
+    setReservations((prev) =>
+      prev.map((res) => (res.id === updatedReservation.id ? updatedReservation : res))
+    );
+    saveReservationToFirestore(updatedReservation);
+    showToast(`Réservation ${updatedReservation.id} mise à jour avec succès !`);
+  };
+
   // Admin Handlers with Firestore Persistence
   const handleResetStockToDefault = () => {
     setCars(INITIAL_CARS);
@@ -1077,8 +1119,10 @@ export default function App() {
             {activeTab === 'reservations' && (
               <ReservationList
                 reservations={reservations}
+                cars={cars}
                 currentCommercial={currentUser}
                 onUpdateStatus={handleUpdateStatus}
+                onEditReservation={handleEditReservation}
                 onDeleteReservation={handleDeleteReservation}
                 onDeleteAllReservations={handleDeleteAllReservations}
                 onAddDocument={handleAddDocumentToReservation}
@@ -1221,7 +1265,12 @@ export default function App() {
       {activeVoucher && (
         <ReservationVoucher
           reservation={activeVoucher}
+          siteSettings={siteSettings}
           onClose={() => setActiveVoucher(null)}
+          onUpdateVoucherLogo={(newLogoUrl) => {
+            const updated = { ...siteSettings, voucherLogoUrl: newLogoUrl };
+            handleUpdateSiteSettings(updated);
+          }}
         />
       )}
 

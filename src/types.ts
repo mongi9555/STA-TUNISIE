@@ -43,6 +43,9 @@ export interface DsiContactSettings {
 
 export interface SiteSettings {
   logoUrl?: string;
+  voucherLogoUrl?: string; // Logo personnalisé spécifique pour le bon de réservation & documents imprimés
+  voucherCompanyName?: string; // Nom de la société sur le bon de réservation (ex: CHERY TUNISIE)
+  voucherCompanySubtitle?: string; // Sous-titre sur le bon de réservation (ex: Société Tunisienne d'Automobiles (STA))
   siteName?: string;
   siteSubtitle?: string;
   headerBadgeText?: string;
@@ -77,6 +80,7 @@ export interface SiteSettings {
 export interface UserPermissions {
   canCreateReservation: boolean;
   canCancelReservation: boolean;
+  canEditValidatedReservations?: boolean; // Autorise la modification de la réservation après validation
   canEditPrices: boolean;
   canManageStock: boolean;
   canAccessAdminPanel: boolean;
@@ -139,6 +143,8 @@ export interface CarModel {
   safetyFeatures?: string[];
   interiorOptions?: string[];
 }
+
+export type Car = CarModel;
 
 export type ClientType = 'personne_physique' | 'societe';
 
@@ -276,6 +282,7 @@ export interface KnowledgeBaseItem {
 export interface DocumentTemplateConfig {
   companyName: string; // STA - Société Tunisienne d'Automobiles
   logoUrl: string;
+  voucherLogoUrl?: string; // Logo spécifique bon de réservation
   matriculeFiscale: string; // ex: 1234567/A/M/000
   address: string;
   phone: string;

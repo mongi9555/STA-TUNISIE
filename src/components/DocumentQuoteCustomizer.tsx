@@ -27,8 +27,11 @@ import {
   Share2,
   X,
   UserCheck,
+  Upload,
+  RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { compressImageDataUrl } from '../utils/imageCompressor';
 
 interface DocumentQuoteCustomizerProps {
   templateConfig: DocumentTemplateConfig;
@@ -700,6 +703,66 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
           </h3>
 
           <div className="space-y-3 text-xs">
+            {/* Logo Customization Field */}
+            <div className="space-y-2 p-3.5 bg-slate-950/60 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-200 block">Logo Officiel des Devis & Documents :</label>
+                {editingConfig.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingConfig({ ...editingConfig, logoUrl: '' })}
+                    className="text-[10px] text-red-400 hover:text-red-300 font-bold cursor-pointer"
+                  >
+                    Effacer le Logo
+                  </button>
+                )}
+              </div>
+
+              {/* Logo Preview */}
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-28 bg-white rounded-lg border border-slate-700 flex items-center justify-center p-1 overflow-hidden shrink-0 shadow-inner">
+                  {editingConfig.logoUrl ? (
+                    <img
+                      src={editingConfig.logoUrl}
+                      alt="Logo Devis"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-slate-400 font-semibold text-center">Aucun logo</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <input
+                    type="text"
+                    placeholder="URL directe du Logo (https://...)"
+                    value={editingConfig.logoUrl || ''}
+                    onChange={(e) => setEditingConfig({ ...editingConfig, logoUrl: e.target.value })}
+                    className={`w-full p-2 rounded-lg border font-mono text-xs ${inputBgClass}`}
+                  />
+                  <label className="flex items-center justify-center gap-1.5 p-2 bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-lg text-slate-300 hover:text-white cursor-pointer transition text-xs font-semibold">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Téléverser une image locale (PNG, JPG, SVG)...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = async (ev) => {
+                          const dataUrl = ev.target?.result as string;
+                          const compressed = await compressImageDataUrl(dataUrl, 600, 600, 0.85);
+                          setEditingConfig({ ...editingConfig, logoUrl: compressed });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="font-bold block mb-1">Raison Sociale de l'Entreprise :</label>
               <input
@@ -831,13 +894,22 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
               <div className="p-6 border border-slate-200 rounded-xl space-y-6 print:border-none print:p-0">
                 {/* Header Brand */}
                 <div className="flex justify-between items-start border-b border-slate-300 pb-4">
-                  <div>
-                    <h2 className="text-xl font-extrabold text-red-700 tracking-tight">
-                      {templateConfig.companyName}
-                    </h2>
-                    <p className="text-xs text-slate-600 font-medium mt-1">{templateConfig.address}</p>
-                    <p className="text-xs text-slate-600">Matricule Fiscale : {templateConfig.matriculeFiscale}</p>
-                    <p className="text-xs text-slate-600">Tél : {templateConfig.phone} | Email : {templateConfig.email}</p>
+                  <div className="flex items-start gap-3.5">
+                    {templateConfig.logoUrl && (
+                      <img
+                        src={templateConfig.logoUrl}
+                        alt="Logo Document"
+                        className="h-12 w-auto max-w-[140px] object-contain rounded-lg border border-slate-200 p-0.5 bg-white shadow-sm"
+                      />
+                    )}
+                    <div>
+                      <h2 className="text-xl font-extrabold text-red-700 tracking-tight">
+                        {templateConfig.companyName}
+                      </h2>
+                      <p className="text-xs text-slate-600 font-medium mt-1">{templateConfig.address}</p>
+                      <p className="text-xs text-slate-600">Matricule Fiscale : {templateConfig.matriculeFiscale}</p>
+                      <p className="text-xs text-slate-600">Tél : {templateConfig.phone} | Email : {templateConfig.email}</p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-slate-900">OFFRE DE PRIX / DEVIS</span>

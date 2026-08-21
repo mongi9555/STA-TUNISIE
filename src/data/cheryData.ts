@@ -103,6 +103,7 @@ export const INITIAL_KNOWLEDGE_BASE: KnowledgeBaseItem[] = [
 export const DEFAULT_DOCUMENT_TEMPLATE: DocumentTemplateConfig = {
   companyName: 'Société Tunisienne d\'Automobiles (STA)',
   logoUrl: '',
+  voucherLogoUrl: '',
   matriculeFiscale: '0024925/N',
   address: 'Z.I Borj Ghorbel, GP1 Km 13, 2013 Ben Arous',
   phone: '(+216) 31 390 290 / (+216) 71 800 900',
@@ -165,6 +166,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteName: 'Société Tunisienne d\'Automobiles (STA)',
   siteSubtitle: 'Concessionnaire Officiel CHERY en Tunisie - Leader du marché SUV & Hybride',
   logoUrl: '',
+  voucherLogoUrl: '',
+  voucherCompanyName: 'CHERY TUNISIE',
+  voucherCompanySubtitle: 'Société Tunisienne d\'Automobiles (STA)',
   accentColor: '#DC2626',
   defaultThemeMode: 'dark',
   announcementBanner: {
@@ -193,6 +197,7 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     permissions: {
       canCreateReservation: true,
       canCancelReservation: true,
+      canEditValidatedReservations: true,
       canEditPrices: true,
       canManageStock: true,
       canAccessAdminPanel: true,
@@ -212,6 +217,7 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     permissions: {
       canCreateReservation: true,
       canCancelReservation: true,
+      canEditValidatedReservations: true,
       canEditPrices: true,
       canManageStock: true,
       canAccessAdminPanel: true,
@@ -231,6 +237,7 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     permissions: {
       canCreateReservation: true,
       canCancelReservation: false,
+      canEditValidatedReservations: false,
       canEditPrices: false,
       canManageStock: false,
       canAccessAdminPanel: false,
@@ -250,6 +257,7 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     permissions: {
       canCreateReservation: true,
       canCancelReservation: false,
+      canEditValidatedReservations: false,
       canEditPrices: false,
       canManageStock: false,
       canAccessAdminPanel: false,
@@ -1305,6 +1313,7 @@ export function saveStoredStockRequests(requests: StockRequest[]): void {
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   canCreateReservation: true,
   canCancelReservation: true,
+  canEditValidatedReservations: true,
   canEditPrices: true,
   canManageStock: true,
   canAccessAdminPanel: true,
@@ -1315,6 +1324,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
 export const DEFAULT_COMMERCIAL_PERMISSIONS: UserPermissions = {
   canCreateReservation: true,
   canCancelReservation: false,
+  canEditValidatedReservations: false,
   canEditPrices: false,
   canManageStock: false,
   canAccessAdminPanel: false,

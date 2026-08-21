@@ -68,6 +68,7 @@ import {
   Server,
   HardDrive,
   FileJson,
+  Printer,
 } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
@@ -170,6 +171,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [footerSubtitleInput, setFooterSubtitleInput] = useState(siteSettings?.footerSubtitle || 'Distributeur Officiel & Réseau Agréé');
   const [footerDescriptionInput, setFooterDescriptionInput] = useState(siteSettings?.footerDescription || "Plateforme réservée aux commerciaux & réseau d'agences agréées.");
   const [footerCopyrightInput, setFooterCopyrightInput] = useState(siteSettings?.footerCopyright || "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.");
+
+  // Bon de Réservation & Printable Documents Logo Customization State
+  const [voucherLogoInput, setVoucherLogoInput] = useState(siteSettings?.voucherLogoUrl || '');
+  const [voucherCompanyNameInput, setVoucherCompanyNameInput] = useState(siteSettings?.voucherCompanyName || 'CHERY TUNISIE');
+  const [voucherCompanySubtitleInput, setVoucherCompanySubtitleInput] = useState(siteSettings?.voucherCompanySubtitle || "Société Tunisienne d'Automobiles (STA)");
 
   // Background Media Customization State (Home & Global Site)
   const [homeBgType, setHomeBgType] = useState<'image' | 'video'>(
@@ -287,6 +293,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleVoucherLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const compressed = await compressImageDataUrl(dataUrl, 800, 800, 0.88);
+      const uploadedUrl = await uploadMediaFile(file, compressed);
+      setVoucherLogoInput(uploadedUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
     if (!onUpdateSiteSettings) return;
@@ -313,6 +332,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       footerSubtitle: footerSubtitleInput.trim(),
       footerDescription: footerDescriptionInput.trim(),
       footerCopyright: footerCopyrightInput.trim(),
+
+      // Personnalisation du Bon de Réservation & Documents Imprimés
+      voucherLogoUrl: voucherLogoInput.trim(),
+      voucherCompanyName: voucherCompanyNameInput.trim(),
+      voucherCompanySubtitle: voucherCompanySubtitleInput.trim(),
 
       // Page d'accueil (Choix rôle)
       homeBackgroundType: homeBgType,
@@ -581,6 +605,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       phone: newUserPhone.trim(),
       password: newUserPassword.trim(),
       avatar: newUserAvatar.trim() || randomAvatar,
+      permissions: newUserRole === 'admin' ? { ...DEFAULT_ADMIN_PERMISSIONS } : { ...DEFAULT_COMMERCIAL_PERMISSIONS },
     };
 
     onAddCommercial(newUser);
@@ -2102,12 +2127,224 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* PANEL 4: BANDEAU D'ANNONCE GLOBALE */}
+            {/* PANEL 4: LOGO & EN-TÊTE DU BON DE RÉSERVATION (IMPRESSION & PDF) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 lg:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+                    <Printer className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-white text-base">4. Logo &amp; En-Tête du Bon de Réservation (Impression &amp; PDF)</h4>
+                    <p className="text-xs text-slate-400">Personnalisez le logo affiché sur le Bon de Réservation officiel, les devis imprimés et les documents contractuels.</p>
+                  </div>
+                </div>
+
+                {/* Reset to default Voucher logo */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVoucherLogoInput('');
+                    setVoucherCompanyNameInput('CHERY TUNISIE');
+                    setVoucherCompanySubtitleInput("Société Tunisienne d'Automobiles (STA)");
+                  }}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Réinitialiser Logo du Bon par défaut</span>
+                </button>
+              </div>
+
+              {/* Live Voucher Header Preview */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Aperçu en Direct de l'En-Tête du Bon de Réservation Imprimé :
+                </label>
+                <div className="p-5 bg-white text-slate-900 rounded-2xl border-2 border-slate-300 shadow-sm space-y-3">
+                  <div className="flex items-start justify-between border-b-2 border-slate-900 pb-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={voucherLogoInput || logoInput || cheryLogo}
+                          alt="Logo Bon de Réservation"
+                          className="h-12 w-auto max-w-[150px] object-contain rounded-xl border border-slate-200 shadow-sm p-0.5 bg-white"
+                        />
+                        <div>
+                          <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                            {voucherCompanyNameInput || 'CHERY TUNISIE'}
+                          </h1>
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-600">
+                            {voucherCompanySubtitleInput || "Société Tunisienne d'Automobiles (STA)"}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600 pt-0.5">
+                        STA Direction Générale - Ben Arous / Tunis (Showroom Officiel)
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-md font-mono text-xs font-bold">
+                        N° BON : RES-2026-654
+                      </span>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Date : {new Date().toLocaleDateString('fr-FR')}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Commercial : <strong className="text-slate-800">Mongi Jamaï</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-center bg-slate-100 p-2 rounded-lg border border-slate-200">
+                    <h2 className="text-sm font-black uppercase text-slate-800 tracking-wide">
+                      BON DE RÉSERVATION VÉHICULE NEUF
+                    </h2>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload & Direct URL Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Upload Local Logo for Voucher */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Téléverser un Nouveau Logo pour le Bon (Fichier local) :
+                  </label>
+                  <label className="flex bg-slate-950 border border-dashed border-red-500/40 hover:border-red-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-red-950/20 text-xs text-red-300 font-bold">
+                    <Upload className="w-4 h-4 text-red-400" />
+                    <span>Choisir une Image de Logo (PNG, JPG, SVG, WebP)...</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleVoucherLogoFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Direct URL Input */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Ou saisir une URL Web directe du Logo du Bon :
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://.../mon-logo-bon.png"
+                    value={voucherLogoInput}
+                    onChange={(e) => setVoucherLogoInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+
+              {/* Presets for Voucher Logo */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                  Logos Prédéfinis pour le Bon de Réservation (1-Click) :
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setVoucherLogoInput('')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      !voucherLogoInput
+                        ? 'border-red-500 bg-red-950/30 ring-1 ring-red-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                      <img
+                        src={cheryLogo}
+                        alt="Chery"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Écusson Chery Original</p>
+                      <p className="text-[10px] text-slate-400">Logo Constructeur Officiel</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVoucherLogoInput('/sta_logo.svg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      voucherLogoInput === '/sta_logo.svg'
+                        ? 'border-red-500 bg-red-950/30 ring-1 ring-red-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="p-1 bg-white rounded-lg border border-slate-300 shrink-0 w-8 h-8 flex items-center justify-center">
+                      <img src="/sta_logo.svg" alt="STA" className="max-h-6 max-w-full object-contain" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo STA Officiel</p>
+                      <p className="text-[10px] text-slate-400">Vectoriel pour Documents</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVoucherLogoInput('https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&auto=format&fit=crop&q=80')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      voucherLogoInput.includes('photo-1617788138017-80ad40651399')
+                        ? 'border-red-500 bg-red-950/30 ring-1 ring-red-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                      <img
+                        src="https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&auto=format&fit=crop&q=80"
+                        alt="Chery"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo Chery Automobile</p>
+                      <p className="text-[10px] text-slate-400">Haute Définition</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Text Fields for Voucher Header */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Titre Principal sur le Bon de Réservation :
+                  </label>
+                  <input
+                    type="text"
+                    value={voucherCompanyNameInput}
+                    onChange={(e) => setVoucherCompanyNameInput(e.target.value)}
+                    placeholder="CHERY TUNISIE"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Sous-Titre / Raison Sociale sur le Bon :
+                  </label>
+                  <input
+                    type="text"
+                    value={voucherCompanySubtitleInput}
+                    onChange={(e) => setVoucherCompanySubtitleInput(e.target.value)}
+                    placeholder="Société Tunisienne d'Automobiles (STA)"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL 5: BANDEAU D'ANNONCE GLOBALE */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3 justify-between">
                 <div className="flex items-center gap-2">
                   <Megaphone className="w-5 h-5 text-amber-400" />
-                  <h4 className="font-extrabold text-white text-base">4. Bandeau d'Annonce Globale en Haut du Site</h4>
+                  <h4 className="font-extrabold text-white text-base">5. Bandeau d'Annonce Globale en Haut du Site</h4>
                 </div>
 
                 {/* Toggle Switch */}
@@ -3814,6 +4051,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {[
                 { key: 'canCreateReservation', label: 'Créer et valider les bons de réservation', desc: 'Permet d\'effectuer des réservations au nom des clients' },
                 { key: 'canCancelReservation', label: 'Annuler ou libérer les réservations', desc: 'Permet d\'annuler un dossier actif et remettre les véhicules en stock' },
+                { key: 'canEditValidatedReservations', label: 'Modifier la réservation après validation', desc: 'Autorise la modification des informations ou du statut d\'une réservation déjà confirmée/validée' },
                 { key: 'canEditPrices', label: 'Modifier les tarifs & prix catalogue', desc: 'Autorise le changement de tarif TTC des véhicules Chery' },
                 { key: 'canManageStock', label: 'Gérer les stocks et ajouter des couleurs', desc: 'Permet d\'ajouter/supprimer des couleurs et ajuster les stocks' },
                 { key: 'canAccessAdminPanel', label: 'Accès au Panneau d\'Administration et Réseau', desc: 'Donne accès aux données financières et à la gestion du personnel' },

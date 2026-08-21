@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Reservation, CommercialUser, UploadedDocument } from '../types';
+import { Reservation, CommercialUser, UploadedDocument, Car as CarModel } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
 import { compressImageDataUrl } from '../utils/imageCompressor';
+import { EditReservationModal } from './EditReservationModal';
 import {
   Search,
   Filter,
@@ -26,12 +27,16 @@ import {
   Upload,
   Sparkles,
   AlertTriangle,
+  Edit3,
+  Lock,
 } from 'lucide-react';
 
 interface ReservationListProps {
   reservations: Reservation[];
+  cars?: CarModel[];
   currentCommercial: CommercialUser;
   onUpdateStatus: (reservationId: string, newStatus: Reservation['status']) => void;
+  onEditReservation?: (updatedReservation: Reservation) => void;
   onDeleteReservation?: (reservationId: string) => void;
   onDeleteAllReservations?: () => void;
   onAddDocument?: (reservationId: string, doc: UploadedDocument) => void;
@@ -41,8 +46,10 @@ interface ReservationListProps {
 
 export const ReservationList: React.FC<ReservationListProps> = ({
   reservations,
+  cars = [],
   currentCommercial,
   onUpdateStatus,
+  onEditReservation,
   onDeleteReservation,
   onDeleteAllReservations,
   onAddDocument,
@@ -57,6 +64,12 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [dateStart, setDateStart] = useState<string>('');
   const [dateEnd, setDateEnd] = useState<string>('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
+
+  // Permission: modifier une réservation après validation
+  const canEditValidated =
+    currentCommercial.role === 'super_admin' ||
+    Boolean(currentCommercial.permissions?.canEditValidatedReservations);
 
   // Dynamic dropdown lists
   const uniqueCarModels = Array.from(new Set(reservations.map((r) => r.carName))).sort();
@@ -600,6 +613,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             const physique = res.client.personnePhysique;
             const societe = res.client.societe;
             const leasingEval = evaluateLeasingStatus(res);
+            const isValidated = res.status === 'Confirmée' || res.status === 'Livrée';
+            const isEditRestricted = isValidated && !canEditValidated;
 
             return (
               <div
@@ -622,20 +637,38 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
                     {getStatusBadge(res.status)}
 
                     {/* Status Changer */}
-                    <select
-                      value={res.status}
-                      onChange={(e) => onUpdateStatus(res.id, e.target.value as any)}
-                      className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-red-500"
-                    >
-                      <option value="En attente">En attente</option>
-                      <option value="Confirmée">Confirmée</option>
-                      <option value="Livrée">Livrée</option>
-                      <option value="Annulée">Annulée</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={res.status}
+                        disabled={isEditRestricted}
+                        onChange={(e) => onUpdateStatus(res.id, e.target.value as any)}
+                        title={
+                          isEditRestricted
+                            ? 'Statut verrouillé : Droit "Modifier la réservation après validation" requis pour ce profil'
+                            : 'Modifier le statut de la réservation'
+                        }
+                        className={`bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-red-500 ${
+                          isEditRestricted ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                      >
+                        <option value="En attente">En attente</option>
+                        <option value="Confirmée">Confirmée</option>
+                        <option value="Livrée">Livrée</option>
+                        <option value="Annulée">Annulée</option>
+                      </select>
+                      {isEditRestricted && (
+                        <span
+                          className="absolute -top-1.5 -right-1.5 p-0.5 bg-amber-900/90 text-amber-300 rounded-full border border-amber-500/40"
+                          title="Modification statut verrouillée après validation"
+                        >
+                          <Lock className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -829,6 +862,29 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                       </button>
                     )}
 
+                    {onEditReservation && (
+                      <button
+                        onClick={() => setEditingReservation(res)}
+                        className={`px-3.5 py-2 border rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                          isEditRestricted
+                            ? 'bg-slate-950 text-slate-400 border-slate-800 hover:border-amber-500/40 hover:text-amber-300'
+                            : 'bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border-slate-800 hover:border-slate-700'
+                        }`}
+                        title={
+                          isEditRestricted
+                            ? 'Réservation validée : modification verrouillée selon les droits de votre profil'
+                            : 'Modifier les informations du dossier / bon de commande'
+                        }
+                      >
+                        {isEditRestricted ? (
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        ) : (
+                          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                        )}
+                        <span>Modifier</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => onViewVoucher(res)}
                       className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow"
@@ -843,6 +899,23 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           })
         )}
       </div>
+
+      {/* Edit Reservation Modal */}
+      {editingReservation && (
+        <EditReservationModal
+          isOpen={true}
+          reservation={editingReservation}
+          cars={cars}
+          onClose={() => setEditingReservation(null)}
+          onSave={(updated) => {
+            if (onEditReservation) {
+              onEditReservation(updated);
+            }
+            setEditingReservation(null);
+          }}
+          canEditValidated={canEditValidated}
+        />
+      )}
     </div>
   );
 };
