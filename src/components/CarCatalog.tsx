@@ -316,8 +316,12 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
                     {/* Prix complet breakdown badge */}
                     <div className="p-2 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-200 flex items-center justify-between">
                       <div>
-                        <span className="font-extrabold text-emerald-400 block">Prix Complet Clé en Main</span>
-                        <span className="text-[10px] text-slate-400">Véhicule {car.priceTND.toLocaleString()} DT + Frais immat/carte grise {getRegistrationFeeForCar(car).toLocaleString()} DT</span>
+                        <span className="font-extrabold text-emerald-400 block">Prix TTC Clé en Main</span>
+                        <span className="text-[10px] text-slate-400">
+                          {getRegistrationFeeForCar(car) > 0
+                            ? `Véhicule ${car.priceTND.toLocaleString()} DT + Frais ${getRegistrationFeeForCar(car).toLocaleString()} DT`
+                            : `Prix Véhicule TTC (${car.category || 'SUV'})`}
+                        </span>
                       </div>
                       <span className="font-mono font-black text-xs text-emerald-300 bg-emerald-900/60 px-2 py-1 rounded-lg border border-emerald-500/40">
                         {getFullCarPrice(car).toLocaleString()} DT

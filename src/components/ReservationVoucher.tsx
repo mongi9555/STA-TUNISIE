@@ -385,12 +385,14 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                   <td className="p-2.5">Prix Public Véhicule Neuf TTC ({reservation.carName})</td>
                   <td className="p-2.5 text-right font-mono font-bold">{reservation.priceTND.toLocaleString()} TND</td>
                 </tr>
-                <tr>
-                  <td className="p-2.5">Frais d'Immatriculation, Carte Grise & Timbre Fiscal</td>
-                  <td className="p-2.5 text-right font-mono">{reservation.registrationFeeTND.toLocaleString()} TND</td>
-                </tr>
+                {reservation.registrationFeeTND > 0 && (
+                  <tr>
+                    <td className="p-2.5">Frais d'Immatriculation, Carte Grise & Timbre Fiscal</td>
+                    <td className="p-2.5 text-right font-mono">{reservation.registrationFeeTND.toLocaleString()} TND</td>
+                  </tr>
+                )}
                 <tr className="bg-slate-50 font-bold">
-                  <td className="p-2.5">TOTAL CLEF EN MAIN :</td>
+                  <td className="p-2.5">TOTAL TTC CLEF EN MAIN :</td>
                   <td className="p-2.5 text-right font-mono text-sm">{totalWithFees.toLocaleString()} TND</td>
                 </tr>
                 <tr className="bg-emerald-50 text-emerald-900 font-bold">
@@ -419,13 +421,21 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
             </div>
           )}
 
-          {/* Notes */}
-          {reservation.notes && (
-            <div className="text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="font-bold text-slate-700">Observations / Conditions : </span>
-              <span className="text-slate-600">{reservation.notes}</span>
+          {/* Observations / Conditions */}
+          <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
+            <div>
+              <span className="font-bold text-slate-800">Observations / Conditions : </span>
+              <span className="text-slate-700 leading-relaxed italic">
+                « Le prix est communiqué à titre indicatif. Le prix final sera établi au moment de la facturation et pourra varier selon le taux de change, le coût du transport et les taxes en vigueur. »
+              </span>
             </div>
-          )}
+            {reservation.notes && reservation.notes.trim() !== '' && (
+              <div className="pt-1.5 border-t border-slate-200 text-slate-600">
+                <span className="font-semibold text-slate-700">Remarques complémentaires : </span>
+                <span>{reservation.notes}</span>
+              </div>
+            )}
+          </div>
 
           {/* Signatures & Stamps */}
           <div className="pt-8 grid grid-cols-2 gap-8 text-xs text-center border-t border-slate-300">

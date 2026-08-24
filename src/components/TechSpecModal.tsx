@@ -482,7 +482,9 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                 {getFullCarPrice(car).toLocaleString()} TND
               </span>
               <span className="text-[10px] text-slate-400 block font-mono">
-                (Véhicule: {car.priceTND.toLocaleString()} DT + Frais immat/carte grise/timbre: {getRegistrationFeeForCar(car).toLocaleString()} DT)
+                {getRegistrationFeeForCar(car) > 0
+                  ? `(Véhicule: ${car.priceTND.toLocaleString()} DT + Frais: ${getRegistrationFeeForCar(car).toLocaleString()} DT)`
+                  : `(Prix Public TTC Clé en Main)`}
               </span>
             </div>
             <div className="hidden sm:block border-l border-slate-800 pl-4">

@@ -1223,11 +1223,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
               <div className="flex flex-wrap items-center gap-4">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Véhicule + Frais:</span>
-                  <span className="text-slate-300 font-mono">{currentCar?.priceTND.toLocaleString()} + {registrationFee.toLocaleString()} DT</span>
+                  <span className="text-slate-400 block text-[10px]">Prix Véhicule TTC :</span>
+                  <span className="text-slate-300 font-mono font-bold">
+                    {currentCar?.priceTND.toLocaleString()} TND
+                    {registrationFee > 0 ? ` (+ ${registrationFee.toLocaleString()} DT frais)` : ''}
+                  </span>
                 </div>
                 <div className="border-l border-slate-800 pl-4">
-                  <span className="text-emerald-400 block font-extrabold text-[10px] uppercase">Prix Complet Clé en Main:</span>
+                  <span className="text-emerald-400 block font-extrabold text-[10px] uppercase">Prix Total TTC:</span>
                   <strong className="text-emerald-400 font-mono font-bold text-sm">{totalPriceWithFees.toLocaleString()} TND</strong>
                 </div>
                 <div className="border-l border-slate-800 pl-4">
