@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Reservation, SiteSettings } from '../types';
-import { Printer, Download, X, CheckCircle2, Shield, Building, User, FileText, Phone, Mail, MapPin, Palette, Upload, Image as ImageIcon, RotateCcw, Check, Sparkles } from 'lucide-react';
+import { Printer, Download, X, CheckCircle2, Shield, Building, User, FileText, Phone, Mail, MapPin, Palette, Upload, Image as ImageIcon, RotateCcw, Check, Sparkles, Calendar, Clock } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import { compressImageDataUrl } from '../utils/imageCompressor';
+import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
 
 interface ReservationVoucherProps {
   reservation: Reservation;
@@ -96,6 +97,12 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
 
   const totalWithFees = reservation.priceTND + reservation.registrationFeeTND;
   const remaining = totalWithFees - reservation.depositPaidTND;
+
+  // Calcul automatique de la date de livraison estimée (Date ETA + 30 jours)
+  const baseEtaDate = reservation.etaDate || reservation.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const deliveryDateIso = reservation.expectedDeliveryDate || calculateDeliveryDate(baseEtaDate, 30);
+  const formattedEtaDate = formatVoucherDate(reservation.etaDate || reservation.createdAt?.slice(0, 10));
+  const formattedDeliveryDate = formatVoucherDate(deliveryDateIso);
 
   const displayLogo = currentLogo || siteSettings?.voucherLogoUrl || siteSettings?.logoUrl || cheryLogo;
   const companyTitle = siteSettings?.voucherCompanyName || 'CHERY TUNISIE';
@@ -367,6 +374,34 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
 
                 <p><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
                 <p><span className="text-slate-500">Statut réservation :</span> <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold">{reservation.status}</span></p>
+
+                {/* Section Date ETA & Date de Livraison Estimée */}
+                <div className="pt-2 border-t border-slate-300 space-y-1.5">
+                  {reservation.etaDate && (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-600 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-500" />
+                        <span>Arrivage prévisionnel (ETA) :</span>
+                      </span>
+                      <strong className="font-mono text-slate-900 font-bold">{formattedEtaDate}</strong>
+                    </div>
+                  )}
+
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between shadow-xs">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold text-red-950 uppercase tracking-wider block flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-red-600" />
+                        <span>Date de Livraison Estimée :</span>
+                      </span>
+                      <span className="text-[9px] text-red-700 font-medium italic block">
+                        (Délai sécurisé : Date ETA + 30 jours)
+                      </span>
+                    </div>
+                    <span className="font-mono font-black text-xs sm:text-sm text-red-800 bg-white px-2.5 py-1 rounded-md border border-red-300 shadow-sm">
+                      {formattedDeliveryDate}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -422,7 +457,17 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
           )}
 
           {/* Observations / Conditions */}
-          <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5">
+          <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+            <div className="flex items-start gap-1.5 pb-1.5 border-b border-slate-200 text-slate-800">
+              <Calendar className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-slate-900">Délai & Date de Livraison Estimée : </span>
+                <strong className="text-red-700 font-bold">{formattedDeliveryDate}</strong>
+                <span className="text-slate-600 text-[11px] block mt-0.5">
+                  (Délai indicatif calculé : Date d'Arrivage ETA + 30 jours de sécurité pour dédouanement, transport, préparation PDI en atelier et formalités administratives d'immatriculation).
+                </span>
+              </div>
+            </div>
             <div>
               <span className="font-bold text-slate-800">Observations / Conditions : </span>
               <span className="text-slate-700 leading-relaxed italic">

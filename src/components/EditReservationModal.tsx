@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Reservation, TUNISIA_GOVERNORATES, ClientType, Car, CarColor } from '../types';
+import { calculateDeliveryDate } from '../data/cheryData';
 import {
   X,
   User,
@@ -14,6 +15,7 @@ import {
   Palette,
   Check,
   Car as CarIcon,
+  Clock,
 } from 'lucide-react';
 
 interface EditReservationModalProps {
@@ -76,14 +78,24 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const [adresseSociete, setAdresseSociete] = useState(reservation.client.societe?.adresse || '');
   const [registreCommerce, setRegistreCommerce] = useState(reservation.client.societe?.registreCommerce || '');
 
-  // Financials & Payment
+  // Financials & Payment & Dates
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>(
     reservation.paymentMethod
   );
   const [depositPaidTND, setDepositPaidTND] = useState<number>(reservation.depositPaidTND);
   const [status, setStatus] = useState<Reservation['status']>(reservation.status);
-  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<string>(reservation.expectedDeliveryDate || '');
+  const [etaDate, setEtaDate] = useState<string>(() => reservation.etaDate || reservation.createdAt?.slice(0, 10) || '');
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<string>(() => {
+    if (reservation.expectedDeliveryDate) return reservation.expectedDeliveryDate;
+    const base = reservation.etaDate || reservation.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+    return calculateDeliveryDate(base, 30);
+  });
   const [notes, setNotes] = useState<string>(reservation.notes || '');
+
+  const handleEtaChange = (newEta: string) => {
+    setEtaDate(newEta);
+    setExpectedDeliveryDate(calculateDeliveryDate(newEta, 30));
+  };
 
   const isLeasing = paymentMethod === 'Leasing';
 
@@ -108,7 +120,8 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
       colorChosen,
       interiorColorChosen,
       depositPaidTND: isLeasing ? 0 : Number(depositPaidTND),
-      expectedDeliveryDate: expectedDeliveryDate.trim() || undefined,
+      etaDate: etaDate.trim() || undefined,
+      expectedDeliveryDate: expectedDeliveryDate.trim() || calculateDeliveryDate(etaDate, 30),
       notes: notes.trim(),
       client: {
         type: clientType,
@@ -606,14 +619,34 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Date Livraison Prévue :</label>
+                <label className="block text-slate-300 font-medium mb-1 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Date Arrivage (ETA) :</span>
+                </label>
+                <input
+                  type="date"
+                  disabled={isLocked}
+                  value={etaDate}
+                  onChange={(e) => handleEtaChange(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-emerald-400 font-medium mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Date de Livraison Estimée (ETA + 30 jours) :</span>
+                </label>
                 <input
                   type="date"
                   disabled={isLocked}
                   value={expectedDeliveryDate}
                   onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                  className="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3 py-2 text-emerald-300 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-60"
                 />
+                <p className="text-[10px] text-emerald-400/80 mt-1">
+                  Délai de sécurité de 30 jours ajouté après la date ETA pour formalités, dédouanement et préparation.
+                </p>
               </div>
             </div>
 

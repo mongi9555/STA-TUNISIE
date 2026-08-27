@@ -265,7 +265,8 @@ export interface Reservation {
   paymentMethod: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing';
   status: ReservationStatus;
   createdAt: string;
-  expectedDeliveryDate?: string;
+  etaDate?: string; // Date ETA / Arrivage prévisionnel
+  expectedDeliveryDate?: string; // Date de livraison estimée (date ETA + 30 jours)
   notes?: string;
 }
 

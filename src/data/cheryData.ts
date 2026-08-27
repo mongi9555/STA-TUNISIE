@@ -497,6 +497,39 @@ export function getFullCarPrice(car?: CarModel | null | string): number {
   return base + regFee;
 }
 
+/**
+ * Calcule la Date de Livraison Estimée sur la base de la Date ETA + 30 jours (marge de sécurité)
+ */
+export function calculateDeliveryDate(etaDateOrCreatedAt?: string, daysToAdd: number = 30): string {
+  const base = etaDateOrCreatedAt ? new Date(etaDateOrCreatedAt) : new Date();
+  if (isNaN(base.getTime())) {
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + daysToAdd);
+    return fallback.toISOString().slice(0, 10);
+  }
+  const result = new Date(base);
+  result.setDate(result.getDate() + daysToAdd);
+  return result.toISOString().slice(0, 10);
+}
+
+/**
+ * Formate une date pour affichage sur les bons de réservation et documents officiels
+ */
+export function formatVoucherDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr || '';
+  }
+}
+
 export function isPickupCar(car?: CarModel | { name?: string; category?: string } | string | null): boolean {
   if (!car) return false;
   if (typeof car === 'string') {
@@ -1305,178 +1338,22 @@ export function saveStoredStockRequests(requests: StockRequest[]): void {
   safeLocalStorageSet('chery_tn_stock_requests_v1', JSON.stringify(requests));
 }
 
-export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
-  {
-    id: 'audit-log-10',
-    timestamp: new Date(Date.now() - 1000 * 60 * 18).toISOString(), // ~18 min ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'price_update',
-    actionLabel: 'Modification Prix Véhicule',
-    targetCarId: 'chery-tiggo-8-pro-max',
-    targetCarName: 'Chery Tiggo 8 Pro Max 1.6T 4WD',
-    details: 'Mise à jour du tarif catalogue officiel STA : passage de 129 900 TND à 132 900 TND (+3 000 TND).',
-    previousValue: '129 900 TND',
-    newValue: '132 900 TND',
-  },
-  {
-    id: 'audit-log-9',
-    timestamp: new Date(Date.now() - 1000 * 60 * 42).toISOString(), // ~42 min ago
-    userId: 'comm-admin',
-    userName: 'Arbi Gharbi',
-    userRole: 'admin',
-    userAgency: 'STA Showroom Les Berges du Lac - Tunis',
-    actionType: 'stock_update',
-    actionLabel: 'Ajustement Stock Couleur',
-    targetCarId: 'chery-tiggo-7-pro',
-    targetCarName: 'Chery Tiggo 7 Pro Luxury',
-    targetColorName: 'Gris Carbone / Titanium',
-    details: 'Réapprovisionnement arrivage portuaire : stock ajusté de 4 à 8 unités (+4).',
-    previousValue: 4,
-    newValue: 8,
-  },
-  {
-    id: 'audit-log-8',
-    timestamp: new Date(Date.now() - 1000 * 60 * 95).toISOString(), // ~1.5h ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'stock_request_approved',
-    actionLabel: 'Validation Demande de Quota',
-    targetCarId: 'chery-omoda-5',
-    targetCarName: 'Chery Omoda 5 GT',
-    details: 'Demande de quota validée pour Mongi Jamaï (+2 unités allouées pour livraison Agence Lac).',
-    previousValue: 'Demande En attente (+2)',
-    newValue: 'Approuvé (+2)',
-  },
-  {
-    id: 'audit-log-7',
-    timestamp: new Date(Date.now() - 1000 * 60 * 160).toISOString(), // ~2.5h ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'price_update',
-    actionLabel: 'Modification Prix Véhicule',
-    targetCarId: 'chery-tiggo-4-pro',
-    targetCarName: 'Chery Tiggo 4 Pro Luxury',
-    details: 'Ajustement tarifaire gamme SUV : passage de 74 900 TND à 76 500 TND.',
-    previousValue: '74 900 TND',
-    newValue: '76 500 TND',
-  },
-  {
-    id: 'audit-log-6',
-    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(), // ~4h ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'reservation_stock_deduct',
-    actionLabel: 'Déduction Stock Réservation',
-    targetCarId: 'chery-tiggo-8-pro-max',
-    targetCarName: 'Chery Tiggo 8 Pro Max 1.6T 4WD',
-    targetColorName: 'Blanc Okavango / Arctique',
-    details: 'Réservation validée RES-2026-104 : déduction automatique de 1 unité de stock disponible.',
-    previousValue: 'Stock dispo: 6',
-    newValue: 'Stock dispo: 5 (1 réservé)',
-  },
-  {
-    id: 'audit-log-5',
-    timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(), // ~6h ago
-    userId: 'comm-admin',
-    userName: 'Arbi Gharbi',
-    userRole: 'admin',
-    userAgency: 'STA Showroom Les Berges du Lac - Tunis',
-    actionType: 'color_added',
-    actionLabel: 'Ajout Nouvelle Teinte & Stock',
-    targetCarId: 'chery-tiggo-1x',
-    targetCarName: 'Chery Tiggo 1X Cross',
-    targetColorName: 'Bleu Saphir / Électrique',
-    details: 'Création d\'une nouvelle finition carrosserie avec stock initial de 3 véhicules.',
-    previousValue: '0 unité',
-    newValue: '3 unités',
-  },
-  {
-    id: 'audit-log-4',
-    timestamp: new Date(Date.now() - 1000 * 60 * 520).toISOString(), // ~8.5h ago
-    userId: 'comm-admin',
-    userName: 'Arbi Gharbi',
-    userRole: 'admin',
-    userAgency: 'STA Showroom Les Berges du Lac - Tunis',
-    actionType: 'stock_update',
-    actionLabel: 'Ajustement Stock Couleur',
-    targetCarId: 'chery-tiggo-7-pro',
-    targetCarName: 'Chery Tiggo 7 Pro Luxury',
-    targetColorName: 'Noir Onyx / Profond',
-    details: 'Contrôle inventaire mensuel : stock physique passé de 3 à 5 unités.',
-    previousValue: 3,
-    newValue: 5,
-  },
-  {
-    id: 'audit-log-3',
-    timestamp: new Date(Date.now() - 1000 * 60 * 720).toISOString(), // ~12h ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'price_update',
-    actionLabel: 'Modification Prix Véhicule',
-    targetCarId: 'chery-omoda-5',
-    targetCarName: 'Chery Omoda 5 GT',
-    details: 'Alignement grille tarifaire réseau national : passage de 98 500 TND à 99 900 TND.',
-    previousValue: '98 500 TND',
-    newValue: '99 900 TND',
-  },
-  {
-    id: 'audit-log-2',
-    timestamp: new Date(Date.now() - 1000 * 60 * 1100).toISOString(), // ~18h ago
-    userId: 'comm-admin',
-    userName: 'Arbi Gharbi',
-    userRole: 'admin',
-    userAgency: 'STA Showroom Les Berges du Lac - Tunis',
-    actionType: 'stock_update',
-    actionLabel: 'Ajustement Stock Couleur',
-    targetCarId: 'chery-tiggo-4-pro',
-    targetCarName: 'Chery Tiggo 4 Pro Luxury',
-    targetColorName: 'Blanc Okavango / Arctique',
-    details: 'Arrivage lot showroom : stock passé de 5 à 10 unités (+5).',
-    previousValue: 5,
-    newValue: 10,
-  },
-  {
-    id: 'audit-log-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 1440).toISOString(), // ~24h ago
-    userId: 'comm-superadmin',
-    userName: 'Mongi Jamaï',
-    userRole: 'super_admin',
-    userAgency: 'STA Direction Générale - Ben Arous / Tunis',
-    actionType: 'reservation_stock_deduct',
-    actionLabel: 'Déduction Stock Réservation',
-    targetCarId: 'chery-tiggo-7-pro',
-    targetCarName: 'Chery Tiggo 7 Pro Luxury',
-    targetColorName: 'Gris Platine / Titanium',
-    details: 'Validation contrat réservation RES-2026-102 : 1 unité passée en réservée.',
-    previousValue: 'Stock dispo: 5',
-    newValue: 'Stock dispo: 4 (1 réservé)',
-  },
-];
+export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [];
 
 export function getStoredAuditLogs(): AuditLogEntry[] {
   try {
     const data = localStorage.getItem('chery_tn_audit_logs_v1');
     if (data !== null) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        // Exclure automatiquement les anciens faux exemples STA (audit-log-1 à audit-log-10)
+        return parsed.filter((l: any) => l && l.id && !l.id.startsWith('audit-log-'));
       }
     }
   } catch (e) {
     console.error('Error loading audit logs from storage', e);
   }
-  return INITIAL_AUDIT_LOGS;
+  return [];
 }
 
 export function saveStoredAuditLogs(logs: AuditLogEntry[]): void {

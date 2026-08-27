@@ -155,13 +155,39 @@ export async function cleanupDeprecatedCommercialsFromFirestore() {
 }
 
 /**
+ * Clean up legacy mock/example audit logs from Firestore (e.g. audit-log-1 to audit-log-10)
+ */
+export async function cleanupMockAuditLogsFromFirestore() {
+  try {
+    const snap = await withTimeout(getDocs(auditLogsCollection), 4000);
+    const mockDocs = snap.docs.filter((d) => {
+      const id = d.id;
+      return id.startsWith('audit-log-') || id.includes('mock');
+    });
+
+    if (mockDocs.length > 0) {
+      console.log(`[Firestore Cleanup] Deleting ${mockDocs.length} mock audit logs from Firestore...`);
+      const batch = writeBatch(db);
+      mockDocs.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await withTimeout(batch.commit(), 4000);
+      console.log('[Firestore Cleanup] Mock audit logs successfully deleted from Firestore.');
+    }
+  } catch (error) {
+    console.warn('Note on mock audit logs cleanup from Firestore:', error);
+  }
+}
+
+/**
  * Seed initial data to Firestore if collections are empty.
  */
 export async function seedInitialDataIfEmpty() {
   try {
-    // First, purge any leftover virtual cars & deprecated commercial sessions
+    // First, purge any leftover virtual cars, deprecated commercial sessions & mock audit logs
     await cleanupVirtualCarsFromFirestore();
     await cleanupDeprecatedCommercialsFromFirestore();
+    await cleanupMockAuditLogsFromFirestore();
 
     const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
     const validCars = carsSnap.docs.filter((d) => !isVirtualCar(d.data() as CarModel));
@@ -200,17 +226,6 @@ export async function seedInitialDataIfEmpty() {
       INITIAL_ADMIN_DOCUMENTS.forEach((docItem) => {
         const docRef = doc(db, 'admin_documents', docItem.id);
         batch.set(docRef, sanitizeForFirestore(docItem));
-      });
-      await withTimeout(batch.commit(), 4000);
-    }
-
-    const auditLogsSnap = await withTimeout(getDocs(auditLogsCollection), 4000);
-    if (auditLogsSnap.empty) {
-      console.log('Seeding initial audit logs to Firestore...');
-      const batch = writeBatch(db);
-      INITIAL_AUDIT_LOGS.forEach((logItem) => {
-        const docRef = doc(db, 'audit_logs', logItem.id);
-        batch.set(docRef, sanitizeForFirestore(logItem));
       });
       await withTimeout(batch.commit(), 4000);
     }
@@ -457,6 +472,21 @@ export async function deleteAuditLogFromFirestore(logId: string) {
     await deleteDoc(doc(db, 'audit_logs', logId));
   } catch (e) {
     console.error('Error deleting audit log from Firestore:', e);
+  }
+}
+
+/**
+ * Delete multiple audit logs from Firestore
+ */
+export async function deleteMultipleAuditLogsFromFirestore(logIds: string[]) {
+  try {
+    const batch = writeBatch(db);
+    logIds.forEach((id) => {
+      batch.delete(doc(db, 'audit_logs', id));
+    });
+    await batch.commit();
+  } catch (e) {
+    console.error('Error deleting multiple audit logs in Firestore:', e);
   }
 }
 

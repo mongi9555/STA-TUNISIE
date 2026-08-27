@@ -83,6 +83,8 @@ interface AdminPanelProps {
   quotes?: CustomQuote[];
   auditLogs?: AuditLogEntry[];
   onClearAuditLogs?: () => void;
+  onDeleteAuditLog?: (logId: string) => void;
+  onDeleteMultipleAuditLogs?: (logIds: string[]) => void;
   onResetDefaultLogs?: () => void;
   onAddManualLog?: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
   onUpdateCarStock: (carId: string, updatedColors: CarColor[]) => void;
@@ -115,6 +117,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   quotes = [],
   auditLogs = [],
   onClearAuditLogs,
+  onDeleteAuditLog,
+  onDeleteMultipleAuditLogs,
   onResetDefaultLogs,
   onAddManualLog,
   onUpdateCarStock,
@@ -4314,6 +4318,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           currentUser={currentUser}
           cars={cars}
           onClearLogs={onClearAuditLogs}
+          onDeleteLog={onDeleteAuditLog}
+          onDeleteMultipleLogs={onDeleteMultipleAuditLogs}
           onResetDefaultLogs={onResetDefaultLogs}
           onAddManualLog={onAddManualLog}
         />

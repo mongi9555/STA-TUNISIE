@@ -87,6 +87,7 @@ import {
   deleteAdminDocFromFirestore,
   saveAuditLogToFirestore,
   deleteAuditLogFromFirestore,
+  deleteMultipleAuditLogsFromFirestore,
   clearAuditLogsFromFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
@@ -379,12 +380,12 @@ export default function App() {
     }, (err) => console.warn('Admin docs snapshot listener warning:', err));
 
     const unsubscribeAuditLogs = onSnapshot(auditLogsCollection, (snapshot) => {
-      if (!snapshot.empty) {
-        const fetched = snapshot.docs.map((doc) => doc.data() as AuditLogEntry);
-        fetched.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setAuditLogs(fetched);
-        saveStoredAuditLogs(fetched);
-      }
+      const fetched = snapshot.docs
+        .map((doc) => doc.data() as AuditLogEntry)
+        .filter((l) => l && l.id && !l.id.startsWith('audit-log-'));
+      fetched.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setAuditLogs(fetched);
+      saveStoredAuditLogs(fetched);
     }, (err) => console.warn('Audit logs snapshot listener warning:', err));
 
     return () => {
@@ -568,13 +569,33 @@ export default function App() {
     showToast("Journal d'audit réinitialisé.");
   };
 
+  const handleDeleteAuditLog = (logId: string) => {
+    setAuditLogs((prev) => {
+      const updated = prev.filter((l) => l.id !== logId);
+      saveStoredAuditLogs(updated);
+      return updated;
+    });
+    deleteAuditLogFromFirestore(logId);
+    showToast("Action d'audit supprimée.");
+  };
+
+  const handleDeleteMultipleAuditLogs = (logIds: string[]) => {
+    setAuditLogs((prev) => {
+      const updated = prev.filter((l) => !logIds.includes(l.id));
+      saveStoredAuditLogs(updated);
+      return updated;
+    });
+    deleteMultipleAuditLogsFromFirestore(logIds);
+    showToast(`${logIds.length} enregistrement(s) d'audit supprimé(s).`);
+  };
+
   const handleResetDefaultLogs = () => {
     setAuditLogs(INITIAL_AUDIT_LOGS);
     saveStoredAuditLogs(INITIAL_AUDIT_LOGS);
     INITIAL_AUDIT_LOGS.forEach((log) => {
       saveAuditLogToFirestore(log);
     });
-    showToast("Exemples d'audit de démonstration rechargés !");
+    showToast("Journal d'audit synchronisé.");
   };
 
   // Handler: Open Reservation Modal
@@ -1395,6 +1416,8 @@ export default function App() {
                 quotes={quotes}
                 auditLogs={auditLogs}
                 onClearAuditLogs={handleClearAuditLogs}
+                onDeleteAuditLog={handleDeleteAuditLog}
+                onDeleteMultipleAuditLogs={handleDeleteMultipleAuditLogs}
                 onResetDefaultLogs={handleResetDefaultLogs}
                 onAddManualLog={addAuditLog}
                 onImportDatabase={handleImportDatabase}

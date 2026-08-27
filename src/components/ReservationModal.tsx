@@ -11,7 +11,7 @@ import {
   TUNISIA_GOVERNORATES,
   StockRequest,
 } from '../types';
-import { getFixedDepositForCar, getRegistrationFeeForCar, getFullCarPrice } from '../data/cheryData';
+import { getFixedDepositForCar, getRegistrationFeeForCar, getFullCarPrice, calculateDeliveryDate } from '../data/cheryData';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
   X,
@@ -33,6 +33,7 @@ import {
   Sparkles,
   Send,
   Clock,
+  Calendar,
 } from 'lucide-react';
 
 interface ReservationModalProps {
@@ -98,11 +99,19 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [docCategory, setDocCategory] = useState<UploadedDocument['category']>('cin_recto');
 
-  // Step 4: Financials & Deposit
+  // Step 4: Financials & Deposit & Delivery Dates
   const [registrationFee, setRegistrationFee] = useState<number>(0);
   const [depositAmount, setDepositAmount] = useState<number>(20000);
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>('Chèque Certifié');
+  const [etaDate, setEtaDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<string>(() => calculateDeliveryDate(new Date().toISOString().slice(0, 10), 30));
   const [notes, setNotes] = useState('');
+
+  // Auto calculate delivery date when ETA changes
+  const handleEtaDateChange = (newEta: string) => {
+    setEtaDate(newEta);
+    setExpectedDeliveryDate(calculateDeliveryDate(newEta, 30));
+  };
 
   const isLeasing = paymentMethod === 'Leasing';
 
@@ -334,6 +343,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       paymentMethod: paymentMethod,
       status: autoStatus,
       createdAt: new Date().toISOString(),
+      etaDate: etaDate || undefined,
+      expectedDeliveryDate: expectedDeliveryDate || calculateDeliveryDate(etaDate, 30),
       notes: leasingNote,
     };
 
@@ -1332,6 +1343,53 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Section Délais & Date de Livraison Estimée (ETA + 30 jours) */}
+            <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-red-500" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Délais d'Arrivage & Date de Livraison Estimée (Bon de Réservation)
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 bg-red-950 text-red-300 border border-red-800 rounded text-[10px] font-bold">
+                  Marge de sécurité +30 jours
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Date d'Arrivage Prévisionnel (ETA) :</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={etaDate}
+                    onChange={(e) => handleEtaDateChange(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Date estimée de débarquement au port</p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-emerald-400 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Date de Livraison Estimée (ETA + 30 jours) :</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={expectedDeliveryDate}
+                    onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <p className="text-[10px] text-emerald-400/80 mt-1">
+                    Calcul automatique : ETA + 30 jours pour formalités, préparation PDI et immatriculation
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Notes */}

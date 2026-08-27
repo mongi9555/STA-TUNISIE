@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Reservation, CommercialUser, UploadedDocument, Car as CarModel } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
 import { compressImageDataUrl } from '../utils/imageCompressor';
+import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
 import { EditReservationModal } from './EditReservationModal';
 import {
   Search,
@@ -784,7 +785,32 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                         )}
                       </div>
 
-                      <p className="text-slate-400">
+                      {/* ETA & Estimated Delivery Date */}
+                      <div className="pt-1.5 border-t border-slate-800/80 text-[11px] space-y-0.5">
+                        {res.etaDate && (
+                          <div className="flex items-center justify-between text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-500" />
+                              <span>Arrivage (ETA) :</span>
+                            </span>
+                            <span className="font-mono text-slate-300">{formatVoucherDate(res.etaDate)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-emerald-400 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-emerald-400" />
+                            <span>Livraison estimée :</span>
+                          </span>
+                          <span className="font-mono bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                            {formatVoucherDate(
+                              res.expectedDeliveryDate ||
+                                calculateDeliveryDate(res.etaDate || res.createdAt?.slice(0, 10), 30)
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-slate-400 pt-1">
                         Commercial : <strong className="text-slate-200">{res.commercialName}</strong> ({res.agency})
                       </p>
                     </div>

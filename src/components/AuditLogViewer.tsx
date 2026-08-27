@@ -21,6 +21,9 @@ import {
   Info,
   Car,
   FileSpreadsheet,
+  CheckSquare,
+  Square,
+  Check,
 } from 'lucide-react';
 import { AuditLogEntry, AuditActionType, CommercialUser, CarModel } from '../types';
 
@@ -29,6 +32,8 @@ interface AuditLogViewerProps {
   currentUser: CommercialUser;
   cars?: CarModel[];
   onClearLogs?: () => void;
+  onDeleteLog?: (logId: string) => void;
+  onDeleteMultipleLogs?: (logIds: string[]) => void;
   onResetDefaultLogs?: () => void;
   onAddManualLog?: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
 }
@@ -38,15 +43,21 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
   currentUser,
   cars = [],
   onClearLogs,
+  onDeleteLog,
+  onDeleteMultipleLogs,
   onResetDefaultLogs,
   onAddManualLog,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'prices' | 'stocks' | 'reservations'>('all');
   const [userFilter, setUserFilter] = useState<string>('all');
-  const [limitCount, setLimitCount] = useState<number>(10); // Default to last 10 actions as requested
+  const [limitCount, setLimitCount] = useState<number>(0); // 0 = all by default
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
+  const [logToDelete, setLogToDelete] = useState<AuditLogEntry | null>(null);
+  const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
+
+  const isSuperAdminOrAdmin = currentUser.role === 'super_admin' || currentUser.role === 'admin';
 
   // Filter and sort logs (most recent first)
   const filteredLogs = useMemo(() => {
@@ -55,11 +66,11 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
         // Search filter
         const matchSearch =
           !searchTerm ||
-          log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (log.userName && log.userName.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (log.targetCarName && log.targetCarName.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (log.targetColorName && log.targetColorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          log.actionLabel.toLowerCase().includes(searchTerm.toLowerCase());
+          (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (log.actionLabel && log.actionLabel.toLowerCase().includes(searchTerm.toLowerCase()));
 
         // Category filter
         let matchCat = true;
@@ -88,13 +99,6 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       .slice(0, limitCount === 0 ? undefined : limitCount);
   }, [logs, searchTerm, categoryFilter, userFilter, limitCount]);
 
-  // Distinct users in logs
-  const distinctUsers = useMemo(() => {
-    const map = new Map<string, string>();
-    logs.forEach((l) => map.set(l.userId || l.userName, l.userName));
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [logs]);
-
   // Statistics
   const stats = useMemo(() => {
     const total = logs.length;
@@ -105,6 +109,43 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
     const reservationDeductions = logs.filter((l) => l.actionType === 'reservation_stock_deduct').length;
     return { total, priceUpdates, stockUpdates, reservationDeductions };
   }, [logs]);
+
+  // Selection handlers
+  const handleToggleSelectLog = (id: string) => {
+    setSelectedLogIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllVisible = () => {
+    const visibleIds = filteredLogs.map((l) => l.id);
+    const allSelected = visibleIds.every((id) => selectedLogIds.includes(id));
+    if (allSelected) {
+      setSelectedLogIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedLogIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedLogIds([]);
+  };
+
+  const handleConfirmBatchDelete = () => {
+    if (onDeleteMultipleLogs && selectedLogIds.length > 0) {
+      onDeleteMultipleLogs(selectedLogIds);
+      setSelectedLogIds([]);
+      setShowBatchDeleteConfirm(false);
+    }
+  };
+
+  const handleConfirmSingleDelete = () => {
+    if (logToDelete && onDeleteLog) {
+      onDeleteLog(logToDelete.id);
+      setSelectedLogIds((prev) => prev.filter((id) => id !== logToDelete.id));
+      setLogToDelete(null);
+    }
+  };
 
   const getActionBadge = (actionType: AuditActionType, label: string) => {
     switch (actionType) {
@@ -178,7 +219,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       const diffHours = Math.floor(diffMs / 3600000);
 
       let relative = '';
-      if (diffMinutes < 1) relative = 'À l\'instant';
+      if (diffMinutes < 1) relative = "À l'instant";
       else if (diffMinutes < 60) relative = `Il y a ${diffMinutes} min`;
       else if (diffHours < 24) relative = `Il y a ${diffHours}h`;
 
@@ -229,6 +270,9 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
     window.print();
   };
 
+  const isAllVisibleSelected =
+    filteredLogs.length > 0 && filteredLogs.every((l) => selectedLogIds.includes(l.id));
+
   return (
     <div className="space-y-6" id="audit-log-section">
       {/* Header Banner */}
@@ -243,14 +287,15 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-white tracking-tight">
-                    Journal d'Audit & Traçabilité
+                    Journal d'Audit & Traçabilité Réelle
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    10 Dernières Actions
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Temps Réel
                   </span>
                 </div>
                 <p className="text-sm text-slate-400">
-                  Historique certifié des modifications apportées aux stocks, quotas et tarifs des véhicules CHERY
+                  Historique authentique des modifications sur les stocks, prix, quotas et réservations des véhicules CHERY
                 </p>
               </div>
             </div>
@@ -263,7 +308,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               onClick={handleExportCSV}
               id="export-audit-csv-btn"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-              title="Exporter l'historique complet au format CSV / Excel"
+              title="Exporter l'historique au format CSV / Excel"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               <span>Exporter CSV</span>
@@ -280,29 +325,16 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               <span>Imprimer</span>
             </button>
 
-            {onResetDefaultLogs && (
-              <button
-                type="button"
-                onClick={onResetDefaultLogs}
-                id="reset-audit-defaults-btn"
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-                title="Rétablir les entrées d'audit certifiées de démonstration"
-              >
-                <RotateCcw className="w-4 h-4 text-amber-400" />
-                <span>Exemples STA</span>
-              </button>
-            )}
-
-            {onClearLogs && (currentUser.role === 'super_admin' || currentUser.role === 'admin') && (
+            {onClearLogs && isSuperAdminOrAdmin && logs.length > 0 && (
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(true)}
                 id="clear-audit-logs-btn"
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-                title="Effacer les journaux d'audit"
+                title="Purger tout l'historique d'audit"
               >
                 <Trash2 className="w-4 h-4 text-red-400" />
-                <span>Purger</span>
+                <span>Purger Tout ({logs.length})</span>
               </button>
             )}
           </div>
@@ -315,7 +347,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               <History className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Actions</p>
+              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Actions Réelles</p>
               <p className="text-lg font-bold text-white">{stats.total}</p>
             </div>
           </div>
@@ -398,7 +430,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             }`}
           >
             <DollarSign className="w-3.5 h-3.5 text-amber-400" />
-            <span>Prix uniquement</span>
+            <span>Prix</span>
           </button>
           <button
             type="button"
@@ -410,11 +442,11 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             }`}
           >
             <Package className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Stocks uniquement</span>
+            <span>Stocks</span>
           </button>
         </div>
 
-        {/* Display Count Limit (10 by default) */}
+        {/* Display Count Limit */}
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-slate-400 font-medium">Affichage :</span>
           <select
@@ -423,66 +455,133 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             id="audit-limit-select"
             className="px-3 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs font-semibold text-amber-400 focus:outline-none focus:border-amber-500 cursor-pointer"
           >
-            <option value={10}>10 dernières actions (Recommandé)</option>
+            <option value={0}>Tout l'historique ({logs.length})</option>
+            <option value={10}>10 dernières actions</option>
             <option value={25}>25 dernières actions</option>
             <option value={50}>50 dernières actions</option>
-            <option value={0}>Tout l'historique ({logs.length})</option>
           </select>
         </div>
       </div>
 
-      {/* Main Audit Log Table / List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-4 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              {limitCount === 10 ? 'Les 10 Dernières Actions sur les Stocks & Prix' : `Historique des Actions (${filteredLogs.length})`}
+      {/* Floating / Prominent Multi-Selection Action Bar */}
+      {selectedLogIds.length > 0 && isSuperAdminOrAdmin && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2.5 text-xs text-amber-300">
+            <span className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-xs">
+              {selectedLogIds.length}
+            </span>
+            <span className="font-semibold">
+              {selectedLogIds.length === 1
+                ? '1 action d\'audit sélectionnée'
+                : `${selectedLogIds.length} actions d'audit sélectionnées`}
             </span>
           </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+            >
+              Désélectionner tout
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBatchDeleteConfirm(true)}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Supprimer la sélection ({selectedLogIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Audit Log Table / List */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="p-4 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            {isSuperAdminOrAdmin && filteredLogs.length > 0 && (
+              <button
+                type="button"
+                onClick={handleSelectAllVisible}
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white px-2.5 py-1 bg-slate-800/80 rounded-lg border border-slate-700 transition-colors"
+                title={isAllVisibleSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              >
+                {isAllVisibleSelected ? (
+                  <CheckSquare className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400" />
+                )}
+                <span>{isAllVisibleSelected ? 'Tout décocher' : 'Tout sélectionner'}</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                {`Historique des Actions Réelles (${filteredLogs.length})`}
+              </span>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Base Cloud Firestore & LocalStorage Synchronisés</span>
+            <span>Traçabilité Directe &amp; Firestore Synchronisé</span>
           </div>
         </div>
 
         {filteredLogs.length === 0 ? (
           <div className="p-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-500">
-              <History className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+              <History className="w-8 h-8 text-amber-400/70" />
             </div>
-            <div className="space-y-1">
-              <p className="text-base font-semibold text-white">Aucune action enregistrée</p>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Aucune modification ne correspond aux filtres actuels. Dès qu'un utilisateur modifie un stock ou un tarif, l'action sera automatiquement consignée ici.
+            <div className="space-y-1.5">
+              <p className="text-base font-bold text-white">Journal d'Audit Réel Prêt</p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                Aucune modification n'est enregistrée pour le moment. Dès qu'un utilisateur modifie un stock de véhicule, ajuste un tarif catalogue, approuve un quota ou crée une réservation, l'action sera automatiquement consignée ici en temps réel avec horodatage certifié.
               </p>
             </div>
-            {onResetDefaultLogs && (
-              <button
-                type="button"
-                onClick={onResetDefaultLogs}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition-all inline-flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Charger les 10 actions types de démonstration
-              </button>
-            )}
           </div>
         ) : (
           <div className="divide-y divide-slate-800/60">
             {filteredLogs.map((log, index) => {
               const { formatted, relative } = formatDate(log.timestamp);
               const isPriceAction = log.actionType === 'price_update';
-              const isStockAction = ['stock_update', 'color_added', 'color_edited', 'stock_request_approved', 'stock_reset'].includes(log.actionType);
+              const isStockAction = [
+                'stock_update',
+                'color_added',
+                'color_edited',
+                'stock_request_approved',
+                'stock_reset',
+              ].includes(log.actionType);
+              const isSelected = selectedLogIds.includes(log.id);
 
               return (
                 <div
                   key={log.id || `audit-${index}`}
                   id={`audit-log-item-${index + 1}`}
-                  className="p-4 hover:bg-slate-800/40 transition-colors flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 group"
+                  className={`p-4 transition-colors flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 group ${
+                    isSelected ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-slate-800/40'
+                  }`}
                 >
-                  {/* Left Column: Index Badge + User Info + Time */}
-                  <div className="flex items-start gap-3.5 min-w-[260px]">
+                  {/* Left Column: Checkbox + Index Badge + User Info + Time */}
+                  <div className="flex items-start gap-3 min-w-[280px]">
+                    {isSuperAdminOrAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectLog(log.id)}
+                        className="mt-0.5 p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        title={isSelected ? 'Désélectionner' : 'Sélectionner pour suppression'}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Square className="w-4 h-4 text-slate-500" />
+                        )}
+                      </button>
+                    )}
+
                     <div className="w-7 h-7 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 font-mono text-xs font-bold text-amber-400 group-hover:border-amber-500/40 transition-colors">
                       #{index + 1}
                     </div>
@@ -566,12 +665,27 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                     )}
                   </div>
 
-                  {/* Right Column: Status & Agency */}
-                  <div className="shrink-0 flex lg:flex-col items-end justify-between lg:justify-center gap-1 w-full lg:w-auto text-right border-t lg:border-t-0 pt-2 lg:pt-0 border-slate-800/50">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Appliqué
-                    </span>
+                  {/* Right Column: Status, Agency & Individual Delete Button */}
+                  <div className="shrink-0 flex lg:flex-col items-end justify-between lg:justify-center gap-2 w-full lg:w-auto text-right border-t lg:border-t-0 pt-2 lg:pt-0 border-slate-800/50">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Appliqué
+                      </span>
+
+                      {/* Individual Delete Button */}
+                      {isSuperAdminOrAdmin && onDeleteLog && (
+                        <button
+                          type="button"
+                          onClick={() => setLogToDelete(log)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 border border-transparent hover:border-red-800/40 transition-colors cursor-pointer"
+                          title="Supprimer cette ligne d'audit"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
                     {log.userAgency && (
                       <span className="text-[10px] text-slate-400 truncate max-w-[180px]">
                         {log.userAgency}
@@ -585,7 +699,86 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
         )}
       </div>
 
-      {/* Confirmation Modal for Purging Logs */}
+      {/* Confirmation Modal for Single Log Deletion */}
+      {logToDelete && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Supprimer cette action d'audit ?</h3>
+                <p className="text-xs text-slate-400">{logToDelete.actionLabel}</p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <p className="font-semibold text-white">{logToDelete.details}</p>
+              <p className="text-[11px] text-slate-400">
+                Par <span className="text-amber-400 font-medium">{logToDelete.userName}</span> le {formatDate(logToDelete.timestamp).formatted}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setLogToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSingleDelete}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors cursor-pointer"
+              >
+                Confirmer la suppression
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Batch Selection Deletion */}
+      {showBatchDeleteConfirm && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Supprimer la sélection ?</h3>
+                <p className="text-xs text-slate-400">{selectedLogIds.length} enregistrement(s) à supprimer définitivement</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 leading-relaxed">
+              Êtes-vous certain de vouloir supprimer les {selectedLogIds.length} entrées d'audit sélectionnées ? Cette opération est irréversible.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBatchDeleteConfirm(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatchDelete}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors cursor-pointer"
+              >
+                Supprimer ({selectedLogIds.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Purging ALL Logs */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-red-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
@@ -594,20 +787,20 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Purger le Journal d'Audit ?</h3>
-                <p className="text-xs text-slate-400">Cette action réinitialisera l'historique des modifications de stocks et tarifs.</p>
+                <h3 className="text-lg font-bold text-white">Purger tout le Journal d'Audit ?</h3>
+                <p className="text-xs text-slate-400">Cette action supprimera la totalité des {logs.length} enregistrements.</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 leading-relaxed">
-              Êtes-vous sûr de vouloir supprimer tous les enregistrements d'audit ? Les futures modifications de stocks et prix continueront à être tracées en temps réel.
+              Êtes-vous certain de vouloir vider l'ensemble du journal d'audit ? Les futures modifications de stocks et prix continueront à être tracées en temps réel dès la prochaine action.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
               >
                 Annuler
               </button>
@@ -615,11 +808,12 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                 type="button"
                 onClick={() => {
                   if (onClearLogs) onClearLogs();
+                  setSelectedLogIds([]);
                   setShowClearConfirm(false);
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors cursor-pointer"
               >
-                Confirmer la purge
+                Confirmer la purge complète
               </button>
             </div>
           </div>
