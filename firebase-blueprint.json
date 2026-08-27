@@ -57,6 +57,24 @@
         "role": { "type": "string" }
       },
       "required": ["id", "name", "role"]
+    },
+    "audit_logs": {
+      "title": "AuditLogEntry",
+      "description": "Audit trail log tracking stock, price, and model modifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userRole": { "type": "string" },
+        "actionType": { "type": "string" },
+        "actionLabel": { "type": "string" },
+        "details": { "type": "string" },
+        "targetCarId": { "type": "string" },
+        "targetCarName": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "userName", "actionType", "details"]
     }
   }
 }

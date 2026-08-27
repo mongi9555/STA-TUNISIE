@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote } from '../types';
+import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote, AuditLogEntry } from '../types';
 import { TechSpecModal } from './TechSpecModal';
 import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
 import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 import { StaLogo } from './StaLogo';
+import { AuditLogViewer } from './AuditLogViewer';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -69,6 +70,7 @@ import {
   HardDrive,
   FileJson,
   Printer,
+  History,
 } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
@@ -79,6 +81,10 @@ interface AdminPanelProps {
   reservations: Reservation[];
   accessories?: CarAccessory[];
   quotes?: CustomQuote[];
+  auditLogs?: AuditLogEntry[];
+  onClearAuditLogs?: () => void;
+  onResetDefaultLogs?: () => void;
+  onAddManualLog?: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
   onUpdateCarStock: (carId: string, updatedColors: CarColor[]) => void;
   onUpdateCarPrice: (carId: string, newPriceTND: number) => void;
   onAddColorToCar: (carId: string, newColor: CarColor) => void;
@@ -107,6 +113,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   reservations,
   accessories = [],
   quotes = [],
+  auditLogs = [],
+  onClearAuditLogs,
+  onResetDefaultLogs,
+  onAddManualLog,
   onUpdateCarStock,
   onUpdateCarPrice,
   onAddColorToCar,
@@ -127,7 +137,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onImportDatabase,
   onResetToFactoryDefaults,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'branding' | 'database'>('inventory');
+  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'database'>('inventory');
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stock Request Filter State
@@ -772,6 +782,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveAdminTab('audit_log')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'audit_log'
+                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <History className="w-4 h-4 text-amber-400" />
+            <span>Journal d'Audit (Stocks & Tarifs)</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeAdminTab === 'audit_log' ? 'bg-amber-700/80 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              10 Dernières
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveAdminTab('branding')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
               activeAdminTab === 'branding'
@@ -822,6 +850,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <span>Nouveau Modèle Chery</span>
               </button>
             )}
+          </div>
+
+          {/* Quick Snapshot: Recent Stock & Price Actions */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 shrink-0">
+                <History className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Traçabilité & 10 Dernières Actions
+                  </h4>
+                  <span className="text-[10px] px-2 py-0.2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full font-semibold">
+                    En direct
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {auditLogs.length > 0
+                    ? `Dernière action : ${auditLogs[0].actionLabel} par ${auditLogs[0].userName} (${new Date(auditLogs[0].timestamp).toLocaleDateString('fr-FR')} ${new Date(auditLogs[0].timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})`
+                    : "Toutes les modifications de prix et stocks sont enregistrées et consultables dans l'onglet Journal d'Audit."}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveAdminTab('audit_log')}
+              id="open-audit-log-tab-btn"
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 border border-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-sm"
+            >
+              <span>Consulter le Journal Complet</span>
+              <History className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -4243,6 +4305,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: AUDIT LOG (10 LAST ACTIONS ON STOCKS & PRICES) */}
+      {activeAdminTab === 'audit_log' && (
+        <AuditLogViewer
+          logs={auditLogs}
+          currentUser={currentUser}
+          cars={cars}
+          onClearLogs={onClearAuditLogs}
+          onResetDefaultLogs={onResetDefaultLogs}
+          onAddManualLog={onAddManualLog}
+        />
       )}
 
       {/* Floating Tech Spec Sheet Modal */}

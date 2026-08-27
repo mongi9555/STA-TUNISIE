@@ -13,8 +13,8 @@ import {
   Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest, AdministrativeDocument } from './types';
-import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar, INITIAL_ADMIN_DOCUMENTS } from './data/cheryData';
+import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest, AdministrativeDocument, AuditLogEntry } from './types';
+import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar, INITIAL_ADMIN_DOCUMENTS, INITIAL_AUDIT_LOGS } from './data/cheryData';
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
@@ -47,6 +47,7 @@ export const accessoriesCollection = collection(db, 'accessories');
 export const quotesCollection = collection(db, 'quotes');
 export const stockRequestsCollection = collection(db, 'stock_requests');
 export const adminDocsCollection = collection(db, 'admin_documents');
+export const auditLogsCollection = collection(db, 'audit_logs');
 
 /**
  * Helper to recursively sanitize objects before saving to Firestore.
@@ -199,6 +200,17 @@ export async function seedInitialDataIfEmpty() {
       INITIAL_ADMIN_DOCUMENTS.forEach((docItem) => {
         const docRef = doc(db, 'admin_documents', docItem.id);
         batch.set(docRef, sanitizeForFirestore(docItem));
+      });
+      await withTimeout(batch.commit(), 4000);
+    }
+
+    const auditLogsSnap = await withTimeout(getDocs(auditLogsCollection), 4000);
+    if (auditLogsSnap.empty) {
+      console.log('Seeding initial audit logs to Firestore...');
+      const batch = writeBatch(db);
+      INITIAL_AUDIT_LOGS.forEach((logItem) => {
+        const docRef = doc(db, 'audit_logs', logItem.id);
+        batch.set(docRef, sanitizeForFirestore(logItem));
       });
       await withTimeout(batch.commit(), 4000);
     }
@@ -425,4 +437,43 @@ export async function deleteAdminDocFromFirestore(docId: string) {
     console.error('Error deleting administrative document from Firestore:', e);
   }
 }
+
+/**
+ * Save audit log entry to Firestore
+ */
+export async function saveAuditLogToFirestore(auditLog: AuditLogEntry) {
+  try {
+    await setDoc(doc(db, 'audit_logs', auditLog.id), sanitizeForFirestore(auditLog));
+  } catch (e) {
+    console.error('Error saving audit log to Firestore:', e);
+  }
+}
+
+/**
+ * Delete single audit log entry from Firestore
+ */
+export async function deleteAuditLogFromFirestore(logId: string) {
+  try {
+    await deleteDoc(doc(db, 'audit_logs', logId));
+  } catch (e) {
+    console.error('Error deleting audit log from Firestore:', e);
+  }
+}
+
+/**
+ * Clear all audit logs from Firestore
+ */
+export async function clearAuditLogsFromFirestore() {
+  try {
+    const snap = await getDocs(auditLogsCollection);
+    const batch = writeBatch(db);
+    snap.docs.forEach((d) => {
+      batch.delete(d.ref);
+    });
+    await batch.commit();
+  } catch (e) {
+    console.error('Error clearing audit logs in Firestore:', e);
+  }
+}
+
 

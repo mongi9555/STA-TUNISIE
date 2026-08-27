@@ -17,6 +17,9 @@ import {
   StockRequest,
   StockRequestStatus,
   AdministrativeDocument,
+  AuditLogEntry,
+  AuditActionType,
+  UserRole,
 } from './types';
 import {
   getStoredCars,
@@ -41,6 +44,9 @@ import {
   saveStoredStockRequests,
   getStoredAdminDocuments,
   saveStoredAdminDocuments,
+  getStoredAuditLogs,
+  saveStoredAuditLogs,
+  INITIAL_AUDIT_LOGS,
   INITIAL_COMMERCIALS,
   INITIAL_CARS,
   DEFAULT_SITE_SETTINGS,
@@ -58,6 +64,7 @@ import {
   accessoriesCollection,
   quotesCollection,
   adminDocsCollection,
+  auditLogsCollection,
   seedInitialDataIfEmpty,
   cleanupVirtualCarsFromFirestore,
   saveCarToFirestore,
@@ -78,6 +85,9 @@ import {
   deleteQuoteFromFirestore,
   saveAdminDocToFirestore,
   deleteAdminDocFromFirestore,
+  saveAuditLogToFirestore,
+  deleteAuditLogFromFirestore,
+  clearAuditLogsFromFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -159,6 +169,7 @@ export default function App() {
   const [testDrives, setTestDrives] = useState<TestDriveAppointment[]>(() => getStoredTestDrives());
   const [stockRequests, setStockRequests] = useState<StockRequest[]>(() => getStoredStockRequests());
   const [adminDocs, setAdminDocs] = useState<AdministrativeDocument[]>(() => getStoredAdminDocuments());
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => getStoredAuditLogs());
 
   const [isDbSynced, setIsDbSynced] = useState<boolean>(false);
 
@@ -367,6 +378,15 @@ export default function App() {
       }
     }, (err) => console.warn('Admin docs snapshot listener warning:', err));
 
+    const unsubscribeAuditLogs = onSnapshot(auditLogsCollection, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map((doc) => doc.data() as AuditLogEntry);
+        fetched.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setAuditLogs(fetched);
+        saveStoredAuditLogs(fetched);
+      }
+    }, (err) => console.warn('Audit logs snapshot listener warning:', err));
+
     return () => {
       isMounted = false;
       unsubscribeCars();
@@ -378,6 +398,7 @@ export default function App() {
       unsubscribeAccessories();
       unsubscribeQuotes();
       unsubscribeAdminDocs();
+      unsubscribeAuditLogs();
     };
   }, []);
 
@@ -409,6 +430,10 @@ export default function App() {
   useEffect(() => {
     saveStoredAdminDocuments(adminDocs);
   }, [adminDocs]);
+
+  useEffect(() => {
+    saveStoredAuditLogs(auditLogs);
+  }, [auditLogs]);
 
   // Admin Documents Handlers
   const handleAddAdminDocument = (newDoc: AdministrativeDocument) => {
@@ -493,6 +518,65 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [cars, reservations, commercials, siteSettings, accessories, quotes]);
 
+  // Audit Log Management Helpers
+  const addAuditLog = (entry: {
+    actionType: AuditActionType;
+    actionLabel: string;
+    details: string;
+    userId?: string;
+    userName?: string;
+    userRole?: UserRole;
+    userAgency?: string;
+    targetCarId?: string;
+    targetCarName?: string;
+    targetColorName?: string;
+    previousValue?: string | number;
+    newValue?: string | number;
+    ipOrDevice?: string;
+  }) => {
+    const newLog: AuditLogEntry = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      userId: entry.userId || currentUser?.id || 'STA_SYSTEM',
+      userName: entry.userName || currentUser?.name || 'Administrateur',
+      userRole: entry.userRole || currentUser?.role || 'admin',
+      userAgency: entry.userAgency || currentUser?.agency || 'Direction STA',
+      actionType: entry.actionType,
+      actionLabel: entry.actionLabel,
+      details: entry.details,
+      targetCarId: entry.targetCarId,
+      targetCarName: entry.targetCarName,
+      targetColorName: entry.targetColorName,
+      previousValue: entry.previousValue,
+      newValue: entry.newValue,
+      ipOrDevice: entry.ipOrDevice,
+    };
+
+    setAuditLogs((prev) => {
+      const updated = [newLog, ...prev];
+      saveStoredAuditLogs(updated);
+      return updated;
+    });
+
+    saveAuditLogToFirestore(newLog);
+  };
+
+  const handleClearAuditLogs = () => {
+    setAuditLogs([]);
+    saveStoredAuditLogs([]);
+    clearAuditLogsFromFirestore();
+    showToast("Journal d'audit réinitialisé.");
+  };
+
+  const handleResetDefaultLogs = () => {
+    setAuditLogs(INITIAL_AUDIT_LOGS);
+    saveStoredAuditLogs(INITIAL_AUDIT_LOGS);
+    INITIAL_AUDIT_LOGS.forEach((log) => {
+      saveAuditLogToFirestore(log);
+    });
+    showToast("Exemples d'audit de démonstration rechargés !");
+  };
+
   // Handler: Open Reservation Modal
   const handleOpenReservationModal = (car?: CarModel, color?: CarColor) => {
     setPreselectedCar(car || null);
@@ -528,7 +612,26 @@ export default function App() {
       })
     );
 
-    // 3. Show Toast notification & open Printable Voucher
+    const clientDisplayName =
+      newReservation.client.type === 'personne_physique'
+        ? `${newReservation.client.personnePhysique?.prenom || ''} ${newReservation.client.personnePhysique?.nom || ''}`.trim()
+        : newReservation.client.societe?.raisonSociale || 'Client';
+    const clientPhone =
+      newReservation.client.type === 'personne_physique'
+        ? newReservation.client.personnePhysique?.telephone || ''
+        : newReservation.client.societe?.telephone || '';
+
+    // 3. Record Audit Log for reservation stock decrement
+    addAuditLog({
+      actionType: 'reservation_stock_deduct',
+      actionLabel: 'Déduction Stock (Réservation)',
+      details: `Déduction de 1 unité de stock pour le bon de réservation #${newReservation.id} au nom de ${clientDisplayName} (${clientPhone})`,
+      targetCarId: newReservation.carId,
+      targetCarName: newReservation.carName,
+      targetColorName: newReservation.colorChosen.name,
+    });
+
+    // 4. Show Toast notification & open Printable Voucher
     showToast(`Réservation ${newReservation.id} créée avec succès et enregistrée dans la base de données !`);
     setActiveVoucher(newReservation);
   };
@@ -591,16 +694,8 @@ export default function App() {
   };
 
   // Admin Handlers with Firestore Persistence
-  const handleResetStockToDefault = () => {
-    setCars(INITIAL_CARS);
-    saveStoredCars(INITIAL_CARS);
-    INITIAL_CARS.forEach((car) => {
-      saveCarToFirestore(car);
-    });
-    showToast('⚡ Modifications de stock annulées : Stocks réinitialisés aux valeurs par défaut !');
-  };
-
   const handleUpdateCarStock = (carId: string, updatedColors: CarColor[]) => {
+    const targetCar = cars.find((c) => c.id === carId);
     setCars((prev) =>
       prev.map((car) => {
         if (car.id === carId) {
@@ -611,10 +706,27 @@ export default function App() {
         return car;
       })
     );
+
+    const oldTotal = targetCar ? targetCar.colors.reduce((sum, c) => sum + (c.stock || 0), 0) : 0;
+    const newTotal = updatedColors.reduce((sum, c) => sum + (c.stock || 0), 0);
+
+    addAuditLog({
+      actionType: 'stock_update',
+      actionLabel: 'Ajustement Stock',
+      details: `Mise à jour des stocks par teinte pour ${targetCar?.name || carId} (Total : ${oldTotal} ➔ ${newTotal} unités)`,
+      targetCarId: carId,
+      targetCarName: targetCar?.name || carId,
+      previousValue: oldTotal,
+      newValue: newTotal,
+    });
+
     showToast('Stocks de couleurs mis à jour et sauvegardés !');
   };
 
   const handleUpdateCarPrice = (carId: string, newPriceTND: number) => {
+    const targetCar = cars.find((c) => c.id === carId);
+    const oldPrice = targetCar?.priceTND || 0;
+
     setCars((prev) =>
       prev.map((car) => {
         if (car.id === carId) {
@@ -625,10 +737,22 @@ export default function App() {
         return car;
       })
     );
+
+    addAuditLog({
+      actionType: 'price_update',
+      actionLabel: 'Modification Prix TTC',
+      details: `Mise à jour du tarif catalogue pour le modèle ${targetCar?.name || carId} : ${oldPrice.toLocaleString()} TND ➔ ${newPriceTND.toLocaleString()} TND`,
+      targetCarId: carId,
+      targetCarName: targetCar?.name || carId,
+      previousValue: oldPrice,
+      newValue: newPriceTND,
+    });
+
     showToast('Prix du véhicule mis à jour et sauvegardé !');
   };
 
   const handleAddColorToCar = (carId: string, newColor: CarColor) => {
+    const targetCar = cars.find((c) => c.id === carId);
     setCars((prev) =>
       prev.map((car) => {
         if (car.id === carId) {
@@ -639,10 +763,24 @@ export default function App() {
         return car;
       })
     );
+
+    addAuditLog({
+      actionType: 'color_added',
+      actionLabel: 'Nouvelle Teinte Ajoutée',
+      details: `Ajout de la teinte "${newColor.name}" avec un stock initial de ${newColor.stock} unités pour le modèle ${targetCar?.name || carId}`,
+      targetCarId: carId,
+      targetCarName: targetCar?.name || carId,
+      targetColorName: newColor.name,
+      newValue: newColor.stock,
+    });
+
     showToast(`Nouvelle couleur "${newColor.name}" ajoutée et sauvegardée !`);
   };
 
   const handleEditColor = (carId: string, colorId: string, updatedColorProps: Partial<CarColor>) => {
+    const targetCar = cars.find((c) => c.id === carId);
+    const oldColor = targetCar?.colors.find((c) => c.id === colorId);
+
     setCars((prev) =>
       prev.map((car) => {
         if (car.id === carId) {
@@ -656,10 +794,25 @@ export default function App() {
         return car;
       })
     );
+
+    addAuditLog({
+      actionType: 'color_edited',
+      actionLabel: 'Modification Teinte / Stock',
+      details: `Ajustement de la teinte "${updatedColorProps.name || oldColor?.name}" (Stock : ${oldColor?.stock ?? 0} ➔ ${updatedColorProps.stock ?? oldColor?.stock ?? 0}) pour ${targetCar?.name || carId}`,
+      targetCarId: carId,
+      targetCarName: targetCar?.name || carId,
+      targetColorName: updatedColorProps.name || oldColor?.name,
+      previousValue: oldColor?.stock,
+      newValue: updatedColorProps.stock ?? oldColor?.stock,
+    });
+
     showToast('Couleur et stock modifiés dans la base de données !');
   };
 
   const handleDeleteColor = (carId: string, colorId: string) => {
+    const targetCar = cars.find((c) => c.id === carId);
+    const targetColor = targetCar?.colors.find((c) => c.id === colorId);
+
     setCars((prev) =>
       prev.map((car) => {
         if (car.id === carId) {
@@ -670,6 +823,16 @@ export default function App() {
         return car;
       })
     );
+
+    addAuditLog({
+      actionType: 'color_deleted',
+      actionLabel: 'Suppression Teinte',
+      details: `Suppression de la teinte "${targetColor?.name || colorId}" pour le modèle ${targetCar?.name || carId}`,
+      targetCarId: carId,
+      targetCarName: targetCar?.name || carId,
+      targetColorName: targetColor?.name,
+    });
+
     showToast('Couleur supprimée du modèle');
   };
 
@@ -682,6 +845,16 @@ export default function App() {
   const handleAddCarModel = (newCar: CarModel) => {
     setCars((prev) => [...prev, newCar]);
     saveCarToFirestore(newCar);
+
+    addAuditLog({
+      actionType: 'model_added',
+      actionLabel: 'Nouveau Modèle Ajouté',
+      details: `Ajout au catalogue du nouveau véhicule ${newCar.name} (${newCar.category}) au tarif de ${newCar.priceTND.toLocaleString()} TND TTC`,
+      targetCarId: newCar.id,
+      targetCarName: newCar.name,
+      newValue: newCar.priceTND,
+    });
+
     showToast(`Nouveau modèle "${newCar.name}" ajouté à la base de données !`);
   };
 
@@ -689,6 +862,15 @@ export default function App() {
     const car = cars.find((c) => c.id === carId);
     setCars((prev) => prev.filter((c) => c.id !== carId));
     deleteCarFromFirestore(carId);
+
+    addAuditLog({
+      actionType: 'model_deleted',
+      actionLabel: 'Suppression Modèle',
+      details: `Suppression définitive du modèle ${car?.name || carId} du catalogue`,
+      targetCarId: carId,
+      targetCarName: car?.name,
+    });
+
     showToast(`Modèle "${car?.name || ''}" supprimé de la base de données`);
   };
 
@@ -900,6 +1082,16 @@ export default function App() {
           return c;
         })
       );
+
+      addAuditLog({
+        actionType: 'stock_request_approved',
+        actionLabel: 'Attribution Quota Commercial',
+        details: `Validation de la demande #${requestId} : Attribution d'un quota supplémentaire (+${addedQty} unités) pour ${targetReq.commercialName} (${targetReq.commercialAgency}) sur le modèle ${targetReq.carName}`,
+        targetCarId: targetReq.carId,
+        targetCarName: targetReq.carName,
+        newValue: addedQty,
+      });
+
       showToast(`Demande #${requestId} approuvée ! Quota augmenté de +${addedQty} pour ${targetReq.commercialName}.`);
     } else {
       showToast(`Demande #${requestId} refusée.`);
@@ -1110,7 +1302,6 @@ export default function App() {
                 stockRequests={stockRequests}
                 currentUser={currentUser}
                 onOpenReservationModal={handleOpenReservationModal}
-                onResetStockToDefault={handleResetStockToDefault}
                 onProcessStockRequest={handleProcessStockRequest}
                 onNavigateToAdmin={() => setActiveTab('admin')}
               />
@@ -1190,6 +1381,10 @@ export default function App() {
                 onDeleteStockRequest={handleDeleteStockRequest}
                 accessories={accessories}
                 quotes={quotes}
+                auditLogs={auditLogs}
+                onClearAuditLogs={handleClearAuditLogs}
+                onResetDefaultLogs={handleResetDefaultLogs}
+                onAddManualLog={addAuditLog}
                 onImportDatabase={handleImportDatabase}
                 onResetToFactoryDefaults={handleResetToFactoryDefaults}
               />

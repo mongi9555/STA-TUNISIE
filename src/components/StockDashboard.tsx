@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CarModel, CarColor, Reservation, CommercialUser, StockRequest } from '../types';
 import { getFullCarPrice } from '../data/cheryData';
-import { Search, CheckCircle2, Car, Package, Sparkles, Plus, AlertCircle, RefreshCw, FileText, Bell, X, Sliders, AlertTriangle } from 'lucide-react';
+import { Search, CheckCircle2, Car, Package, Sparkles, Plus, AlertCircle, FileText, Bell, X, Sliders, AlertTriangle } from 'lucide-react';
 import { TechSpecModal } from './TechSpecModal';
 
 interface StockDashboardProps {
@@ -10,7 +10,6 @@ interface StockDashboardProps {
   stockRequests?: StockRequest[];
   currentUser?: CommercialUser;
   onOpenReservationModal: (car: CarModel, color?: CarColor) => void;
-  onResetStockToDefault?: () => void;
   onProcessStockRequest?: (id: string, status: 'Approuvé' | 'Refusé') => void;
   onNavigateToAdmin?: () => void;
 }
@@ -20,14 +19,12 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   stockRequests = [],
   currentUser,
   onOpenReservationModal,
-  onResetStockToDefault,
   onProcessStockRequest,
   onNavigateToAdmin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [selectedSpecCar, setSelectedSpecCar] = useState<CarModel | null>(null);
 
   // Model-based metrics (instead of color counts or reservations)
@@ -287,61 +284,9 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 Épuisé
               </button>
             </div>
-
-            {/* Reset Stock Button */}
-            {onResetStockToDefault && (
-              <button
-                onClick={() => setIsResetConfirmOpen(true)}
-                title="Annuler les modifications et restaurer le stock par défaut"
-                className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-                <span>Stock Défaut</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
-
-      {/* Confirmation Modal for Resetting Stock */}
-      {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-red-600/20 text-red-400 rounded-xl border border-red-500/30">
-                <RefreshCw className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-white">Annuler les modifications de stock ?</h3>
-                <p className="text-xs text-slate-400">Cette action réinitialisera le stock de tous les véhicules Chery aux valeurs par défaut initiales.</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
-              ⚡ Tous les ajustements manuels de stock seront annulés et synchronisés avec la base de données.
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={() => setIsResetConfirmOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => {
-                  onResetStockToDefault?.();
-                  setIsResetConfirmOpen(false);
-                }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Restaurer le Stock par Défaut</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Stock Matrix per Car Model */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

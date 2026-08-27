@@ -1,3 +1,35 @@
+export type AuditActionType =
+  | 'price_update'
+  | 'stock_update'
+  | 'color_added'
+  | 'color_edited'
+  | 'color_deleted'
+  | 'model_added'
+  | 'model_edited'
+  | 'model_deleted'
+  | 'stock_reset'
+  | 'stock_request_approved'
+  | 'reservation_stock_deduct'
+  | 'database_import';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string; // ISO string
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  userAgency?: string;
+  actionType: AuditActionType;
+  actionLabel: string; // e.g. "Modification Prix", "Ajustement Stock", "Validation Demande Stock"
+  targetCarId?: string;
+  targetCarName?: string;
+  targetColorName?: string;
+  details: string;
+  previousValue?: string | number;
+  newValue?: string | number;
+  ipOrDevice?: string;
+}
+
 export type StockRequestStatus = 'En attente' | 'Approuvé' | 'Refusé';
 
 export interface StockRequest {
