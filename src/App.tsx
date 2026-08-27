@@ -837,13 +837,21 @@ export default function App() {
   };
 
   const handleEditCarModel = (updatedCar: CarModel) => {
-    setCars((prev) => prev.map((c) => (c.id === updatedCar.id ? updatedCar : c)));
+    setCars((prev) => {
+      const updated = prev.map((c) => (c.id === updatedCar.id ? updatedCar : c));
+      saveStoredCars(updated);
+      return updated;
+    });
     saveCarToFirestore(updatedCar);
     showToast(`Fiche technique & photos du véhicule "${updatedCar.name}" enregistrées !`);
   };
 
   const handleAddCarModel = (newCar: CarModel) => {
-    setCars((prev) => [...prev, newCar]);
+    setCars((prev) => {
+      const updated = [...prev, newCar];
+      saveStoredCars(updated);
+      return updated;
+    });
     saveCarToFirestore(newCar);
 
     addAuditLog({
@@ -860,7 +868,11 @@ export default function App() {
 
   const handleDeleteCarModel = (carId: string) => {
     const car = cars.find((c) => c.id === carId);
-    setCars((prev) => prev.filter((c) => c.id !== carId));
+    setCars((prev) => {
+      const updated = prev.filter((c) => c.id !== carId);
+      saveStoredCars(updated);
+      return updated;
+    });
     deleteCarFromFirestore(carId);
 
     addAuditLog({

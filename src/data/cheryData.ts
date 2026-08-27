@@ -584,15 +584,9 @@ export const OFFICIAL_CAR_NAMES = [
 
 export function isVirtualCar(carOrId: CarModel | string | null | undefined): boolean {
   if (!carOrId) return false;
-  if (typeof carOrId === 'string') {
-    if (VIRTUAL_CAR_IDS.includes(carOrId)) return true;
-    return !OFFICIAL_CAR_IDS.includes(carOrId);
-  }
-  if (VIRTUAL_CAR_IDS.includes(carOrId.id)) return true;
-  if (carOrId.imageUrl && carOrId.imageUrl.includes('images.unsplash.com')) return true;
-  const nameNorm = (carOrId.name || '').toLowerCase().trim();
-  const isOfficial = OFFICIAL_CAR_NAMES.some((officialName) => nameNorm === officialName || nameNorm.includes(officialName));
-  return !isOfficial;
+  const carId = typeof carOrId === 'string' ? carOrId : carOrId.id;
+  if (carId && VIRTUAL_CAR_IDS.includes(carId)) return true;
+  return false;
 }
 
 export const INITIAL_CARS: CarModel[] = [
