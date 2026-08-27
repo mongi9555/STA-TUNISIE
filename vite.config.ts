@@ -17,5 +17,9 @@ export default defineConfig(() => {
       },
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    build: {
+      target: ['es2015', 'chrome60', 'firefox60', 'safari11', 'edge18'],
+      cssTarget: 'chrome61',
+    },
   };
 });

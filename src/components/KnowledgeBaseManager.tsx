@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KnowledgeBaseItem, KnowledgeCategory, CommercialUser } from '../types';
+import { KnowledgeBaseItem, KnowledgeCategory, CommercialUser, ThemeMode } from '../types';
 import { BookOpen, Plus, Search, Tag, Edit3, Trash2, CheckCircle2, AlertCircle, Sparkles, Filter, Building2, ShieldCheck, FileText, Gift, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -7,7 +7,7 @@ interface KnowledgeBaseManagerProps {
   items: KnowledgeBaseItem[];
   onSaveItems: (items: KnowledgeBaseItem[]) => void;
   currentUser: CommercialUser;
-  theme: 'dark' | 'light' | 'red';
+  theme: ThemeMode;
 }
 
 const CATEGORY_LABELS: Record<KnowledgeCategory, { label: string; icon: any; color: string }> = {

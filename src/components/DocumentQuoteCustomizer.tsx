@@ -7,6 +7,7 @@ import {
   CommercialUser,
   ClientInfo,
   VehicleConfiguration,
+  ThemeMode,
 } from '../types';
 import {
   FileCheck,
@@ -42,7 +43,7 @@ interface DocumentQuoteCustomizerProps {
   onSaveQuote: (quote: CustomQuote) => void;
   onDeleteQuote: (quoteId: string) => void;
   currentUser: CommercialUser;
-  theme: 'dark' | 'light' | 'red';
+  theme: ThemeMode;
   onConvertToReservation?: (quote: CustomQuote) => void;
   initialConfigToQuote?: VehicleConfiguration | null;
 }

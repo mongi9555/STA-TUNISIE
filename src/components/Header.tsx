@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
-export type AppTab = 'dashboard' | 'reservations' | 'admin_docs' | 'knowledge_base' | 'admin';
+export type AppTab = 'dashboard' | 'reservations' | 'admin_docs' | 'knowledge_base' | 'documents_devis' | 'admin';
 
 interface HeaderProps {
   currentUser: CommercialUser;

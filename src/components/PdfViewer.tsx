@@ -183,13 +183,14 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
         renderTaskRef.current.cancel();
       }
 
-      const renderContext = {
+      const renderContext: any = {
         canvasContext: context,
+        canvas: canvasRef.current,
         viewport,
         transform
       };
 
-      const renderTask = page.render(renderContext);
+      const renderTask = (page as any).render(renderContext);
       renderTaskRef.current = renderTask;
 
       renderTask.promise
