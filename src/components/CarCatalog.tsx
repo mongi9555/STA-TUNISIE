@@ -396,29 +396,6 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
                           );
                         })}
                       </div>
-
-                      {/* Interior Colors Display */}
-                      {car.interiorColors && car.interiorColors.length > 0 && (
-                        <div className="pt-2 border-t border-slate-900/80">
-                          <span className="text-[11px] font-bold text-amber-400 block mb-1">
-                            Couleurs & Habillages Intérieurs Disponibles :
-                          </span>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {car.interiorColors.map((intCol) => (
-                              <div
-                                key={intCol.id}
-                                className="flex items-center gap-1.5 bg-slate-950 border border-slate-800/80 px-2 py-1 rounded-lg text-[10px]"
-                              >
-                                <span
-                                  className="w-3 h-3 rounded-md border border-slate-600 shrink-0"
-                                  style={{ backgroundColor: intCol.hexCode }}
-                                />
-                                <span className="text-slate-300 font-medium truncate max-w-[130px]">{intCol.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

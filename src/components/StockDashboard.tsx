@@ -424,30 +424,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                       );
                     })}
                   </div>
-
-                  {/* Interior Colors Display */}
-                  {car.interiorColors && car.interiorColors.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-800">
-                      <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>Finitions & Couleurs Intérieures Disponibles</span>
-                        <span className="text-[10px] text-slate-400 font-normal">({car.interiorColors.length} options)</span>
-                      </p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {car.interiorColors.map((intCol) => (
-                          <div
-                            key={intCol.id}
-                            className="flex items-center gap-1.5 bg-slate-950 border border-amber-500/20 px-2 py-1 rounded-lg text-xs"
-                          >
-                            <span
-                              className="w-3.5 h-3.5 rounded-md border border-slate-600 shrink-0"
-                              style={{ backgroundColor: intCol.hexCode }}
-                            />
-                            <span className="text-slate-200 font-medium text-[11px]">{intCol.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Reservation Action Button for whole car */}
