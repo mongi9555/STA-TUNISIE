@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CarModel, CarColor } from '../types';
-import { getFixedDepositForCar, getFullCarPrice, getRegistrationFeeForCar, isPickupCar, getCarCapacityLabel } from '../data/cheryData';
+import { getFixedDepositForCar, getFullCarPrice, getRegistrationFeeForCar, isPickupCar } from '../data/cheryData';
 import { PdfViewer } from './PdfViewer';
 import {
   X,
@@ -21,10 +21,15 @@ import {
   ZoomOut,
   RotateCw,
   Image as ImageIcon,
-  Car,
   Award,
-  AlertTriangle,
-  Globe
+  Maximize,
+  Minimize,
+  Eye,
+  Sun,
+  Moon,
+  Grid,
+  RotateCcw,
+  Move
 } from 'lucide-react';
 
 interface TechSpecModalProps {
@@ -33,13 +38,13 @@ interface TechSpecModalProps {
   onOpenReservationModal?: (car: CarModel, selectedColor?: CarColor) => void;
 }
 
-// Convert base64 Data URL to a Blob URL to avoid Chrome blocking base64 URLs in iframe src
+// Convert base64 Data URL to a Blob URL
 function dataUrlToBlobUrl(dataUrl: string): string | null {
   if (!dataUrl || !dataUrl.startsWith('data:')) return null;
   try {
     const parts = dataUrl.split(',');
     const mimeMatch = parts[0].match(/:(.*?);/);
-    const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
     const bstr = atob(parts[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -60,10 +65,23 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
   onOpenReservationModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'document' | 'details' | 'gallery'>('document');
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string>(car?.imageUrl || '');
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [pdfEngine, setPdfEngine] = useState<'direct' | 'google'>('direct');
+
+  // Image Viewer state for PNG/JPG
+  const [imageFitMode, setImageFitMode] = useState<'fit-width' | 'fit-window' | 'original' | 'custom'>('fit-width');
+  const [imageZoom, setImageZoom] = useState<number>(100);
+  const [imageRotation, setImageRotation] = useState<number>(0);
+  const [imageBgTheme, setImageBgTheme] = useState<'dark' | 'light' | 'grid'>('dark');
+
+  // Manual document format selector: 'auto' | 'pdf' | 'image'
+  const [docFormatOverride, setDocFormatOverride] = useState<'auto' | 'pdf' | 'image'>('auto');
+
+  // Image pan/drag state
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const imageContainerRef = useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (car?.imageUrl) {
@@ -73,7 +91,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
   const rawDocumentUrl = car?.ficheTechniqueUrl || car?.imageUrl || '';
 
-  // Create Blob URL for base64 data URLs to fix Chrome iframe blocking
+  // Create Blob URL for base64 data URLs
   useEffect(() => {
     if (rawDocumentUrl && rawDocumentUrl.startsWith('data:')) {
       const bUrl = dataUrlToBlobUrl(rawDocumentUrl);
@@ -86,11 +104,14 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
     }
   }, [rawDocumentUrl]);
 
+  // Keyboard shortcut listener (Esc to close, F to fullscreen)
   React.useEffect(() => {
     if (!car) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         onClose();
+      } else if ((e.key === 'f' || e.key === 'F') && !['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+        setIsFullscreen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -99,42 +120,88 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
   if (!car) return null;
 
-  const isPdf =
-    car.ficheTechniqueUrl?.toLowerCase().includes('.pdf') ||
-    car.ficheTechniqueUrl?.toLowerCase().includes('pdf') ||
-    car.ficheTechniqueUrl?.startsWith('data:application/pdf') ||
-    car.ficheTechniqueUrl?.startsWith('data:application/octet-stream') ||
-    car.ficheTechniqueUrl?.includes('drive.google.com');
+  const activeDocumentUrl = blobUrl || rawDocumentUrl;
 
-  const documentUrl = car.ficheTechniqueUrl || car.imageUrl;
-  const activePdfSource = blobUrl || documentUrl;
+  // Accurate format detection
+  const isExplicitImage =
+    rawDocumentUrl.startsWith('data:image/') ||
+    /\.(png|jpe?g|webp|gif|svg|avif|bmp)($|\?)/i.test(rawDocumentUrl);
 
-  // Compute final iframe / object src
-  let finalPdfUrl = activePdfSource;
-  if (finalPdfUrl && finalPdfUrl.includes('drive.google.com') && finalPdfUrl.includes('/file/d/')) {
-    const match = finalPdfUrl.match(/\/file\/d\/([^\/]+)/);
-    if (match && match[1]) {
-      finalPdfUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-    }
-  }
+  const isExplicitPdf =
+    rawDocumentUrl.startsWith('data:application/pdf') ||
+    /\.(pdf)($|\?)/i.test(rawDocumentUrl) ||
+    rawDocumentUrl.includes('drive.google.com');
 
-  if (pdfEngine === 'google' && (finalPdfUrl.startsWith('http://') || finalPdfUrl.startsWith('https://'))) {
-    finalPdfUrl = `https://docs.google.com/gview?url=${encodeURIComponent(finalPdfUrl)}&embedded=true`;
-  }
+  const resolvedIsPdf =
+    docFormatOverride === 'pdf'
+      ? true
+      : docFormatOverride === 'image'
+      ? false
+      : isExplicitPdf && !isExplicitImage;
 
-  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.25, 2.5));
-  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.25, 0.5));
-  const handleResetZoom = () => setZoomLevel(1);
+  const handleZoomIn = () => {
+    setImageFitMode('custom');
+    setImageZoom((prev) => Math.min(prev + 25, 400));
+  };
+
+  const handleZoomOut = () => {
+    setImageFitMode('custom');
+    setImageZoom((prev) => Math.max(prev - 25, 25));
+  };
+
+  const handleResetZoom = () => {
+    setImageFitMode('fit-width');
+    setImageZoom(100);
+    setImageRotation(0);
+  };
+
+  const handleRotateImage = () => {
+    setImageRotation((prev) => (prev + 90) % 360);
+  };
 
   const handlePrint = () => {
     window.print();
   };
 
+  // Drag to pan image when zoomed
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!imageContainerRef.current) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX + imageContainerRef.current.scrollLeft,
+      y: e.clientY + imageContainerRef.current.scrollTop
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !imageContainerRef.current) return;
+    imageContainerRef.current.scrollLeft = dragStart.x - e.clientX;
+    imageContainerRef.current.scrollTop = dragStart.y - e.clientY;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const getDownloadExt = () => {
+    if (resolvedIsPdf) return 'pdf';
+    if (rawDocumentUrl.includes('.png') || rawDocumentUrl.startsWith('data:image/png')) return 'png';
+    return 'jpg';
+  };
+
+  const downloadFileName = `Fiche_Technique_${car.name.replace(/\s+/g, '_')}.${getDownloadExt()}`;
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
+      <div
+        className={`bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden relative transition-all duration-200 ${
+          isFullscreen
+            ? 'fixed inset-2 sm:inset-3 w-auto h-auto max-w-none rounded-2xl z-50'
+            : 'max-w-6xl w-full h-[92vh] rounded-2xl'
+        }`}
+      >
         {/* Header Bar */}
-        <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-4 shrink-0">
+        <div className="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2.5 bg-red-600/20 text-red-400 rounded-xl border border-red-500/30 shrink-0">
               <FileText className="w-5 h-5" />
@@ -142,13 +209,13 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-2 py-0.5 bg-red-600/30 text-red-300 font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-red-500/30">
-                  Fiche Technique Flottante
+                  Fiche Technique Officielle
                 </span>
                 <span className="text-xs text-slate-400 font-mono font-semibold">{car.category}</span>
-                <span className="text-xs text-slate-400">•</span>
-                <span className="text-xs text-emerald-400 font-medium">{car.energy}</span>
+                <span className="text-xs text-slate-400 hidden sm:inline">•</span>
+                <span className="text-xs text-emerald-400 font-medium hidden sm:inline">{car.energy}</span>
               </div>
-              <h3 className="text-lg font-black text-white truncate">{car.name}</h3>
+              <h3 className="text-base sm:text-lg font-black text-white truncate">{car.name}</h3>
             </div>
           </div>
 
@@ -156,6 +223,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
             {/* Tab Navigation */}
             <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
               <button
+                type="button"
                 onClick={() => setActiveTab('document')}
                 className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'document'
@@ -168,6 +236,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('details')}
                 className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'details'
@@ -181,6 +250,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
               {car.galleryImages && car.galleryImages.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => setActiveTab('gallery')}
                   className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'gallery'
@@ -194,7 +264,18 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
               )}
             </div>
 
+            {/* Window Controls: Fullscreen Toggle & Close */}
             <button
+              type="button"
+              onClick={() => setIsFullscreen((prev) => !prev)}
+              className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+              title={isFullscreen ? 'Réduire la fenêtre' : 'Agrandir la fenêtre (Plein écran)'}
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4 text-amber-400" /> : <Maximize className="w-4 h-4 text-amber-400" />}
+            </button>
+
+            <button
+              type="button"
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
               title="Fermer la fiche technique"
@@ -205,8 +286,9 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
         </div>
 
         {/* Mobile Tabs */}
-        <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around">
+        <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around shrink-0">
           <button
+            type="button"
             onClick={() => setActiveTab('document')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
               activeTab === 'document' ? 'bg-red-600 text-white' : 'text-slate-400'
@@ -216,6 +298,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
             <span>Document</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('details')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
               activeTab === 'details' ? 'bg-red-600 text-white' : 'text-slate-400'
@@ -226,6 +309,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
           </button>
           {car.galleryImages && car.galleryImages.length > 0 && (
             <button
+              type="button"
               onClick={() => setActiveTab('gallery')}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
                 activeTab === 'gallery' ? 'bg-red-600 text-white' : 'text-slate-400'
@@ -238,82 +322,268 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-900/60">
+        <div className="flex-1 flex flex-col min-h-0 bg-slate-900/60 overflow-hidden">
           {activeTab === 'document' && (
-            <div className="space-y-4 h-full flex flex-col justify-between">
-              {isPdf ? (
-                <PdfViewer
-                  url={activePdfSource}
-                  title={`Fiche Technique ${car.name}`}
-                  downloadFileName={`Fiche_Technique_${car.name.replace(/\s+/g, '_')}.pdf`}
-                  className="min-h-[520px]"
-                />
-              ) : (
-                <div className="space-y-4">
-                  {/* Toolbar Controls for Image */}
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-semibold">Mode d'affichage :</span>
-                      <span className="px-2.5 py-1 bg-slate-900 text-amber-400 rounded-lg border border-slate-800 font-mono font-bold flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5 text-amber-400" />
-                        Visuel Technique / Image HT
+            <div className="h-full flex flex-col min-h-0 p-2 sm:p-4">
+              {resolvedIsPdf ? (
+                /* PDF RENDERER */
+                <div className="flex-1 flex flex-col min-h-0">
+                  {/* Format Selector Bar for PDF */}
+                  <div className="mb-2 flex items-center justify-between gap-2 px-1 text-xs shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400 text-[11px] font-semibold">Format détecté :</span>
+                      <span className="px-2 py-0.5 bg-red-600/20 text-red-400 rounded-md font-mono text-[10px] font-bold border border-red-500/30">
+                        Document PDF
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                        <button
-                          onClick={handleZoomOut}
-                          className="p-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                          title="Zoom arrière"
-                        >
-                          <ZoomOut className="w-4 h-4" />
-                        </button>
-                        <span className="text-[11px] font-mono px-1 font-bold text-slate-300">
-                          {Math.round(zoomLevel * 100)}%
-                        </span>
-                        <button
-                          onClick={handleZoomIn}
-                          className="p-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                          title="Zoom avant"
-                        >
-                          <ZoomIn className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleResetZoom}
-                          className="text-[10px] font-bold px-1.5 py-0.5 text-slate-400 hover:text-white"
-                        >
-                          Reset
-                        </button>
-                      </div>
-
-                      <a
-                        href={documentUrl}
-                        download={`Fiche_Technique_${car.name.replace(/\s+/g, '_')}`}
-                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Télécharger</span>
-                      </a>
-
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={handlePrint}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => setDocFormatOverride('image')}
+                        className="text-[10px] text-slate-400 hover:text-amber-300 underline cursor-pointer"
+                        title="Forcer l'affichage sous forme d'image si ce n'est pas un PDF"
                       >
-                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Imprimer</span>
+                        Afficher comme Image
                       </button>
                     </div>
                   </div>
 
-                  {/* Image Viewer Container */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 min-h-[480px] flex items-center justify-center overflow-auto relative shadow-inner">
-                    <img
-                      src={documentUrl}
-                      alt={`Fiche technique ${car.name}`}
-                      style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
-                      className="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-200"
-                    />
+                  <PdfViewer
+                    url={activeDocumentUrl}
+                    title={`Fiche Technique ${car.name}`}
+                    downloadFileName={downloadFileName}
+                    className="flex-1 min-h-0"
+                    onToggleFullscreen={() => setIsFullscreen((prev) => !prev)}
+                    isFullscreen={isFullscreen}
+                  />
+                </div>
+              ) : (
+                /* PNG / JPG / IMAGE RENDERER */
+                <div className="flex-1 flex flex-col min-h-0 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                  {/* Image Toolbar */}
+                  <div className="bg-slate-900 border-b border-slate-800 p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 select-none">
+                    {/* Left: Fit Modes */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFitMode('fit-width');
+                            setImageZoom(100);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            imageFitMode === 'fit-width'
+                              ? 'bg-red-600 text-white shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="Ajuster à la largeur de la fenêtre (Recommandé pour lire la fiche de haut en bas)"
+                        >
+                          Ajuster Largeur
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFitMode('fit-window');
+                            setImageZoom(100);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            imageFitMode === 'fit-window'
+                              ? 'bg-red-600 text-white shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="Ajuster l'image entière dans la fenêtre"
+                        >
+                          Page Entière
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFitMode('original');
+                            setImageZoom(100);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            imageFitMode === 'original'
+                              ? 'bg-red-600 text-white shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="Taille réelle (100% natif)"
+                        >
+                          100% Natif
+                        </button>
+                      </div>
+
+                      {/* Background Style Switcher (for transparent PNGs) */}
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setImageBgTheme('dark')}
+                          className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                            imageBgTheme === 'dark' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                          title="Fond Sombre"
+                        >
+                          <Moon className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setImageBgTheme('light')}
+                          className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                            imageBgTheme === 'light' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                          title="Fond Blanc Net"
+                        >
+                          <Sun className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setImageBgTheme('grid')}
+                          className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                            imageBgTheme === 'grid' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                          title="Grille Transparente (PNG)"
+                        >
+                          <Grid className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Center: Zoom and Rotation */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button
+                          type="button"
+                          onClick={handleZoomOut}
+                          className="p-1 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+                          title="Zoom arrière (-)"
+                        >
+                          <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="px-1.5 text-amber-400 font-mono font-bold text-[11px] min-w-[42px] text-center">
+                          {imageZoom}%
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleZoomIn}
+                          className="p-1 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+                          title="Zoom avant (+)"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetZoom}
+                          className="text-[10px] font-bold px-1.5 py-0.5 text-slate-400 hover:text-white rounded"
+                          title="Réinitialiser le zoom"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Rotation */}
+                      <button
+                        type="button"
+                        onClick={handleRotateImage}
+                        className="p-1.5 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 rounded-xl hover:bg-slate-800 cursor-pointer"
+                        title="Pivoter de 90°"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setDocFormatOverride('pdf')}
+                        className="text-[10px] text-slate-400 hover:text-amber-300 underline cursor-pointer mr-1 hidden md:inline"
+                        title="Afficher avec le lecteur PDF"
+                      >
+                        Mode PDF
+                      </button>
+
+                      <a
+                        href={activeDocumentUrl}
+                        download={downloadFileName}
+                        className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px]"
+                        title="Télécharger l'image"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Télécharger</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={handlePrint}
+                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+                        title="Imprimer"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="hidden sm:inline">Imprimer</span>
+                      </button>
+
+                      <a
+                        href={activeDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px] px-2.5"
+                        title="Ouvrir dans un nouvel onglet"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Onglet</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Image Scrollable Viewport */}
+                  <div
+                    ref={imageContainerRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    className={`flex-1 min-h-0 w-full overflow-auto p-4 flex items-start justify-center select-none relative ${
+                      isDragging ? 'cursor-grabbing' : imageFitMode === 'fit-width' ? 'cursor-default' : 'cursor-grab'
+                    } ${
+                      imageBgTheme === 'light'
+                        ? 'bg-white'
+                        : imageBgTheme === 'grid'
+                        ? 'bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] bg-[size:16px_16px] bg-slate-200'
+                        : 'bg-slate-950'
+                    }`}
+                  >
+                    <div
+                      className="transition-all duration-150 inline-block my-auto"
+                      style={{
+                        transform: `rotate(${imageRotation}deg)`,
+                        transformOrigin: 'center center',
+                      }}
+                    >
+                      <img
+                        src={activeDocumentUrl}
+                        alt={`Fiche technique ${car.name}`}
+                        style={{
+                          width:
+                            imageFitMode === 'fit-width'
+                              ? `${imageZoom}%`
+                              : imageFitMode === 'fit-window'
+                              ? 'auto'
+                              : imageFitMode === 'original'
+                              ? 'auto'
+                              : `${imageZoom}%`,
+                          maxWidth: imageFitMode === 'fit-window' ? '100%' : 'none',
+                          maxHeight: imageFitMode === 'fit-window' ? 'calc(100vh - 260px)' : 'none',
+                          height: 'auto',
+                        }}
+                        className={`rounded-xl shadow-2xl transition-all mx-auto block ${
+                          imageFitMode === 'fit-width'
+                            ? 'w-full'
+                            : imageFitMode === 'fit-window'
+                            ? 'object-contain'
+                            : ''
+                        }`}
+                        draggable={false}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -321,7 +591,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
           )}
 
           {activeTab === 'details' && (
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
               {/* Key Highlights Banner */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
@@ -434,7 +704,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
           )}
 
           {activeTab === 'gallery' && car.galleryImages && car.galleryImages.length > 0 && (
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="h-80 w-full bg-black rounded-xl overflow-hidden flex items-center justify-center">
                   <img
@@ -446,8 +716,9 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
                 <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-1">
                   <button
+                    type="button"
                     onClick={() => setSelectedGalleryImage(car.imageUrl)}
-                    className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
+                    className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
                       selectedGalleryImage === car.imageUrl ? 'border-red-500 ring-2 ring-red-500/40' : 'border-slate-800 opacity-60'
                     }`}
                   >
@@ -457,8 +728,9 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                   {car.galleryImages.map((img, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setSelectedGalleryImage(img)}
-                      className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
+                      className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
                         selectedGalleryImage === img ? 'border-red-500 ring-2 ring-red-500/40' : 'border-slate-800 opacity-60'
                       }`}
                     >
@@ -472,13 +744,13 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div className="p-3 sm:p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
             <div>
               <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider block">
                 Prix Complet Clé en Main TTC
               </span>
-              <span className="text-xl font-black text-emerald-400 font-mono">
+              <span className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
                 {getFullCarPrice(car).toLocaleString()} TND
               </span>
               <span className="text-[10px] text-slate-400 block font-mono">
@@ -497,6 +769,7 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
@@ -505,11 +778,12 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
             {onOpenReservationModal && (
               <button
+                type="button"
                 onClick={() => {
                   onClose();
                   onOpenReservationModal(car);
                 }}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-red-600/30 flex items-center gap-2 transition-colors cursor-pointer"
+                className="px-4 sm:px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-red-600/30 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Créer Réservation Client</span>
