@@ -1105,9 +1105,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </div>
 
                           {/* Case / Badge Couleur Intérieur associée */}
-                          <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] text-amber-300 w-fit">
-                            <span className="text-slate-400 text-[10px] font-semibold">Couleur Intérieur associée:</span>
-                            <span className="font-bold text-amber-300">{color.interiorColor || 'Noir'}</span>
+                          <div className="flex items-center gap-2 bg-slate-900 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs sm:text-sm text-amber-300 w-fit">
+                            <span className="text-slate-300 text-xs font-medium">Couleur Intérieur associée:</span>
+                            <span className="font-extrabold text-amber-300 text-xs sm:text-sm">{color.interiorColor || 'Noir'}</span>
                           </div>
 
                           {/* Controls */}

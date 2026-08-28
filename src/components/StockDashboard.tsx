@@ -397,11 +397,13 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                             </div>
 
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold text-white truncate">{color.name}</p>
-                              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                                <span className="text-slate-400 font-mono">{color.hexCode}</span>
+                              <p className="text-xs sm:text-sm font-bold text-white truncate">{color.name}</p>
+                              <div className="flex items-center gap-2 flex-wrap text-xs mt-0.5">
+                                <span className="text-slate-400 font-mono text-[11px]">{color.hexCode}</span>
                                 <span className="text-slate-600">•</span>
-                                <span className="text-amber-300 font-medium">Intérieur: {color.interiorColor || 'Noir'}</span>
+                                <span className="text-amber-300 font-bold text-xs sm:text-sm bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                  Intérieur: {color.interiorColor || 'Noir'}
+                                </span>
                               </div>
                             </div>
                           </div>
