@@ -51,14 +51,14 @@ export const auditLogsCollection = collection(db, 'audit_logs');
 
 /**
  * Helper to recursively sanitize objects before saving to Firestore.
- * Strips or truncates large base64 data URLs (>100KB) to ensure payloads NEVER exceed Firestore's 1MB limit.
+ * Removes undefined values and ensures valid serialization without deleting user data.
  */
 export function sanitizeForFirestore<T>(data: T): T {
   if (data === null || data === undefined) return data;
   if (typeof data === 'string') {
-    if (data.startsWith('data:') && data.length > 100000) {
-      console.warn('[Firestore Sanitize] Truncated large base64 string to prevent payload limit error.');
-      return '' as unknown as T;
+    // Only warn if a base64 string exceeds 900KB (approaching Firestore's 1MB doc ceiling)
+    if (data.startsWith('data:') && data.length > 900000) {
+      console.warn('[Firestore Sanitize] Large base64 data string detected (>900KB).');
     }
     return data;
   }
@@ -68,7 +68,9 @@ export function sanitizeForFirestore<T>(data: T): T {
   if (typeof data === 'object') {
     const sanitized: Record<string, any> = {};
     for (const [key, val] of Object.entries(data)) {
-      sanitized[key] = sanitizeForFirestore(val);
+      if (val !== undefined) {
+        sanitized[key] = sanitizeForFirestore(val);
+      }
     }
     return sanitized as T;
   }

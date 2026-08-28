@@ -420,15 +420,49 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const dataUrl = event.target?.result as string;
+      let dataUrl = event.target?.result as string;
+      if (file.type.startsWith('image/')) {
+        try {
+          dataUrl = await compressImageDataUrl(dataUrl, 2400, 2400, 0.88);
+        } catch (compErr) {
+          console.warn('[Fiche Upload] Fallback sans compression:', compErr);
+        }
+      }
       const uploadedUrl = await uploadMediaFile(file, dataUrl);
-      if (isEditing && editingCarModel) {
-        setEditingCarModel({
-          ...editingCarModel,
+      if (isEditing) {
+        setEditingCarModel((prev) => (prev ? {
+          ...prev,
           ficheTechniqueUrl: uploadedUrl,
-        });
+        } : null));
       } else {
         setNewCarFicheUrl(uploadedUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCarImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditing: boolean) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      let dataUrl = event.target?.result as string;
+      if (file.type.startsWith('image/')) {
+        try {
+          dataUrl = await compressImageDataUrl(dataUrl, 1600, 1200, 0.85);
+        } catch (err) {
+          console.warn('[Car Photo Upload] Fallback:', err);
+        }
+      }
+      const uploadedUrl = await uploadMediaFile(file, dataUrl);
+      if (isEditing) {
+        setEditingCarModel((prev) => (prev ? {
+          ...prev,
+          imageUrl: uploadedUrl,
+        } : null));
+      } else {
+        setNewCarImage(uploadedUrl);
       }
     };
     reader.readAsDataURL(file);
@@ -3576,9 +3610,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="font-semibold text-slate-300 block">URL Image Véhicule</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-300 block text-xs">Photo / Image Principale du Véhicule</label>
+                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold rounded-lg border border-slate-700 cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Uploader Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleCarImageFileUpload(e, true)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <input
                   type="url"
+                  placeholder="https://... ou téléversez une photo"
                   value={editingCarModel.imageUrl}
                   onChange={(e) => setEditingCarModel({ ...editingCarModel, imageUrl: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-[11px]"
@@ -3877,9 +3924,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="font-semibold text-slate-300 block">URL Image Véhicule</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-300 block text-xs">Photo / Image Principale du Véhicule</label>
+                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold rounded-lg border border-slate-700 cursor-pointer transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Uploader Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleCarImageFileUpload(e, false)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <input
                   type="url"
+                  placeholder="https://... ou téléversez une photo"
                   value={newCarImage}
                   onChange={(e) => setNewCarImage(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-[11px]"

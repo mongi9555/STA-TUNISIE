@@ -22,10 +22,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   next(err);
 });
 
-// Serve public directory for static uploads (/uploads/*)
+// Serve public directory and explicit /uploads directory for static uploads (/uploads/*)
+app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 app.use(express.static(path.join(process.cwd(), "public")));
 
-// Endpoint pour uploader des fichiers (images, vidéos, PDF) et obtenir une URL d'accès
+// Endpoint pour uploader des fichiers (images fiches techniques, photos véhicules, vidéos, PDF) et obtenir une URL permanente
 app.post("/api/upload", (req, res) => {
   try {
     const { fileName, fileData } = req.body;
@@ -43,7 +44,7 @@ app.post("/api/upload", (req, res) => {
     let extension = "bin";
 
     if (matches) {
-      const mime = matches[1];
+      const mime = matches[1].toLowerCase();
       const base64Data = matches[2];
       buffer = Buffer.from(base64Data, "base64");
       if (mime.includes("pdf")) extension = "pdf";
@@ -52,19 +53,21 @@ app.post("/api/upload", (req, res) => {
       else if (mime.includes("webp")) extension = "webp";
       else if (mime.includes("mp4")) extension = "mp4";
       else if (mime.includes("webm")) extension = "webm";
+      else if (mime.includes("svg")) extension = "svg";
     } else {
       buffer = Buffer.from(fileData, "base64");
     }
 
-    const cleanBaseName = (fileName || "upload").replace(/[^a-zA-Z0-9_\.-]/g, "_");
-    const uniqueFileName = `${Date.now()}_${cleanBaseName.includes('.') ? cleanBaseName : cleanBaseName + '.' + extension}`;
+    const cleanBaseName = (fileName || "document").replace(/[^a-zA-Z0-9_\.-]/g, "_");
+    const hasValidExt = cleanBaseName.includes('.') && cleanBaseName.split('.').pop()!.length <= 5;
+    const uniqueFileName = `${Date.now()}_${hasValidExt ? cleanBaseName : cleanBaseName + '.' + extension}`;
     const filePath = path.join(uploadsDir, uniqueFileName);
 
     fs.writeFileSync(filePath, buffer);
     const publicUrl = `/uploads/${uniqueFileName}`;
 
-    console.log(`[Upload API] Fichier enregistré : ${publicUrl} (${(buffer.length / 1024).toFixed(1)} KB)`);
-    return res.json({ success: true, url: publicUrl });
+    console.log(`[Upload API] Fichier enregistré avec succès : ${publicUrl} (${(buffer.length / 1024).toFixed(1)} KB)`);
+    return res.json({ success: true, url: publicUrl, fileName: uniqueFileName });
   } catch (error: any) {
     console.error("Erreur durant upload API:", error);
     return res.status(500).json({ error: "Erreur lors de l'enregistrement du fichier." });
