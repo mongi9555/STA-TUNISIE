@@ -108,6 +108,38 @@ interface AdminPanelProps {
   onResetToFactoryDefaults?: () => void;
 }
 
+export const getCheryModelDefaultPhoto = (name: string, category?: string): string => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('himla') || category === 'Pick-up') {
+    return 'https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1';
+  }
+  if (n.includes('tiggo 9')) {
+    return 'https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077';
+  }
+  if (n.includes('tiggo 8')) {
+    return 'https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403';
+  }
+  if (n.includes('tiggo 7')) {
+    return 'https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835';
+  }
+  if (n.includes('tiggo 4')) {
+    return 'https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731';
+  }
+  if (n.includes('tiggo 2')) {
+    return 'https://catalogue.automobile.tn/big/2026/04/47617.webp?t=1777544465';
+  }
+  if (n.includes('icar') || n.includes('i03') || n.includes('i 03')) {
+    return 'https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1';
+  }
+  if (n.includes('arrizo 8') && (n.includes('phev') || n.includes('plug'))) {
+    return 'https://catalogue.automobile.tn/big/2026/06/47649.webp?t=1782727426';
+  }
+  if (n.includes('arrizo 8')) {
+    return 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724';
+  }
+  return 'https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1';
+};
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   currentUser,
   cars,
@@ -399,8 +431,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCarTransmission, setNewCarTransmission] = useState('Boîte Automatique CVT 9 rapports');
   const [newCarEnergy, setNewCarEnergy] = useState<CarModel['energy']>('Essence');
   const [newCarGuarantee, setNewCarGuarantee] = useState('7 ans ou 200 000 km');
-  const [newCarImage, setNewCarImage] = useState('https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724');
-  const [newCarDesc, setNewCarDesc] = useState('SUV moderne équipé des dernières technologies Chery.');
+  const [newCarImage, setNewCarImage] = useState('');
+  const [newCarDesc, setNewCarDesc] = useState('Modèle moderne équipé des dernières technologies Chery.');
   const [newCarFicheUrl, setNewCarFicheUrl] = useState('');
   
   // Extended Technical Specs state for new car model
@@ -549,6 +581,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditingUserSession(null);
   };
 
+  const handleOpenAddCarModal = () => {
+    setNewCarName('');
+    setNewCarCategory('SUV');
+    setNewCarPrice(65000);
+    setNewCarRequiredDeposit(20000);
+    setNewCarEngine('1.5L Turbo 147 ch');
+    setNewCarTransmission('Boîte Automatique CVT 9 rapports');
+    setNewCarEnergy('Essence');
+    setNewCarGuarantee('7 ans ou 200 000 km');
+    setNewCarImage('');
+    setNewCarDesc('Modèle moderne équipé des dernières technologies Chery.');
+    setNewCarFicheUrl('');
+    setIsAddCarModalOpen(true);
+  };
+
   const handleCreateCarSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCarName.trim() || !onAddCarModel) return;
@@ -563,6 +610,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       .map((s) => s.trim())
       .filter(Boolean);
 
+    // Intelligently resolve the vehicle image: custom image URL or uploaded photo or model preset
+    let resolvedImage = newCarImage.trim();
+    if (!resolvedImage) {
+      if (newCarFicheUrl && (newCarFicheUrl.startsWith('data:image') || /\.(jpg|jpeg|png|webp)/i.test(newCarFicheUrl))) {
+        resolvedImage = newCarFicheUrl;
+      } else {
+        resolvedImage = getCheryModelDefaultPhoto(newCarName, newCarCategory);
+      }
+    }
+
     const newCar: CarModel = {
       id: `car-${Date.now()}`,
       name: newCarName.trim(),
@@ -573,7 +630,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       transmission: newCarTransmission.trim(),
       energy: newCarEnergy,
       guarantee: newCarGuarantee.trim(),
-      imageUrl: newCarImage.trim() || 'https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724',
+      imageUrl: resolvedImage,
       description: newCarDesc.trim(),
       ficheTechniqueUrl: newCarFicheUrl.trim(),
       powerHP: newCarPower.trim(),
@@ -595,6 +652,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onAddCarModel(newCar);
     setIsAddCarModalOpen(false);
     setNewCarName('');
+    setNewCarImage('');
     setNewCarPrice(65000);
     setNewCarRequiredDeposit(20000);
   };
@@ -881,7 +939,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {onAddCarModel && (
               <button
-                onClick={() => setIsAddCarModalOpen(true)}
+                onClick={handleOpenAddCarModal}
                 className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-600/30 flex items-center gap-2 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-4 h-4" />
@@ -3609,12 +3667,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 />
               </div>
 
-              <div className="space-y-1 sm:col-span-2">
+              <div className="space-y-2 sm:col-span-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                 <div className="flex items-center justify-between">
-                  <label className="font-semibold text-slate-300 block text-xs">Photo / Image Principale du Véhicule</label>
-                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold rounded-lg border border-slate-700 cursor-pointer transition-colors">
+                  <div>
+                    <label className="font-semibold text-slate-200 block text-xs">Photo / Image Principale du Véhicule</label>
+                    <p className="text-[10px] text-slate-400">Photo affichée sur le Tableau de bord, le Catalogue et les Devis</p>
+                  </div>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Uploader Photo</span>
+                    <span>Uploader une Photo</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -3623,6 +3684,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   </label>
                 </div>
+
+                {editingCarModel.imageUrl && (
+                  <div className="flex items-center gap-3 p-2 bg-slate-900 rounded-lg border border-slate-800">
+                    <img
+                      src={editingCarModel.imageUrl}
+                      alt="Aperçu véhicule"
+                      className="w-24 h-16 object-cover rounded-md border border-slate-700 bg-black shrink-0"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1';
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Photo actuelle enregistrée
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono truncate">{editingCarModel.imageUrl}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCarModel({ ...editingCarModel, imageUrl: getCheryModelDefaultPhoto(editingCarModel.name, editingCarModel.category) })}
+                          className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium"
+                        >
+                          Réinitialiser avec la photo officielle
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <input
                   type="url"
                   placeholder="https://... ou téléversez une photo"
@@ -3923,12 +4013,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-1 sm:col-span-2">
+              <div className="space-y-2 sm:col-span-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                 <div className="flex items-center justify-between">
-                  <label className="font-semibold text-slate-300 block text-xs">Photo / Image Principale du Véhicule</label>
-                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold rounded-lg border border-slate-700 cursor-pointer transition-colors">
+                  <div>
+                    <label className="font-semibold text-slate-200 block text-xs">Photo / Image Principale du Véhicule</label>
+                    <p className="text-[10px] text-slate-400">Photo affichée sur le Tableau de bord, le Catalogue et les Devis</p>
+                  </div>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Uploader Photo</span>
+                    <span>Uploader une Photo</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -3937,6 +4030,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   </label>
                 </div>
+
+                {newCarImage ? (
+                  <div className="flex items-center gap-3 p-2 bg-slate-900 rounded-lg border border-slate-800">
+                    <img
+                      src={newCarImage}
+                      alt="Aperçu photo"
+                      className="w-24 h-16 object-cover rounded-md border border-slate-700 bg-black shrink-0"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1';
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Photo prête pour ce véhicule
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono truncate">{newCarImage}</p>
+                      <button
+                        type="button"
+                        onClick={() => setNewCarImage('')}
+                        className="text-[10px] text-red-400 hover:text-red-300 underline font-medium mt-1"
+                      >
+                        Retirer la photo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2 bg-slate-900/60 rounded-lg border border-dashed border-slate-800">
+                    <p className="text-[11px] text-slate-400">
+                      💡 Aucune photo personnalisée. Par défaut, la photo officielle pour <strong className="text-white">{newCarName || newCarCategory}</strong> sera appliquée.
+                    </p>
+                    {newCarName && (
+                      <button
+                        type="button"
+                        onClick={() => setNewCarImage(getCheryModelDefaultPhoto(newCarName, newCarCategory))}
+                        className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold rounded border border-slate-700 shrink-0"
+                      >
+                        Appliquer photo Chery
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <input
                   type="url"
                   placeholder="https://... ou téléversez une photo"
