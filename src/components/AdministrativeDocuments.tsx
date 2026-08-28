@@ -150,8 +150,29 @@ export const AdministrativeDocuments: React.FC<AdministrativeDocumentsProps> = (
     setUploadedFileSize(sizeInKB > 1024 ? `${(sizeInKB / 1024).toFixed(1)} MB` : `${sizeInKB} KB`);
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedFileDataUrl(reader.result as string);
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setUploadedFileDataUrl(dataUrl);
+
+      // Upload file to permanent server storage
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileData: dataUrl,
+            fileName: file.name,
+          }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.url) {
+            setUploadedFileDataUrl(json.url);
+          }
+        }
+      } catch (err) {
+        console.warn('Server upload failed, fallback to local dataUrl:', err);
+      }
     };
     reader.readAsDataURL(file);
   };

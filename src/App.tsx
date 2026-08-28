@@ -89,6 +89,10 @@ import {
   deleteAuditLogFromFirestore,
   deleteMultipleAuditLogsFromFirestore,
   clearAuditLogsFromFirestore,
+  knowledgeBaseCollection,
+  saveKnowledgeBaseItemToFirestore,
+  deleteKnowledgeBaseItemFromFirestore,
+  saveDocTemplateToFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -240,12 +244,14 @@ export default function App() {
   const handleSaveKnowledgeBase = (newItems: KnowledgeBaseItem[]) => {
     setKnowledgeBase(newItems);
     saveStoredKnowledgeBase(newItems);
+    newItems.forEach((item) => saveKnowledgeBaseItemToFirestore(item));
     showToast('Base de Connaissances mise à jour et enregistrée !');
   };
 
   const handleSaveDocTemplate = (newConfig: DocumentTemplateConfig) => {
     setDocTemplate(newConfig);
     saveStoredDocumentTemplate(newConfig);
+    saveDocTemplateToFirestore(newConfig);
     showToast('Paramètres des documents et devis mis à jour !');
   };
 
@@ -379,6 +385,14 @@ export default function App() {
       }
     }, (err) => console.warn('Admin docs snapshot listener warning:', err));
 
+    const unsubscribeKnowledgeBase = onSnapshot(knowledgeBaseCollection, (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map((doc) => doc.data() as KnowledgeBaseItem);
+        setKnowledgeBase(fetched);
+        saveStoredKnowledgeBase(fetched);
+      }
+    }, (err) => console.warn('Knowledge base snapshot listener warning:', err));
+
     const unsubscribeAuditLogs = onSnapshot(auditLogsCollection, (snapshot) => {
       const fetched = snapshot.docs
         .map((doc) => doc.data() as AuditLogEntry)
@@ -399,6 +413,7 @@ export default function App() {
       unsubscribeAccessories();
       unsubscribeQuotes();
       unsubscribeAdminDocs();
+      unsubscribeKnowledgeBase();
       unsubscribeAuditLogs();
     };
   }, []);
@@ -491,6 +506,24 @@ export default function App() {
           if (data.siteSettings) {
             setSiteSettings((prev) => (prev ? prev : data.siteSettings));
           }
+          if (Array.isArray(data.adminDocs) && data.adminDocs.length > 0) {
+            setAdminDocs((prev) => (prev.length === 0 ? data.adminDocs : prev));
+          }
+          if (Array.isArray(data.knowledgeBase) && data.knowledgeBase.length > 0) {
+            setKnowledgeBase((prev) => (prev.length === 0 ? data.knowledgeBase : prev));
+          }
+          if (Array.isArray(data.testDrives) && data.testDrives.length > 0) {
+            setTestDrives((prev) => (prev.length === 0 ? data.testDrives : prev));
+          }
+          if (Array.isArray(data.stockRequests) && data.stockRequests.length > 0) {
+            setStockRequests((prev) => (prev.length === 0 ? data.stockRequests : prev));
+          }
+          if (data.docTemplate) {
+            setDocTemplate((prev) => (prev ? prev : data.docTemplate));
+          }
+          if (Array.isArray(data.auditLogs) && data.auditLogs.length > 0) {
+            setAuditLogs((prev) => (prev.length === 0 ? data.auditLogs : prev));
+          }
           console.log('[Chery Local DB] Synchronisation locale prête');
         }
       })
@@ -509,7 +542,20 @@ export default function App() {
         await fetch('/api/db/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cars, reservations, commercials, siteSettings, accessories, quotes }),
+          body: JSON.stringify({
+            cars,
+            reservations,
+            commercials,
+            siteSettings,
+            accessories,
+            quotes,
+            adminDocs,
+            knowledgeBase,
+            testDrives,
+            stockRequests,
+            docTemplate,
+            auditLogs,
+          }),
         });
       } catch (err) {
         // En mode client pur, sauvegarde locale déjà gérée
@@ -517,7 +563,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [cars, reservations, commercials, siteSettings, accessories, quotes]);
+  }, [cars, reservations, commercials, siteSettings, accessories, quotes, adminDocs, knowledgeBase, testDrives, stockRequests, docTemplate, auditLogs]);
 
   // Audit Log Management Helpers
   const addAuditLog = (entry: {

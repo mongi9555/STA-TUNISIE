@@ -13,8 +13,8 @@ import {
   Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest, AdministrativeDocument, AuditLogEntry } from './types';
-import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar, INITIAL_ADMIN_DOCUMENTS, INITIAL_AUDIT_LOGS } from './data/cheryData';
+import { CarModel, Reservation, CommercialUser, SiteSettings, CarAccessory, CustomQuote, TestDriveAppointment, StockRequest, AdministrativeDocument, AuditLogEntry, KnowledgeBaseItem, DocumentTemplateConfig } from './types';
+import { INITIAL_CARS, INITIAL_RESERVATIONS, INITIAL_COMMERCIALS, DEFAULT_SITE_SETTINGS, isVirtualCar, INITIAL_ADMIN_DOCUMENTS, INITIAL_AUDIT_LOGS, INITIAL_KNOWLEDGE_BASE } from './data/cheryData';
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
@@ -48,6 +48,7 @@ export const quotesCollection = collection(db, 'quotes');
 export const stockRequestsCollection = collection(db, 'stock_requests');
 export const adminDocsCollection = collection(db, 'admin_documents');
 export const auditLogsCollection = collection(db, 'audit_logs');
+export const knowledgeBaseCollection = collection(db, 'knowledge_base');
 
 /**
  * Helper to recursively sanitize objects before saving to Firestore.
@@ -78,9 +79,6 @@ export function sanitizeForFirestore<T>(data: T): T {
 }
 
 /**
- * Seed initial data to Firestore if collections are empty.
- */
-/**
  * Helper to run a Firestore promise with a safety timeout to prevent hanging when offline
  */
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 3500): Promise<T> {
@@ -93,92 +91,18 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 3500): Promise<
 }
 
 /**
- * Deletes any virtual/mock placeholder cars from Firestore database.
+ * Safe cleanup routines that protect all user-created items from being deleted.
  */
 export async function cleanupVirtualCarsFromFirestore() {
-  try {
-    const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
-    const virtualDocs = carsSnap.docs.filter((d) => {
-      const data = d.data() as CarModel;
-      return isVirtualCar(data) || isVirtualCar(d.id);
-    });
-
-    if (virtualDocs.length > 0) {
-      console.log(`[Firestore Cleanup] Deleting ${virtualDocs.length} virtual cars from Firestore...`);
-      const batch = writeBatch(db);
-      virtualDocs.forEach((d) => {
-        batch.delete(d.ref);
-      });
-      await withTimeout(batch.commit(), 4000);
-      console.log('[Firestore Cleanup] Virtual cars successfully deleted from Firestore.');
-    }
-  } catch (error) {
-    console.warn('Note on virtual cars cleanup from Firestore (offline or queued):', error);
-  }
+  // No-op: never auto-delete user cars
 }
 
-/**
- * Clean up deprecated demo commercials from Firestore if present
- */
 export async function cleanupDeprecatedCommercialsFromFirestore() {
-  try {
-    const deprecatedIds = ['comm-1', 'comm-2', 'comm-3'];
-    for (const id of deprecatedIds) {
-      const docRef = doc(db, 'commercials', id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        await deleteDoc(docRef);
-        console.log(`[Firestore Cleanup] Deleted obsolete commercial doc by ID: ${id}`);
-      }
-    }
-
-    // Also scan existing commercials in Firestore to delete any matching deprecated profiles
-    const snap = await getDocs(commercialsCollection);
-    for (const d of snap.docs) {
-      const data = d.data() as any;
-      const name = (data.name || '').toLowerCase();
-      const email = (data.email || '').toLowerCase();
-      if (
-        deprecatedIds.includes(d.id) ||
-        name.includes('direction commerciale') ||
-        name.includes('karim ben salem') ||
-        name.includes('sarra mansour') ||
-        email.includes('admin@chery-tunisie.tn') ||
-        email.includes('karim.bensalem') ||
-        email.includes('sarra.mansour')
-      ) {
-        await deleteDoc(doc(db, 'commercials', d.id));
-        console.log(`[Firestore Cleanup] Purged deprecated commercial document: ${d.id} (${data.name})`);
-      }
-    }
-  } catch (err) {
-    console.warn('Note on commercial cleanup from Firestore:', err);
-  }
+  // No-op: never auto-delete user commercial accounts
 }
 
-/**
- * Clean up legacy mock/example audit logs from Firestore (e.g. audit-log-1 to audit-log-10)
- */
 export async function cleanupMockAuditLogsFromFirestore() {
-  try {
-    const snap = await withTimeout(getDocs(auditLogsCollection), 4000);
-    const mockDocs = snap.docs.filter((d) => {
-      const id = d.id;
-      return id.startsWith('audit-log-') || id.includes('mock');
-    });
-
-    if (mockDocs.length > 0) {
-      console.log(`[Firestore Cleanup] Deleting ${mockDocs.length} mock audit logs from Firestore...`);
-      const batch = writeBatch(db);
-      mockDocs.forEach((d) => {
-        batch.delete(d.ref);
-      });
-      await withTimeout(batch.commit(), 4000);
-      console.log('[Firestore Cleanup] Mock audit logs successfully deleted from Firestore.');
-    }
-  } catch (error) {
-    console.warn('Note on mock audit logs cleanup from Firestore:', error);
-  }
+  // No-op: never auto-delete logs
 }
 
 /**
@@ -186,20 +110,24 @@ export async function cleanupMockAuditLogsFromFirestore() {
  */
 export async function seedInitialDataIfEmpty() {
   try {
-    // First, purge any leftover virtual cars, deprecated commercial sessions & mock audit logs
-    await cleanupVirtualCarsFromFirestore();
-    await cleanupDeprecatedCommercialsFromFirestore();
-    await cleanupMockAuditLogsFromFirestore();
-
     const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
-    const validCars = carsSnap.docs.filter((d) => !isVirtualCar(d.data() as CarModel));
-
-    if (validCars.length === 0) {
+    if (carsSnap.empty) {
       console.log('Seeding initial official cars to Firestore...');
       const batch = writeBatch(db);
       INITIAL_CARS.forEach((car) => {
         const docRef = doc(db, 'cars', car.id);
         batch.set(docRef, sanitizeForFirestore(car));
+      });
+      await withTimeout(batch.commit(), 4000);
+    }
+
+    const kbSnap = await withTimeout(getDocs(knowledgeBaseCollection), 4000);
+    if (kbSnap.empty && INITIAL_KNOWLEDGE_BASE) {
+      console.log('Seeding initial knowledge base to Firestore...');
+      const batch = writeBatch(db);
+      INITIAL_KNOWLEDGE_BASE.forEach((kb) => {
+        const docRef = doc(db, 'knowledge_base', kb.id);
+        batch.set(docRef, sanitizeForFirestore(kb));
       });
       await withTimeout(batch.commit(), 4000);
     }
@@ -507,5 +435,39 @@ export async function clearAuditLogsFromFirestore() {
     console.error('Error clearing audit logs in Firestore:', e);
   }
 }
+
+/**
+ * Save Knowledge Base item to Firestore
+ */
+export async function saveKnowledgeBaseItemToFirestore(item: KnowledgeBaseItem) {
+  try {
+    await setDoc(doc(db, 'knowledge_base', item.id), sanitizeForFirestore(item));
+  } catch (e) {
+    console.error('Error saving knowledge base item to Firestore:', e);
+  }
+}
+
+/**
+ * Delete Knowledge Base item from Firestore
+ */
+export async function deleteKnowledgeBaseItemFromFirestore(itemId: string) {
+  try {
+    await deleteDoc(doc(db, 'knowledge_base', itemId));
+  } catch (e) {
+    console.error('Error deleting knowledge base item from Firestore:', e);
+  }
+}
+
+/**
+ * Save Document Template Config to Firestore
+ */
+export async function saveDocTemplateToFirestore(config: DocumentTemplateConfig) {
+  try {
+    await setDoc(doc(db, 'settings', 'doc_template'), sanitizeForFirestore(config));
+  } catch (e) {
+    console.error('Error saving document template to Firestore:', e);
+  }
+}
+
 
 

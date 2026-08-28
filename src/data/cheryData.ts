@@ -570,22 +570,7 @@ export function formatCarCapacityValue(
   return isPickup ? '1050 Kg (Charge Utile)' : '475 Litres';
 }
 
-export const VIRTUAL_CAR_IDS: string[] = [
-  'car-arrizo-5',
-  'car-arrizo-8-phev',
-  'car-icar-03-4x2',
-  'car-icar-03-4x4',
-  'car-omoda-5',
-  'car-tiggo-2-pro',
-  'car-tiggo-2-pro-max',
-  'car-tiggo-4-pro',
-  'car-tiggo-4-pro-hev',
-  'car-tiggo-7-pro',
-  'car-tiggo-7-pro-phev',
-  'car-tiggo-8-pro-max',
-  'car-tiggo-8-pro-phev',
-  'car-tiggo-9-pro-phev'
-];
+export const VIRTUAL_CAR_IDS: string[] = [];
 
 export const OFFICIAL_CAR_IDS = [
   "car-1785512735025", // Chery Arrizo 8 PHEV
@@ -615,10 +600,8 @@ export const OFFICIAL_CAR_NAMES = [
   "chery tiggo 8 phev",
 ];
 
-export function isVirtualCar(carOrId: CarModel | string | null | undefined): boolean {
-  if (!carOrId) return false;
-  const carId = typeof carOrId === 'string' ? carOrId : carOrId.id;
-  if (carId && VIRTUAL_CAR_IDS.includes(carId)) return true;
+export function isVirtualCar(_carOrId: CarModel | string | null | undefined): boolean {
+  // Never treat any car model as virtual to prevent automatic deletion
   return false;
 }
 
@@ -1278,16 +1261,7 @@ export function saveStoredReservations(reservations: Reservation[]): void {
 
 export function isDeprecatedCommercialUser(u: { id?: string; name?: string; email?: string }): boolean {
   if (!u) return false;
-  const deprecatedIds = ['comm-1', 'comm-2', 'comm-3'];
-  if (u.id && deprecatedIds.includes(u.id)) return true;
-  const name = (u.name || '').toLowerCase();
-  if (name.includes('direction commerciale') || name.includes('karim ben salem') || name.includes('sarra mansour')) {
-    return true;
-  }
-  const email = (u.email || '').toLowerCase();
-  if (email.includes('admin@chery-tunisie.tn') || email.includes('karim.bensalem') || email.includes('sarra.mansour')) {
-    return true;
-  }
+  // Never automatically delete or filter user profiles
   return false;
 }
 

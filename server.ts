@@ -130,6 +130,12 @@ function createDefaultDbPayload() {
     siteSettings: null,
     accessories: [],
     quotes: [],
+    adminDocs: [],
+    knowledgeBase: [],
+    testDrives: [],
+    stockRequests: [],
+    docTemplate: null,
+    auditLogs: [],
   };
 }
 
@@ -191,7 +197,20 @@ app.get("/api/db", (req, res) => {
 app.post("/api/db/save", (req, res) => {
   try {
     ensureDataDir();
-    const { cars, reservations, commercials, siteSettings, accessories, quotes } = req.body || {};
+    const {
+      cars,
+      reservations,
+      commercials,
+      siteSettings,
+      accessories,
+      quotes,
+      adminDocs,
+      knowledgeBase,
+      testDrives,
+      stockRequests,
+      docTemplate,
+      auditLogs,
+    } = req.body || {};
     
     const dbPayload = {
       savedAt: new Date().toISOString(),
@@ -201,6 +220,12 @@ app.post("/api/db/save", (req, res) => {
       siteSettings: siteSettings || null,
       accessories: Array.isArray(accessories) ? accessories : [],
       quotes: Array.isArray(quotes) ? quotes : [],
+      adminDocs: Array.isArray(adminDocs) ? adminDocs : [],
+      knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : [],
+      testDrives: Array.isArray(testDrives) ? testDrives : [],
+      stockRequests: Array.isArray(stockRequests) ? stockRequests : [],
+      docTemplate: docTemplate || null,
+      auditLogs: Array.isArray(auditLogs) ? auditLogs : [],
     };
 
     const jsonString = JSON.stringify(dbPayload, null, 2);
