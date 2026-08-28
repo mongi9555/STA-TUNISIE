@@ -457,39 +457,16 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
           </div>
         )}
 
-        {/* Right: Actions & Fullscreen */}
+        {/* Right: Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {onToggleFullscreen && (
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px] px-2"
-              title={isFullscreen ? "Réduire la fenêtre" : "Agrandir en plein écran"}
-            >
-              {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-amber-400" /> : <Maximize className="w-3.5 h-3.5 text-amber-400" />}
-              <span className="hidden md:inline">{isFullscreen ? "Réduire" : "Plein Écran"}</span>
-            </button>
-          )}
-
           <a
             href={activeSourceForFrame}
             download={downloadFileName}
-            className="p-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px] px-2.5"
+            className="p-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px] px-3"
             title="Télécharger le fichier PDF"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Télécharger</span>
-          </a>
-
-          <a
-            href={activeSourceForFrame}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px] px-2.5"
-            title="Ouvrir dans un nouvel onglet"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Onglet</span>
+            <span>Télécharger</span>
           </a>
         </div>
       </div>

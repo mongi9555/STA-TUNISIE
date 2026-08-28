@@ -220,35 +220,22 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Tab Navigation */}
-            <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setActiveTab('document')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'document'
-                    ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Document (PDF / Image)</span>
-              </button>
+            {/* Tab Navigation (shown only when multiple items exist, e.g., gallery) */}
+            {car.galleryImages && car.galleryImages.length > 0 && (
+              <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('document')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'document'
+                      ? 'bg-red-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Document (PDF / Image)</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('details')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'details'
-                    ? 'bg-red-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>Specs Détaillées</span>
-              </button>
-
-              {car.galleryImages && car.galleryImages.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setActiveTab('gallery')}
@@ -261,19 +248,10 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>Galerie ({car.galleryImages.length})</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Window Controls: Fullscreen Toggle & Close */}
-            <button
-              type="button"
-              onClick={() => setIsFullscreen((prev) => !prev)}
-              className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
-              title={isFullscreen ? 'Réduire la fenêtre' : 'Agrandir la fenêtre (Plein écran)'}
-            >
-              {isFullscreen ? <Minimize className="w-4 h-4 text-amber-400" /> : <Maximize className="w-4 h-4 text-amber-400" />}
-            </button>
-
+            {/* Window Controls: Close */}
             <button
               type="button"
               onClick={onClose}
@@ -286,28 +264,18 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
         </div>
 
         {/* Mobile Tabs */}
-        <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('document')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
-              activeTab === 'document' ? 'bg-red-600 text-white' : 'text-slate-400'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Document</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('details')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
-              activeTab === 'details' ? 'bg-red-600 text-white' : 'text-slate-400'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Specs</span>
-          </button>
-          {car.galleryImages && car.galleryImages.length > 0 && (
+        {car.galleryImages && car.galleryImages.length > 0 && (
+          <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('document')}
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
+                activeTab === 'document' ? 'bg-red-600 text-white' : 'text-slate-400'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Document</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('gallery')}
@@ -318,8 +286,8 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
               <ImageIcon className="w-3.5 h-3.5" />
               <span>Galerie</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Modal Body */}
         <div className="flex-1 flex flex-col min-h-0 bg-slate-900/60 overflow-hidden">
@@ -492,44 +460,14 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setDocFormatOverride('pdf')}
-                        className="text-[10px] text-slate-400 hover:text-amber-300 underline cursor-pointer mr-1 hidden md:inline"
-                        title="Afficher avec le lecteur PDF"
-                      >
-                        Mode PDF
-                      </button>
-
                       <a
                         href={activeDocumentUrl}
                         download={downloadFileName}
-                        className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px]"
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow text-xs"
                         title="Télécharger l'image"
                       >
                         <Download className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Télécharger</span>
-                      </a>
-
-                      <button
-                        type="button"
-                        onClick={handlePrint}
-                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
-                        title="Imprimer"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="hidden sm:inline">Imprimer</span>
-                      </button>
-
-                      <a
-                        href={activeDocumentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-1 transition-colors cursor-pointer shadow text-[11px] px-2.5"
-                        title="Ouvrir dans un nouvel onglet"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Onglet</span>
+                        <span>Télécharger</span>
                       </a>
                     </div>
                   </div>

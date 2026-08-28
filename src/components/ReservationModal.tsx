@@ -465,11 +465,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                             )}
                           </span>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-bold truncate leading-tight">{color.name}</p>
-                            <p className="text-[10px] font-mono text-slate-400">
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-sky-400 block leading-tight">
+                              Couleur Extérieure :
+                            </span>
+                            <p className="text-[11px] font-bold truncate leading-tight text-white">{color.name}</p>
+                            <p className="text-[10px] font-mono text-slate-400 mt-0.5">
                               {color.hexCode} • {isOutOfStock ? 'Épuisé' : `${color.stock} dispo`}
                             </p>
-                            <p className="text-xs text-amber-300 font-bold truncate mt-0.5">
+                            <p className="text-[10px] text-amber-300 font-bold truncate mt-1 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30 inline-block">
                               Intérieur: {color.interiorColor || 'Noir'}
                             </p>
                           </div>

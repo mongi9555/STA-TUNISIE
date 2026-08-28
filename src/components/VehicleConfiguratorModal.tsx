@@ -261,9 +261,12 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                             className="w-5 h-5 rounded-full border border-white/40 shrink-0 shadow"
                             style={{ backgroundColor: col.hexCode }}
                           />
-                          <div className="overflow-hidden">
-                            <p className="font-bold text-xs truncate">{col.name}</p>
-                            <p className="text-[10px] text-slate-400 font-mono">
+                          <div className="overflow-hidden min-w-0">
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-sky-400 block leading-tight">
+                              Couleur Extérieure :
+                            </span>
+                            <p className="font-bold text-xs truncate text-white">{col.name}</p>
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                               {available > 0 ? `Dispo: ${available}` : 'Sur commande'}
                             </p>
                           </div>

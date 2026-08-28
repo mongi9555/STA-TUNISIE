@@ -344,7 +344,9 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
                     {/* Color Picker Swatches with Hex Codes */}
                     <div className="pt-2 border-t border-slate-800 space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-200">Couleur & Stock :</span>
+                        <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px] text-sky-400">
+                          Couleur Extérieure :
+                        </span>
                         {selectedColor && (
                           <span
                             className={`font-mono text-[11px] font-bold px-2 py-0.5 rounded ${
@@ -355,7 +357,7 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
                                 : 'bg-red-500/20 text-red-300 border border-red-500/30'
                             }`}
                           >
-                            {selectedColor.name} ({selectedColor.hexCode}) — {selectedColor.stock === 0 ? '0 ÉPUISÉ' : `${selectedColor.stock} en stock`}
+                            {selectedColor.name} — {selectedColor.stock === 0 ? '0 ÉPUISÉ' : `${selectedColor.stock} en stock`}
                           </span>
                         )}
                       </div>

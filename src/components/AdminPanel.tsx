@@ -1155,6 +1155,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               style={{ backgroundColor: color.hexCode }}
                             />
                             <div className="min-w-0">
+                              <span className="text-[10px] uppercase tracking-wider font-extrabold text-sky-400 block leading-tight">
+                                Couleur Extérieure :
+                              </span>
                               <p className="font-bold text-white truncate flex items-center gap-1.5">
                                 <span>{color.name}</span>
                                 <span className="font-mono text-[10px] text-slate-400">({color.hexCode})</span>
