@@ -173,7 +173,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onImportDatabase,
   onResetToFactoryDefaults,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'database'>('inventory');
+  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'favicon' | 'database'>('inventory');
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stock Request Filter State
@@ -200,6 +200,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Site Customization Local Form State
   const [logoInput, setLogoInput] = useState(siteSettings?.logoUrl || '');
+  const [faviconInput, setFaviconInput] = useState(siteSettings?.faviconUrl || '/favicon.svg');
   const [siteNameInput, setSiteNameInput] = useState(siteSettings?.siteName || 'CHERY Tunisie');
   const [siteSubtitleInput, setSiteSubtitleInput] = useState(siteSettings?.siteSubtitle || 'Système de Réservation, Stocks & Gestion des Accès — Siège STA');
   const [badgeInput, setBadgeInput] = useState(siteSettings?.headerBadgeText || 'Espace Commercial & Direction');
@@ -352,12 +353,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleFaviconFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const isSvg = file.type.includes('svg') || file.name.endsWith('.svg');
+      const compressed = isSvg ? dataUrl : await compressImageDataUrl(dataUrl, 256, 256, 0.95);
+      const uploadedUrl = await uploadMediaFile(file, compressed);
+      setFaviconInput(uploadedUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveFaviconDirect = (customUrl?: string) => {
+    if (!onUpdateSiteSettings) return;
+    const finalFavicon = (customUrl !== undefined ? customUrl : faviconInput).trim() || '/favicon.svg';
+    if (customUrl !== undefined) {
+      setFaviconInput(customUrl);
+    }
+    const updated: SiteSettings = {
+      ...(siteSettings || {}),
+      logoUrl: logoInput.trim(),
+      faviconUrl: finalFavicon,
+      siteName: siteNameInput.trim(),
+      siteSubtitle: siteSubtitleInput.trim(),
+      headerBadgeText: badgeInput.trim(),
+    };
+    onUpdateSiteSettings(updated);
+
+    // Immediate DOM update for browser tabs
+    const iconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+    if (iconLink) iconLink.href = finalFavicon;
+    const altLink = document.querySelector("link[rel='alternate icon']") as HTMLLinkElement | null;
+    if (altLink) altLink.href = finalFavicon;
+
+    setSaveSuccessMsg(true);
+    setTimeout(() => setSaveSuccessMsg(false), 4000);
+  };
+
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
     if (!onUpdateSiteSettings) return;
 
     const updated: SiteSettings = {
       logoUrl: logoInput.trim(),
+      faviconUrl: faviconInput.trim(),
       siteName: siteNameInput.trim(),
       siteSubtitle: siteSubtitleInput.trim(),
       headerBadgeText: badgeInput.trim(),
@@ -905,6 +947,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           >
             <Palette className="w-4 h-4" />
             <span>Personnalisation du Site & Logo</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveAdminTab('favicon')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'favicon'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Globe className="w-4 h-4 text-indigo-400" />
+            <span>Personnalisation Favicon</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold">
+              Onglet Web
+            </span>
           </button>
 
           <button
@@ -1882,6 +1940,296 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
+      {/* TAB: FAVICON & BROWSER TAB CUSTOMIZATION STUDIO */}
+      {activeAdminTab === 'favicon' && (
+        <div className="space-y-6">
+          {/* Top Info Header */}
+          <div className="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-slate-900 border border-indigo-800/40 rounded-2xl p-5 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full border border-indigo-500/30 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" /> Personnalisation de l'Icône de Marque
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono">
+                  Favicon .ICO / .SVG / .PNG
+                </span>
+              </div>
+              <h3 className="text-xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-2">
+                <Globe className="w-6 h-6 text-indigo-400" />
+                <span>Studio de Personnalisation Favicon &amp; Onglet Navigateur</span>
+              </h3>
+              <p className="text-xs text-slate-300 mt-1 max-w-3xl">
+                Configurez l'icône officielle de votre site qui s'affiche dans l'onglet du navigateur, les favoris des commerciaux, l'historique et les raccourcis sur smartphone.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSaveFaviconDirect('/favicon.svg')}
+                className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Rétablir le favicon d'origine"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Réinitialiser par Défaut</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveFaviconDirect()}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Sauvegarder &amp; Appliquer</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Success Banner */}
+          {saveSuccessMsg && (
+            <div className="bg-emerald-950/80 border border-emerald-500/50 p-4 rounded-2xl flex items-center gap-3 animate-fadeIn shadow-lg">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div>
+                <h5 className="text-xs font-extrabold text-white">Favicon et paramètres mis à jour avec succès !</h5>
+                <p className="text-xs text-emerald-300 font-normal">
+                  L'icône de l'onglet du navigateur a été actualisée instantanément et enregistrée dans Firebase.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Real-time Interactive Simulator */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-indigo-400" />
+                <h4 className="font-extrabold text-white text-base">Aperçu en Direct dans l'Onglet du Navigateur</h4>
+              </div>
+              <span className="text-xs text-slate-400 font-mono">Simulation temps réel</span>
+            </div>
+
+            {/* Dark & Light Tab Simulation */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Dark Browser Simulator */}
+              <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold">Thème Sombre</span>
+                </div>
+
+                <div className="inline-flex items-center gap-2.5 max-w-full bg-slate-800/90 border border-slate-600/60 px-3.5 py-2 rounded-t-xl shadow-md">
+                  <img
+                    src={faviconInput || '/favicon.svg'}
+                    alt="Favicon Dark Preview"
+                    className="w-4 h-4 object-contain rounded shrink-0 shadow-sm"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/favicon.svg';
+                    }}
+                  />
+                  <span className="text-xs font-bold text-white truncate">
+                    {siteNameInput || 'CHERY Tunisie'} - Réservation &amp; Gestion
+                  </span>
+                  <X className="w-3.5 h-3.5 text-slate-400 hover:text-white shrink-0 cursor-pointer ml-1" />
+                </div>
+              </div>
+
+              {/* Light Browser Simulator */}
+              <div className="p-4 bg-slate-200 rounded-xl border border-slate-300 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                  </div>
+                  <span className="text-[10px] text-slate-600 font-mono font-bold">Thème Clair</span>
+                </div>
+
+                <div className="inline-flex items-center gap-2.5 max-w-full bg-white border border-slate-300 px-3.5 py-2 rounded-t-xl shadow-md">
+                  <img
+                    src={faviconInput || '/favicon.svg'}
+                    alt="Favicon Light Preview"
+                    className="w-4 h-4 object-contain rounded shrink-0 shadow-sm"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/favicon.svg';
+                    }}
+                  />
+                  <span className="text-xs font-bold text-slate-900 truncate">
+                    {siteNameInput || 'CHERY Tunisie'} - Réservation &amp; Gestion
+                  </span>
+                  <X className="w-3.5 h-3.5 text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer ml-1" />
+                </div>
+              </div>
+            </div>
+
+            {/* Resolution badges */}
+            <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center p-2 shadow-inner">
+                  <img
+                    src={faviconInput || '/favicon.svg'}
+                    alt="48px"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">48x48 px</p>
+                  <p className="text-[10px] text-slate-400">Mobile &amp; Écran HD Retina</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center p-1.5 shadow-inner">
+                  <img
+                    src={faviconInput || '/favicon.svg'}
+                    alt="32px"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">32x32 px</p>
+                  <p className="text-[10px] text-slate-400">Favoris &amp; Raccourcis</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center p-1 shadow-inner">
+                  <img
+                    src={faviconInput || '/favicon.svg'}
+                    alt="16px"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">16x16 px</p>
+                  <p className="text-[10px] text-slate-400">Onglet Standard</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Upload & Direct URL Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Upload className="w-4 h-4 text-indigo-400" />
+                1. Téléverser un Fichier Favicon (ICO, SVG, PNG, JPG, WebP)
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Chargez une icône carrée depuis votre ordinateur (ex: 256x256 ou format vectoriel SVG).
+              </p>
+              <label className="flex flex-col items-center justify-center gap-2 p-5 bg-slate-950 border border-dashed border-indigo-500/40 hover:border-indigo-400 rounded-xl cursor-pointer transition-all hover:bg-indigo-950/20 text-xs text-indigo-300 font-bold">
+                <Upload className="w-6 h-6 text-indigo-400" />
+                <span>Cliquez pour choisir un fichier d'icône</span>
+                <span className="text-[10px] text-slate-400 font-normal">Formats supportés : .ico, .svg, .png, .jpg, .webp</span>
+                <input
+                  type="file"
+                  accept=".ico,image/x-icon,image/svg+xml,image/png,image/jpeg,image/webp"
+                  onChange={handleFaviconFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Globe className="w-4 h-4 text-indigo-400" />
+                2. Ou Saisir l'URL Web Directe du Favicon
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Vous pouvez coller une adresse d'image en ligne hébergée sur votre serveur ou CDN.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="https://.../favicon.ico ou /favicon.svg"
+                  value={faviconInput}
+                  onChange={(e) => setFaviconInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveFaviconDirect()}
+                  className="w-full py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Tester &amp; Enregistrer cette URL</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Presets Gallery (1-Click selection) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                <h4 className="font-extrabold text-white text-base">Favicons Prédéfinis Officiels Chery &amp; STA (1-Clic)</h4>
+              </div>
+              <span className="text-xs text-indigo-400 font-bold">Sélection instantanée</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => handleSaveFaviconDirect('/favicon.svg')}
+                className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all cursor-pointer text-left ${
+                  faviconInput === '/favicon.svg'
+                    ? 'border-indigo-500 bg-indigo-950/30 ring-2 ring-indigo-500/60 shadow-lg'
+                    : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                }`}
+              >
+                <div className="p-2 bg-black rounded-xl border border-slate-700 shrink-0">
+                  <img src="/favicon.svg" alt="Favicon SVG" className="w-8 h-8 object-contain" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Écusson Chery Chrome (SVG)</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Vectoriel haute précision, net sur tous les écrans</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveFaviconDirect('/chery-logo.jpg')}
+                className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all cursor-pointer text-left ${
+                  faviconInput === '/chery-logo.jpg'
+                    ? 'border-indigo-500 bg-indigo-950/30 ring-2 ring-indigo-500/60 shadow-lg'
+                    : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                }`}
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black border border-slate-700 shrink-0">
+                  <img src="/chery-logo.jpg" alt="Chery HD Logo" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Logo Constructeur Chery HD</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Emblème automobile officiel fond sombre</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveFaviconDirect('/sta_logo.svg')}
+                className={`p-4 rounded-2xl border flex items-center gap-3.5 transition-all cursor-pointer text-left ${
+                  faviconInput === '/sta_logo.svg'
+                    ? 'border-indigo-500 bg-indigo-950/30 ring-2 ring-indigo-500/60 shadow-lg'
+                    : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                }`}
+              >
+                <div className="p-2 bg-white rounded-xl border border-slate-300 shrink-0">
+                  <img src="/sta_logo.svg" alt="STA Logo" className="w-8 h-8 object-contain" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Logo Distributeur STA</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Société Tunisienne d'Automobiles (STA)</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB 3: BRANDING & SITE CUSTOMIZATION (SUPER ADMIN DSI) */}
       {activeAdminTab === 'branding' && (
         <form onSubmit={handleSaveBranding} className="space-y-6">
@@ -2051,6 +2399,213 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     placeholder="ex: Espace Commercial & Direction"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL: FAVICON & ICÔNE DE L'ONGLET NAVIGATEUR */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 lg:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-white text-base flex items-center gap-2">
+                      <span>Favicon &amp; Icône de l'Onglet Navigateur</span>
+                      <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono font-bold">Onglet Web</span>
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Personnalisez l'icône de marque (Favicon) qui apparaît dans l'onglet du navigateur, l'historique et les favoris des commerciaux.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Reset to default favicon */}
+                <button
+                  type="button"
+                  onClick={() => setFaviconInput('/favicon.svg')}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Réinitialiser Favicon Chery par Défaut</span>
+                </button>
+              </div>
+
+              {/* Live Browser Tab Preview */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Aperçu en Direct dans l'Onglet du Navigateur :
+                </label>
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
+                  {/* Browser Mockup Chrome */}
+                  <div className="bg-slate-900/90 rounded-xl border border-slate-700/60 p-3 shadow-inner">
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-800/80">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
+                        <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
+                        <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">Navigateur Web • Barre d'Onglets</span>
+                    </div>
+
+                    {/* Active Tab Mockup */}
+                    <div className="inline-flex items-center gap-2.5 max-w-md bg-slate-800/90 border border-slate-600/60 px-3.5 py-2 rounded-t-xl shadow-md">
+                      <img
+                        src={faviconInput || '/favicon.svg'}
+                        alt="Favicon Preview"
+                        className="w-4 h-4 object-contain rounded shrink-0 shadow-sm"
+                        onError={(e) => {
+                          // Fallback to favicon.svg
+                          (e.target as HTMLImageElement).src = '/favicon.svg';
+                        }}
+                      />
+                      <span className="text-xs font-extrabold text-white truncate">
+                        {siteNameInput || 'CHERY Tunisie'} - Réservation &amp; Gestion de Stock
+                      </span>
+                      <X className="w-3.5 h-3.5 text-slate-400 hover:text-white shrink-0 cursor-pointer ml-1" />
+                    </div>
+                  </div>
+
+                  {/* Multi-Resolution Previews */}
+                  <div className="flex flex-wrap items-center gap-6 pt-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center p-2 shadow-md">
+                        <img
+                          src={faviconInput || '/favicon.svg'}
+                          alt="48px preview"
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Écran Retina &amp; Mobile</p>
+                        <p className="text-[10px] text-slate-400 font-mono">48 x 48 px</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center p-1.5 shadow-md">
+                        <img
+                          src={faviconInput || '/favicon.svg'}
+                          alt="32px preview"
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Favoris &amp; Raccourci</p>
+                        <p className="text-[10px] text-slate-400 font-mono">32 x 32 px</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-1 shadow-md">
+                        <img
+                          src={faviconInput || '/favicon.svg'}
+                          alt="16px preview"
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">Onglet Standard</p>
+                        <p className="text-[10px] text-slate-400 font-mono">16 x 16 px</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload File & Direct URL Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Téléverser un Fichier Favicon (ICO, SVG, PNG, JPG, WebP) :
+                  </label>
+                  <label className="flex bg-slate-950 border border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl p-3.5 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-purple-950/20 text-xs text-purple-300 font-bold">
+                    <Upload className="w-4 h-4 text-purple-400" />
+                    <span>Choisir une Icône (ICO, SVG, PNG)...</span>
+                    <input
+                      type="file"
+                      accept=".ico,image/x-icon,image/svg+xml,image/png,image/jpeg,image/webp"
+                      onChange={handleFaviconFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300 block">
+                    Ou saisir l'URL Web directe du Favicon :
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://.../favicon.ico ou /favicon.svg"
+                    value={faviconInput}
+                    onChange={(e) => setFaviconInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Presets (1-Click) */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold text-white flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  Favicons Prédéfinis Recommandés pour l'Onglet (1-Clic) :
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFaviconInput('/favicon.svg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      faviconInput === '/favicon.svg'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="p-1 bg-black rounded-lg border border-slate-700 shrink-0">
+                      <img src="/favicon.svg" alt="Favicon SVG" className="w-6 h-6 object-contain" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Écusson Chery Chrome</p>
+                      <p className="text-[10px] text-slate-400">Vectoriel SVG Haute Netteté</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFaviconInput('/chery-logo.jpg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      faviconInput === '/chery-logo.jpg'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-black border border-slate-700 shrink-0">
+                      <img src="/chery-logo.jpg" alt="Chery Logo" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo Constructeur Chery</p>
+                      <p className="text-[10px] text-slate-400">Format HD Fond Sombre</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFaviconInput('/sta_logo.svg')}
+                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                      faviconInput === '/sta_logo.svg'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500'
+                        : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="p-1 bg-white rounded-lg border border-slate-300 shrink-0">
+                      <img src="/sta_logo.svg" alt="STA Logo" className="w-6 h-6 object-contain" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Logo STA Automobile</p>
+                      <p className="text-[10px] text-slate-400">Distributeur Officiel STA</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>

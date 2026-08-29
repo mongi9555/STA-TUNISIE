@@ -167,6 +167,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteName: 'Société Tunisienne d\'Automobiles (STA)',
   siteSubtitle: 'Concessionnaire Officiel CHERY en Tunisie - Leader du marché SUV & Hybride',
   logoUrl: '',
+  faviconUrl: '/favicon.svg',
   voucherLogoUrl: '',
   voucherCompanyName: 'CHERY TUNISIE',
   voucherCompanySubtitle: 'Société Tunisienne d\'Automobiles (STA)',

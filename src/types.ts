@@ -75,6 +75,7 @@ export interface DsiContactSettings {
 
 export interface SiteSettings {
   logoUrl?: string;
+  faviconUrl?: string; // Favicon personnalisé pour l'onglet du navigateur (format ICO, PNG, SVG ou JPG)
   voucherLogoUrl?: string; // Logo personnalisé spécifique pour le bon de réservation & documents imprimés
   voucherCompanyName?: string; // Nom de la société sur le bon de réservation (ex: CHERY TUNISIE)
   voucherCompanySubtitle?: string; // Sous-titre sur le bon de réservation (ex: Société Tunisienne d'Automobiles (STA))

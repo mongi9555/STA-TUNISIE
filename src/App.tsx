@@ -441,6 +441,31 @@ export default function App() {
 
   useEffect(() => {
     saveStoredSiteSettings(siteSettings);
+
+    // Dynamically update browser tab Favicon
+    const faviconHref = siteSettings?.faviconUrl || '/favicon.svg';
+    let iconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+    if (!iconLink) {
+      iconLink = document.createElement('link');
+      iconLink.rel = 'icon';
+      document.head.appendChild(iconLink);
+    }
+    iconLink.href = faviconHref;
+
+    // Update alternate / apple touch icons
+    const alternateIcon = document.querySelector("link[rel='alternate icon']") as HTMLLinkElement | null;
+    if (alternateIcon) {
+      alternateIcon.href = faviconHref;
+    }
+    const appleTouchIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
+    if (appleTouchIcon) {
+      appleTouchIcon.href = faviconHref;
+    }
+
+    // Dynamically update document title if custom site name provided
+    if (siteSettings?.siteName) {
+      document.title = `${siteSettings.siteName} - Réservation & Gestion de Stock`;
+    }
   }, [siteSettings]);
 
   useEffect(() => {
