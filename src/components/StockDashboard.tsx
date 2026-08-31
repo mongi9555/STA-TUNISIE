@@ -400,7 +400,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredAndSortedCars.map((car, index) => {
           const totalCarStock = car.colors.reduce((acc, c) => acc + c.stock, 0);
-          const dims = getCarDimensions(car);
           const fullPrice = getFullCarPrice(car);
 
           return (
@@ -459,11 +458,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
                   <div>
                     <h3 className="text-xl font-extrabold text-white tracking-tight">{car.name}</h3>
-                    <div className="flex items-center gap-1.5 text-[11px] text-blue-300 font-mono font-bold mt-0.5">
-                      <Ruler className="w-3 h-3 text-blue-400" />
-                      <span>{dims.lengthM} m ({dims.lengthMm} × {dims.widthMm} mm)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">| {dims.segmentLabel}</span>
-                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-[9px] uppercase font-bold text-emerald-400 block tracking-wider">Prix Clé en Main</span>
