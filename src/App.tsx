@@ -327,8 +327,33 @@ export default function App() {
           .map((doc) => doc.data() as CarModel)
           .filter((car) => !isVirtualCar(car));
         if (fetched.length > 0) {
-          setCars(fetched);
-          saveStoredCars(fetched);
+          setCars((prevCars) => {
+            // Read intentionally deleted car IDs
+            let deletedIds = new Set<string>();
+            try {
+              const delSaved = localStorage.getItem('chery_tn_deleted_car_ids_v1');
+              if (delSaved) deletedIds = new Set(JSON.parse(delSaved));
+            } catch {}
+
+            const fetchedIds = new Set(fetched.map((c) => c.id));
+            // Find custom cars in local memory that were not in this Firestore snapshot and not explicitly deleted
+            const customNonDeleted = prevCars.filter(
+              (c) => !fetchedIds.has(c.id) && !deletedIds.has(c.id)
+            );
+
+            if (customNonDeleted.length > 0) {
+              console.log(`[Firestore Sync] Auto-reconciling ${customNonDeleted.length} locally created vehicle(s) into Cloud Firestore...`);
+              customNonDeleted.forEach((c) => {
+                saveCarToFirestore(c);
+              });
+              const combined = [...fetched, ...customNonDeleted];
+              saveStoredCars(combined);
+              return combined;
+            }
+
+            saveStoredCars(fetched);
+            return fetched;
+          });
         }
       }
     }, (err) => console.warn('Cars snapshot listener warning:', err));
@@ -929,22 +954,79 @@ export default function App() {
   };
 
   const handleEditCarModel = (updatedCar: CarModel) => {
-    setCars((prev) => {
-      const updated = prev.map((c) => (c.id === updatedCar.id ? updatedCar : c));
-      saveStoredCars(updated);
-      return updated;
-    });
+    // Ensure not in deleted set
+    try {
+      const delSaved = localStorage.getItem('chery_tn_deleted_car_ids_v1');
+      if (delSaved) {
+        const set = new Set(JSON.parse(delSaved));
+        set.delete(updatedCar.id);
+        localStorage.setItem('chery_tn_deleted_car_ids_v1', JSON.stringify(Array.from(set)));
+      }
+    } catch {}
+
+    const updatedCars = cars.map((c) => (c.id === updatedCar.id ? updatedCar : c));
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
     saveCarToFirestore(updatedCar);
-    showToast(`Fiche technique & photos du véhicule "${updatedCar.name}" enregistrées !`);
+
+    // Instant local file DB backup
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cars: updatedCars,
+        reservations,
+        commercials,
+        siteSettings,
+        accessories,
+        quotes,
+        adminDocs,
+        knowledgeBase,
+        testDrives,
+        stockRequests,
+        docTemplate,
+        auditLogs,
+      }),
+    }).catch((e) => console.warn('[Chery Sync] Instant DB backup warning:', e));
+
+    showToast(`Fiche technique & photos du véhicule "${updatedCar.name}" enregistrées définitivement !`);
   };
 
   const handleAddCarModel = (newCar: CarModel) => {
-    setCars((prev) => {
-      const updated = [...prev, newCar];
-      saveStoredCars(updated);
-      return updated;
-    });
+    // Remove from deleted set if previously deleted
+    try {
+      const delSaved = localStorage.getItem('chery_tn_deleted_car_ids_v1');
+      if (delSaved) {
+        const set = new Set(JSON.parse(delSaved));
+        set.delete(newCar.id);
+        localStorage.setItem('chery_tn_deleted_car_ids_v1', JSON.stringify(Array.from(set)));
+      }
+    } catch {}
+
+    const updatedCars = [...cars.filter((c) => c.id !== newCar.id), newCar];
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
     saveCarToFirestore(newCar);
+
+    // Instant local file DB backup
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cars: updatedCars,
+        reservations,
+        commercials,
+        siteSettings,
+        accessories,
+        quotes,
+        adminDocs,
+        knowledgeBase,
+        testDrives,
+        stockRequests,
+        docTemplate,
+        auditLogs,
+      }),
+    }).catch((e) => console.warn('[Chery Sync] Instant DB backup warning:', e));
 
     addAuditLog({
       actionType: 'model_added',
@@ -955,17 +1037,44 @@ export default function App() {
       newValue: newCar.priceTND,
     });
 
-    showToast(`Nouveau modèle "${newCar.name}" ajouté à la base de données !`);
+    showToast(`Nouveau modèle "${newCar.name}" ajouté et sauvegardé définitivement (Cloud + Local) !`);
   };
 
   const handleDeleteCarModel = (carId: string) => {
     const car = cars.find((c) => c.id === carId);
-    setCars((prev) => {
-      const updated = prev.filter((c) => c.id !== carId);
-      saveStoredCars(updated);
-      return updated;
-    });
+
+    // Register intentional deletion so reconciliation never resurrects this model
+    try {
+      const delSaved = localStorage.getItem('chery_tn_deleted_car_ids_v1');
+      const set = delSaved ? new Set(JSON.parse(delSaved)) : new Set();
+      set.add(carId);
+      localStorage.setItem('chery_tn_deleted_car_ids_v1', JSON.stringify(Array.from(set)));
+    } catch {}
+
+    const updated = cars.filter((c) => c.id !== carId);
+    setCars(updated);
+    saveStoredCars(updated);
     deleteCarFromFirestore(carId);
+
+    // Instant local file DB update
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cars: updated,
+        reservations,
+        commercials,
+        siteSettings,
+        accessories,
+        quotes,
+        adminDocs,
+        knowledgeBase,
+        testDrives,
+        stockRequests,
+        docTemplate,
+        auditLogs,
+      }),
+    }).catch((e) => console.warn('[Chery Sync] Instant DB backup warning:', e));
 
     addAuditLog({
       actionType: 'model_deleted',

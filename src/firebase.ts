@@ -221,13 +221,56 @@ export async function deleteQuoteFromFirestore(quoteId: string) {
 }
 
 /**
- * Save single car doc to Firestore
+ * Save single car doc to Firestore with payload safety and fallback
  */
-export async function saveCarToFirestore(car: CarModel) {
+export async function saveCarToFirestore(car: CarModel): Promise<boolean> {
   try {
-    await setDoc(doc(db, 'cars', car.id), sanitizeForFirestore(car));
+    let carToSave: CarModel = { ...car };
+
+    // Offload heavy base64 images to avoid exceeding Firestore 1MB document ceiling
+    if (typeof window !== 'undefined' && carToSave.imageUrl && carToSave.imageUrl.startsWith('data:image') && carToSave.imageUrl.length > 50000) {
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: `car_${carToSave.id}.jpg`, fileData: carToSave.imageUrl }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.url) {
+            carToSave.imageUrl = data.url;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('[Firestore Car Save] Image upload fallback:', uploadErr);
+      }
+    }
+
+    if (typeof window !== 'undefined' && carToSave.ficheTechniqueUrl && carToSave.ficheTechniqueUrl.startsWith('data:') && carToSave.ficheTechniqueUrl.length > 50000) {
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: `fiche_${carToSave.id}`, fileData: carToSave.ficheTechniqueUrl }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.url) {
+            carToSave.ficheTechniqueUrl = data.url;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('[Firestore Car Save] Fiche upload fallback:', uploadErr);
+      }
+    }
+
+    const sanitized = sanitizeForFirestore(carToSave);
+    await setDoc(doc(db, 'cars', carToSave.id), sanitized);
+    console.log(`[Firestore] Modèle "${carToSave.name}" (${carToSave.id}) sauvegardé avec succès.`);
+    return true;
   } catch (e) {
     console.error('Error saving car to Firestore:', e);
+    return false;
   }
 }
 

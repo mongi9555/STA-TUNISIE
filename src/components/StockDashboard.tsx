@@ -1,7 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { CarModel, CarColor, Reservation, CommercialUser, StockRequest } from '../types';
 import { getFullCarPrice } from '../data/cheryData';
-import { Search, CheckCircle2, Car, Package, Sparkles, Plus, AlertCircle, FileText, Bell, X, Sliders, AlertTriangle } from 'lucide-react';
+import { getCarDimensions, sortCarList, CarSortOption, CAR_SORT_OPTIONS } from '../utils/carDimensions';
+import {
+  Search,
+  CheckCircle2,
+  Car,
+  Package,
+  Sparkles,
+  Plus,
+  AlertCircle,
+  FileText,
+  Bell,
+  X,
+  Sliders,
+  AlertTriangle,
+  ArrowUpDown,
+  DollarSign,
+  Ruler,
+} from 'lucide-react';
 import { TechSpecModal } from './TechSpecModal';
 
 interface StockDashboardProps {
@@ -25,6 +42,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [sortBy, setSortBy] = useState<CarSortOption>('price-asc');
   const [selectedSpecCar, setSelectedSpecCar] = useState<CarModel | null>(null);
 
   // Model-based metrics (instead of color counts or reservations)
@@ -55,9 +73,9 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
     });
   }, [cars]);
 
-  // Filter cars logic (category, search, stock level)
-  const filteredCars = useMemo(() => {
-    return cars.filter((car) => {
+  // Filter and sort cars logic (category, search, stock level, price, size)
+  const filteredAndSortedCars = useMemo(() => {
+    const filtered = cars.filter((car) => {
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         term === '' ||
@@ -80,7 +98,11 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 
       return matchesSearch && matchesCategory && matchesStock;
     });
-  }, [cars, searchTerm, selectedCategory, stockFilter]);
+
+    return sortCarList(filtered, sortBy);
+  }, [cars, searchTerm, selectedCategory, stockFilter, sortBy]);
+
+  const activeSortMeta = CAR_SORT_OPTIONS.find((s) => s.id === sortBy) || CAR_SORT_OPTIONS[0];
 
   return (
     <div className="space-y-6">
@@ -210,18 +232,18 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+      {/* Filters & Sorting Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
-          <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Rechercher modèle (Tiggo, Arrizo, Omoda, PHEV...)"
+              placeholder="Rechercher modèle (Tiggo, Arrizo, Himla, PHEV...)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full pl-10 pr-8 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
             />
             {searchTerm && (
               <button
@@ -233,13 +255,13 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
             )}
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Controls: Category + Sort Dropdown + Stock Level */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {/* Category */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium cursor-pointer"
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium cursor-pointer shrink-0"
             >
               <option value="all">Toutes Catégories ({cars.length})</option>
               <option value="SUV">SUV</option>
@@ -249,12 +271,32 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               <option value="Électrique">Électrique</option>
             </select>
 
+            {/* Main Sorting Dropdown */}
+            <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 shrink-0">
+              <ArrowUpDown className="w-3.5 h-3.5 text-red-500 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Ordre :</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as CarSortOption)}
+                  className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="price-asc" className="bg-slate-900 text-white">💰 Prix croissant</option>
+                  <option value="price-desc" className="bg-slate-900 text-white">💎 Prix décroissant</option>
+                  <option value="size-asc" className="bg-slate-900 text-white">📏 Taille croissante</option>
+                  <option value="size-desc" className="bg-slate-900 text-white">📐 Taille décroissante</option>
+                  <option value="stock-desc" className="bg-slate-900 text-white">📦 Stock disponible</option>
+                  <option value="name-asc" className="bg-slate-900 text-white">🔤 Nom (A-Z)</option>
+                </select>
+              </div>
+            </div>
+
             {/* Stock Level Filter */}
-            <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium">
+            <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
               <button
                 onClick={() => setStockFilter('all')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  stockFilter === 'all' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
+                  stockFilter === 'all' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Tous
@@ -262,7 +304,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               <button
                 onClick={() => setStockFilter('in_stock')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  stockFilter === 'in_stock' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                  stockFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 En Stock
@@ -270,15 +312,15 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
               <button
                 onClick={() => setStockFilter('low_stock')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  stockFilter === 'low_stock' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                  stockFilter === 'low_stock' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Stock Faible
+                Faible
               </button>
               <button
                 onClick={() => setStockFilter('out_of_stock')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  stockFilter === 'out_of_stock' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
+                  stockFilter === 'out_of_stock' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Épuisé
@@ -286,12 +328,80 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Quick Order Tabs */}
+        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mr-1">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              Trier rapidement :
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setSortBy('price-asc')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                sortBy === 'price-asc'
+                  ? 'bg-emerald-600 text-white shadow ring-1 ring-emerald-400'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <DollarSign className="w-3 h-3 text-emerald-300" />
+              <span>Prix ↗ (Moins cher)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSortBy('price-desc')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                sortBy === 'price-desc'
+                  ? 'bg-emerald-600 text-white shadow ring-1 ring-emerald-400'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <DollarSign className="w-3 h-3 text-emerald-300" />
+              <span>Prix ↘ (Plus cher)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSortBy('size-asc')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                sortBy === 'size-asc'
+                  ? 'bg-blue-600 text-white shadow ring-1 ring-blue-400'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <Ruler className="w-3 h-3 text-blue-300" />
+              <span>Taille ↗ (Compact)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSortBy('size-desc')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                sortBy === 'size-desc'
+                  ? 'bg-blue-600 text-white shadow ring-1 ring-blue-400'
+                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <Ruler className="w-3 h-3 text-blue-300" />
+              <span>Taille ↘ (Grand)</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-mono">
+            {filteredAndSortedCars.length} modèle(s) • <span className="text-slate-200 font-bold">{activeSortMeta.label}</span>
+          </div>
+        </div>
       </div>
 
       {/* Stock Matrix per Car Model */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredCars.map((car) => {
+        {filteredAndSortedCars.map((car, index) => {
           const totalCarStock = car.colors.reduce((acc, c) => acc + c.stock, 0);
+          const dims = getCarDimensions(car);
+          const fullPrice = getFullCarPrice(car);
 
           return (
             <div
@@ -319,7 +429,11 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                   </span>
                 </div>
 
-                <div className="absolute top-3 left-3 flex items-center gap-2 flex-wrap max-w-[70%]">
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap max-w-[70%]">
+                  {/* Rank badge */}
+                  <span className="px-2 py-0.5 bg-red-600 text-white text-[11px] font-black rounded-lg shadow font-mono border border-red-400/40">
+                    #{index + 1}
+                  </span>
                   <span className="px-2.5 py-1 bg-slate-900/90 backdrop-blur text-red-400 border border-red-500/30 text-xs font-bold rounded-lg shadow">
                     {car.category}
                   </span>
@@ -345,12 +459,16 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                 <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
                   <div>
                     <h3 className="text-xl font-extrabold text-white tracking-tight">{car.name}</h3>
-                    <p className="text-xs text-slate-300">{car.engine} • {car.transmission}</p>
+                    <div className="flex items-center gap-1.5 text-[11px] text-blue-300 font-mono font-bold mt-0.5">
+                      <Ruler className="w-3 h-3 text-blue-400" />
+                      <span>{dims.lengthM} m ({dims.lengthMm} × {dims.widthMm} mm)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">| {dims.segmentLabel}</span>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-[9px] uppercase font-bold text-emerald-400 block tracking-wider">Prix Clé en Main</span>
                     <span className="text-lg font-black text-emerald-400 font-mono leading-none block">
-                      {getFullCarPrice(car).toLocaleString()} TND
+                      {fullPrice.toLocaleString()} TND
                     </span>
                   </div>
                 </div>
