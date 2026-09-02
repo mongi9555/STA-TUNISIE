@@ -24,8 +24,10 @@ import {
   Table,
   CheckCircle2,
   Layers,
+  Camera,
 } from 'lucide-react';
 import { TechSpecModal } from './TechSpecModal';
+import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 
 interface CarCatalogProps {
   cars: CarModel[];
@@ -33,6 +35,7 @@ interface CarCatalogProps {
   reservations?: Reservation[];
   onOpenReservationModal: (car: CarModel, selectedColor?: CarColor) => void;
   onOpenTestDriveModal?: (car?: CarModel) => void;
+  onEditCarModel?: (updatedCar: CarModel) => void;
 }
 
 export const CarCatalog: React.FC<CarCatalogProps> = ({
@@ -41,9 +44,11 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
   reservations = [],
   onOpenReservationModal,
   onOpenTestDriveModal,
+  onEditCarModel,
 }) => {
   const [selectedColorMap, setSelectedColorMap] = useState<Record<string, string>>({});
   const [selectedSpecCar, setSelectedSpecCar] = useState<CarModel | null>(null);
+  const [selectedPhotoCar, setSelectedPhotoCar] = useState<CarModel | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedColorFilter, setSelectedColorFilter] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -751,22 +756,34 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
 
                 {/* Action Buttons */}
                 <div className="p-4 bg-slate-950 border-t border-slate-800 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       onClick={() => setSelectedSpecCar(car)}
-                      className="py-2 px-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="py-2 px-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      title="Fiche Technique"
                     >
                       <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                      <span>Fiche Tech</span>
+                      <span>Fiche</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPhotoCar(car)}
+                      className="py-2 px-1.5 bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 hover:text-amber-200 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      title="Gérer et ajouter des photos"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Photos ({1 + (car.galleryImages?.length || 0)})</span>
                     </button>
 
                     {onOpenTestDriveModal && (
                       <button
                         onClick={() => onOpenTestDriveModal(car)}
-                        className="py-2 px-2.5 bg-slate-900 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        className="py-2 px-1.5 bg-slate-900 hover:bg-amber-950/40 border border-slate-800 hover:border-amber-500/60 text-slate-300 hover:text-amber-300 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        title="Réserver un essai"
                       >
-                        <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>Test Drive</span>
+                        <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Essai</span>
                       </button>
                     )}
                   </div>
@@ -796,9 +813,23 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
 
       {/* Floating Tech Spec Sheet Modal */}
       <TechSpecModal
-        car={selectedSpecCar}
+        car={selectedSpecCar ? cars.find((c) => c.id === selectedSpecCar.id) || selectedSpecCar : null}
         onClose={() => setSelectedSpecCar(null)}
         onOpenReservationModal={onOpenReservationModal}
+        onEditCarModel={onEditCarModel}
+      />
+
+      {/* Dedicated Car Photo Upload & Gallery Modal */}
+      <CarPhotoUploadModal
+        car={selectedPhotoCar ? cars.find((c) => c.id === selectedPhotoCar.id) || selectedPhotoCar : null}
+        isOpen={Boolean(selectedPhotoCar)}
+        onClose={() => setSelectedPhotoCar(null)}
+        onSaveCar={(updatedCar) => {
+          if (onEditCarModel) {
+            onEditCarModel(updatedCar);
+          }
+          setSelectedPhotoCar(updatedCar);
+        }}
       />
     </div>
   );

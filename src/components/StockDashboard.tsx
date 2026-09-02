@@ -18,8 +18,11 @@ import {
   ArrowUpDown,
   DollarSign,
   Ruler,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import { TechSpecModal } from './TechSpecModal';
+import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 
 interface StockDashboardProps {
   cars: CarModel[];
@@ -29,6 +32,7 @@ interface StockDashboardProps {
   onOpenReservationModal: (car: CarModel, color?: CarColor) => void;
   onProcessStockRequest?: (id: string, status: 'Approuvé' | 'Refusé') => void;
   onNavigateToAdmin?: () => void;
+  onEditCarModel?: (updatedCar: CarModel) => void;
 }
 
 export const StockDashboard: React.FC<StockDashboardProps> = ({
@@ -38,12 +42,14 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   onOpenReservationModal,
   onProcessStockRequest,
   onNavigateToAdmin,
+  onEditCarModel,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
   const [sortBy, setSortBy] = useState<CarSortOption>('price-asc');
   const [selectedSpecCar, setSelectedSpecCar] = useState<CarModel | null>(null);
+  const [selectedPhotoCar, setSelectedPhotoCar] = useState<CarModel | null>(null);
 
   // Model-based metrics (instead of color counts or reservations)
   const totalVehiclesAvailable = useMemo(() => {
@@ -544,12 +550,22 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Reservation Action Button for whole car */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-end">
+                {/* Card Action Buttons for whole car */}
+                <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPhotoCar(car)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Gérer et téléverser des photos pour ce modèle"
+                  >
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    <span>Photos ({1 + (car.galleryImages?.length || 0)})</span>
+                  </button>
+
                   <button
                     onClick={() => onOpenReservationModal(car)}
                     disabled={totalCarStock === 0}
-                    className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow ${
+                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow ${
                       totalCarStock > 0
                         ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/20 cursor-pointer'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
@@ -565,11 +581,25 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         })}
       </div>
 
-      {/* Floating Tech Spec Sheet Modal */}
+      {/* Floating Tech Spec Sheet Modal with Gallery & Upload */}
       <TechSpecModal
-        car={selectedSpecCar}
+        car={selectedSpecCar ? cars.find((c) => c.id === selectedSpecCar.id) || selectedSpecCar : null}
         onClose={() => setSelectedSpecCar(null)}
         onOpenReservationModal={onOpenReservationModal}
+        onEditCarModel={onEditCarModel}
+      />
+
+      {/* Dedicated Car Photo Upload & Gallery Modal */}
+      <CarPhotoUploadModal
+        car={selectedPhotoCar ? cars.find((c) => c.id === selectedPhotoCar.id) || selectedPhotoCar : null}
+        isOpen={Boolean(selectedPhotoCar)}
+        onClose={() => setSelectedPhotoCar(null)}
+        onSaveCar={(updatedCar) => {
+          if (onEditCarModel) {
+            onEditCarModel(updatedCar);
+          }
+          setSelectedPhotoCar(updatedCar);
+        }}
       />
     </div>
   );

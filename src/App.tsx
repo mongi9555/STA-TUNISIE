@@ -1517,6 +1517,7 @@ export default function App() {
                 onOpenReservationModal={handleOpenReservationModal}
                 onProcessStockRequest={handleProcessStockRequest}
                 onNavigateToAdmin={() => setActiveTab('admin')}
+                onEditCarModel={handleEditCarModel}
               />
             )}
 

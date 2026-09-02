@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CarModel, CarColor } from '../types';
 import { getFixedDepositForCar, getFullCarPrice, getRegistrationFeeForCar, isPickupCar } from '../data/cheryData';
+import { uploadMultipleCarImages } from '../utils/imageCompressor';
 import { PdfViewer } from './PdfViewer';
 import {
   X,
@@ -29,13 +30,20 @@ import {
   Moon,
   Grid,
   RotateCcw,
-  Move
+  Move,
+  Upload,
+  Camera,
+  Trash2,
+  Star,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface TechSpecModalProps {
   car: CarModel | null;
   onClose: () => void;
   onOpenReservationModal?: (car: CarModel, selectedColor?: CarColor) => void;
+  onEditCarModel?: (updatedCar: CarModel) => void;
 }
 
 // Convert base64 Data URL to a Blob URL
@@ -63,11 +71,17 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
   car,
   onClose,
   onOpenReservationModal,
+  onEditCarModel,
 }) => {
-  const [activeTab, setActiveTab] = useState<'document' | 'details' | 'gallery'>('document');
+  const [activeTab, setActiveTab] = useState<'document' | 'gallery'>('document');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string>(car?.imageUrl || '');
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  // Photo Upload State
+  const [isUploadingGallery, setIsUploadingGallery] = useState<boolean>(false);
+  const [galleryToastMessage, setGalleryToastMessage] = useState<string | null>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Image Viewer state for PNG/JPG
   const [imageFitMode, setImageFitMode] = useState<'fit-width' | 'fit-window' | 'original' | 'custom'>('fit-width');
@@ -82,6 +96,98 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const imageContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const totalPhotosCount = (car?.imageUrl ? 1 : 0) + (car?.galleryImages?.length || 0);
+
+  const handleUploadGalleryPhotos = async (files: FileList | File[]) => {
+    if (!car || !files || files.length === 0) return;
+    setIsUploadingGallery(true);
+    try {
+      const uploadedUrls = await uploadMultipleCarImages(files);
+      if (uploadedUrls.length > 0) {
+        let newMain = car.imageUrl;
+        let newGallery = [...(car.galleryImages || [])];
+        if (!newMain) {
+          newMain = uploadedUrls[0];
+          newGallery = [...newGallery, ...uploadedUrls.slice(1)];
+        } else {
+          newGallery = [...newGallery, ...uploadedUrls];
+        }
+
+        const updatedCar: CarModel = {
+          ...car,
+          imageUrl: newMain,
+          galleryImages: newGallery,
+        };
+
+        if (onEditCarModel) {
+          onEditCarModel(updatedCar);
+        }
+        setSelectedGalleryImage(uploadedUrls[0]);
+        setGalleryToastMessage(`${uploadedUrls.length} photo(s) ajoutée(s) avec succès !`);
+        setTimeout(() => setGalleryToastMessage(null), 3500);
+      }
+    } catch (err) {
+      console.error('Error uploading gallery photos in TechSpecModal:', err);
+    } finally {
+      setIsUploadingGallery(false);
+      if (galleryFileInputRef.current) galleryFileInputRef.current.value = '';
+    }
+  };
+
+  const handleSetMainPhoto = (imgUrl: string) => {
+    if (!car || imgUrl === car.imageUrl) return;
+    const oldMain = car.imageUrl;
+    const currentGallery = car.galleryImages || [];
+    const newGallery = currentGallery.filter((url) => url !== imgUrl);
+    if (oldMain && !newGallery.includes(oldMain)) {
+      newGallery.unshift(oldMain);
+    }
+
+    const updatedCar: CarModel = {
+      ...car,
+      imageUrl: imgUrl,
+      galleryImages: newGallery,
+    };
+
+    if (onEditCarModel) {
+      onEditCarModel(updatedCar);
+    }
+    setSelectedGalleryImage(imgUrl);
+    setGalleryToastMessage('Photo définie comme couverture principale !');
+    setTimeout(() => setGalleryToastMessage(null), 3000);
+  };
+
+  const handleDeleteGalleryPhoto = (imgUrl: string) => {
+    if (!car) return;
+    const currentGallery = car.galleryImages || [];
+    if (imgUrl === car.imageUrl) {
+      if (currentGallery.length > 0) {
+        const nextMain = currentGallery[0];
+        const nextGallery = currentGallery.slice(1);
+        const updatedCar: CarModel = {
+          ...car,
+          imageUrl: nextMain,
+          galleryImages: nextGallery,
+        };
+        if (onEditCarModel) onEditCarModel(updatedCar);
+        setSelectedGalleryImage(nextMain);
+      } else {
+        const updatedCar: CarModel = { ...car, imageUrl: '' };
+        if (onEditCarModel) onEditCarModel(updatedCar);
+        setSelectedGalleryImage('');
+      }
+    } else {
+      const nextGallery = currentGallery.filter((url) => url !== imgUrl);
+      const updatedCar: CarModel = { ...car, galleryImages: nextGallery };
+      if (onEditCarModel) onEditCarModel(updatedCar);
+      if (selectedGalleryImage === imgUrl) {
+        setSelectedGalleryImage(car.imageUrl || nextGallery[0] || '');
+      }
+    }
+    setGalleryToastMessage('Photo supprimée de la galerie.');
+    setTimeout(() => setGalleryToastMessage(null), 2500);
+  };
 
   React.useEffect(() => {
     if (car?.imageUrl) {
@@ -220,36 +326,34 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Tab Navigation (shown only when multiple items exist, e.g., gallery) */}
-            {car.galleryImages && car.galleryImages.length > 0 && (
-              <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('document')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'document'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Document (PDF / Image)</span>
-                </button>
+            {/* Tab Navigation (Document, Galerie) */}
+            <div className="hidden sm:flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setActiveTab('document')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'document'
+                    ? 'bg-red-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Document (PDF / Image)</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('gallery')}
-                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'gallery'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>Galerie ({car.galleryImages.length})</span>
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setActiveTab('gallery')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'gallery'
+                    ? 'bg-red-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5 text-amber-400" />
+                <span>Galerie ({totalPhotosCount})</span>
+              </button>
+            </div>
 
             {/* Window Controls: Close */}
             <button
@@ -264,30 +368,28 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
         </div>
 
         {/* Mobile Tabs */}
-        {car.galleryImages && car.galleryImages.length > 0 && (
-          <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab('document')}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
-                activeTab === 'document' ? 'bg-red-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Document</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('gallery')}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 ${
-                activeTab === 'gallery' ? 'bg-red-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Galerie</span>
-            </button>
-          </div>
-        )}
+        <div className="flex sm:hidden bg-slate-950 p-2 border-b border-slate-800 text-xs font-bold justify-around shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('document')}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 ${
+              activeTab === 'document' ? 'bg-red-600 text-white' : 'text-slate-400'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Document</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('gallery')}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 ${
+              activeTab === 'gallery' ? 'bg-red-600 text-white' : 'text-slate-400'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 text-amber-400" />
+            <span>Galerie ({totalPhotosCount})</span>
+          </button>
+        </div>
 
         {/* Modal Body */}
         <div className="flex-1 flex flex-col min-h-0 bg-slate-900/60 overflow-hidden">
@@ -528,155 +630,175 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'details' && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              {/* Key Highlights Banner */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                  <p className="text-slate-400 text-[11px] font-bold flex items-center gap-1 uppercase tracking-wider">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" /> Motorisation
+          {activeTab === 'gallery' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {/* Toast Feedback */}
+              {galleryToastMessage && (
+                <div className="p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-emerald-200 text-xs flex items-center justify-between gap-2 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{galleryToastMessage}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGalleryToastMessage(null)}
+                    className="text-emerald-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Upload Controls & Actions Header */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div>
+                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    <span>Galerie Visuelle ({totalPhotosCount} photo{totalPhotosCount > 1 ? 's' : ''})</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Ajoutez des photos supplémentaires en haute résolution pour ce véhicule.
                   </p>
-                  <p className="font-extrabold text-white text-sm">{car.engine}</p>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                  <p className="text-slate-400 text-[11px] font-bold flex items-center gap-1 uppercase tracking-wider">
-                    <Gauge className="w-3.5 h-3.5 text-blue-400" /> Puissance
-                  </p>
-                  <p className="font-extrabold text-white text-sm">{car.powerHP || '147 ch (8 CV)'}</p>
-                </div>
-
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                  <p className="text-slate-400 text-[11px] font-bold flex items-center gap-1 uppercase tracking-wider">
-                    <Settings2 className="w-3.5 h-3.5 text-purple-400" /> Transmission
-                  </p>
-                  <p className="font-extrabold text-white text-sm">{car.transmission}</p>
-                </div>
-
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                  <p className="text-slate-400 text-[11px] font-bold flex items-center gap-1 uppercase tracking-wider">
-                    <Fuel className="w-3.5 h-3.5 text-emerald-400" /> Consommation
-                  </p>
-                  <p className="font-extrabold text-white text-sm">{car.consumption || '6.8 L/100km'}</p>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <input
+                    ref={galleryFileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleUploadGalleryPhotos(e.target.files);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingGallery}
+                    onClick={() => galleryFileInputRef.current?.click()}
+                    className="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isUploadingGallery ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Téléversement en cours...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>Téléverser des photos</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Technical Specifications Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                {/* Performance & Dimensions */}
+              {/* Main Photo Showcase */}
+              {selectedGalleryImage ? (
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                  <h4 className="font-black text-white flex items-center gap-2 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
-                    <Maximize2 className="w-4 h-4 text-red-500" /> Performances & Dimensions
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">Couple Moteur :</span>
-                      <span className="font-mono font-bold text-white">{car.torque || '210 Nm @ 1750 tr/min'}</span>
+                  <div className="relative h-80 sm:h-96 w-full bg-black/90 rounded-xl overflow-hidden flex items-center justify-center group">
+                    <img
+                      src={selectedGalleryImage}
+                      alt={car.name}
+                      className="max-h-full max-w-full object-contain rounded-xl"
+                    />
+
+                    {/* Image Action Overlay */}
+                    <div className="absolute top-3 right-3 flex items-center gap-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                      {selectedGalleryImage === car.imageUrl ? (
+                        <span className="px-2.5 py-1 bg-amber-500 text-slate-950 font-black text-[11px] rounded-lg shadow flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-slate-950" /> Photo Principale
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetMainPhoto(selectedGalleryImage)}
+                          className="px-3 py-1.5 bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 text-amber-300 font-bold text-xs rounded-xl shadow border border-amber-500/40 flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Star className="w-3.5 h-3.5" /> Définir comme Principale
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGalleryPhoto(selectedGalleryImage)}
+                        className="p-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-xl shadow transition-colors cursor-pointer"
+                        title="Supprimer cette photo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">Vitesse Maximale :</span>
-                      <span className="font-mono font-bold text-white">{car.maxSpeed || '190 km/h'}</span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">Accélération (0-100 km/h) :</span>
-                      <span className="font-mono font-bold text-white">{car.acceleration || '8.9 secondes'}</span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">Dimensions (L x l x h) :</span>
-                      <span className="font-mono font-bold text-white">{car.dimensions || '4400 x 1830 x 1670 mm'}</span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-900 text-slate-300">
-                      <span className="text-slate-400">{isPickupCar(car) ? 'Charge Utile :' : 'Volume du Coffre :'}</span>
-                      <span className="font-mono font-bold text-white">
-                        {car.payload || car.bootCapacity || (isPickupCar(car) ? '1050 Kg (Charge Utile)' : '475 Litres')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1.5 text-slate-300">
-                      <span className="text-slate-400">Garantie Constructeur :</span>
-                      <span className="font-bold text-amber-400 flex items-center gap-1">
-                        <Award className="w-3.5 h-3.5 text-amber-400" /> {car.guarantee}
-                      </span>
+                  </div>
+
+                  {/* Thumbnail Strip */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-slate-400 font-semibold block">Toutes les photos :</span>
+                    <div className="flex items-center gap-2.5 overflow-x-auto pt-1 pb-2">
+                      {/* Main Image Thumbnail */}
+                      {car.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGalleryImage(car.imageUrl)}
+                          className={`relative h-16 w-24 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                            selectedGalleryImage === car.imageUrl
+                              ? 'border-amber-500 ring-2 ring-amber-500/40'
+                              : 'border-slate-800 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={car.imageUrl} alt={car.name} className="w-full h-full object-cover" />
+                          <div className="absolute bottom-0 inset-x-0 bg-amber-500 text-slate-950 text-[9px] font-black text-center py-0.2">
+                            Principale
+                          </div>
+                        </button>
+                      )}
+
+                      {/* Gallery Thumbnails */}
+                      {car.galleryImages?.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedGalleryImage(img)}
+                          className={`relative h-16 w-24 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                            selectedGalleryImage === img
+                              ? 'border-red-500 ring-2 ring-red-500/40'
+                              : 'border-slate-800 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={img} alt={`${car.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+
+                      {/* Quick Add Thumbnail Slot */}
+                      <button
+                        type="button"
+                        onClick={() => galleryFileInputRef.current?.click()}
+                        className="h-16 w-20 rounded-xl border-2 border-dashed border-slate-700 hover:border-red-500 hover:bg-slate-900 shrink-0 transition-all flex flex-col items-center justify-center text-slate-400 hover:text-white cursor-pointer"
+                        title="Ajouter une autre photo"
+                      >
+                        <Plus className="w-5 h-5 text-red-400" />
+                        <span className="text-[9px] font-bold mt-0.5">Ajouter</span>
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                {/* Safety & Assist Features */}
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                  <h4 className="font-black text-white flex items-center gap-2 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
-                    <Shield className="w-4 h-4 text-emerald-400" /> Sécurité & Équipements de Série
-                  </h4>
-                  <ul className="space-y-2 text-slate-300">
-                    {(car.safetyFeatures || [
-                      '6 Airbags (Frontaux, Latéraux & Rideaux)',
-                      'Système Antiblocage ABS + Répartiteur EBD',
-                      'Contrôle Électronique de Trajectoire ESP Bosch 9.3',
-                      'Fixations pour sièges enfants ISOFIX',
-                      'Aide au démarrage en côte (HHC)',
-                      'Système de contrôle de vitesse en descente (HDC)',
-                      'Radars de recul avec Caméra 360° HD',
-                    ]).map((item, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-xs">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+              ) : (
+                <div
+                  onClick={() => galleryFileInputRef.current?.click()}
+                  className="p-10 border-2 border-dashed border-slate-700 hover:border-red-500 bg-slate-950/60 rounded-2xl text-center space-y-3 cursor-pointer transition-colors"
+                >
+                  <div className="w-12 h-12 bg-red-600/20 text-red-400 rounded-2xl mx-auto flex items-center justify-center border border-red-500/30">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-white text-sm">Aucune photo dans la galerie</h5>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                      Cliquez ici ou utilisez le bouton "Téléverser des photos" ci-dessus pour ajouter des photos de ce véhicule.
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Key Comfort Features */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 text-xs">
-                <h4 className="font-black text-white flex items-center gap-2 uppercase tracking-wider text-xs border-b border-slate-800 pb-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" /> Équipements de Confort & Multimédia
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
-                  {car.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                      <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="font-medium text-slate-200">{feat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'gallery' && car.galleryImages && car.galleryImages.length > 0 && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <div className="h-80 w-full bg-black rounded-xl overflow-hidden flex items-center justify-center">
-                  <img
-                    src={selectedGalleryImage}
-                    alt={car.name}
-                    className="max-h-full max-w-full object-contain rounded-xl"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-1">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedGalleryImage(car.imageUrl)}
-                    className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                      selectedGalleryImage === car.imageUrl ? 'border-red-500 ring-2 ring-red-500/40' : 'border-slate-800 opacity-60'
-                    }`}
-                  >
-                    <img src={car.imageUrl} alt={car.name} className="w-full h-full object-cover" />
-                  </button>
-
-                  {car.galleryImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedGalleryImage(img)}
-                      className={`h-16 w-24 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                        selectedGalleryImage === img ? 'border-red-500 ring-2 ring-red-500/40' : 'border-slate-800 opacity-60'
-                      }`}
-                    >
-                      <img src={img} alt={`${car.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>

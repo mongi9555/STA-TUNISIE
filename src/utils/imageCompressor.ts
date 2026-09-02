@@ -107,3 +107,115 @@ export function compressImageDataUrl(
     img.onerror = () => resolve(dataUrl);
   });
 }
+
+/**
+ * Compresses an uploaded car photo File into an optimized high-resolution Data URL.
+ */
+export function fileToCompressedCarImageDataUrl(
+  file: File,
+  maxWidth = 1600,
+  maxHeight = 1200,
+  quality = 0.85
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('Le fichier sélectionné n\'est pas une image valide.'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (!result) {
+        reject(new Error('Impossible de lire le fichier image.'));
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / maxWidth > height / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        } else {
+          resolve(result);
+        }
+      };
+      img.onerror = () => reject(new Error('Impossible de charger l\'image.'));
+      img.src = result;
+    };
+    reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Uploads a car image file: compresses it, tries the /api/upload endpoint for a persistent URL,
+ * and falls back to compressed Base64 data URL if the server upload fails.
+ */
+export async function uploadCarImageFile(file: File): Promise<string> {
+  const compressedDataUrl = await fileToCompressedCarImageDataUrl(file);
+
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name || 'car_photo.jpg',
+        fileData: compressedDataUrl,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.url) {
+        return data.url;
+      }
+    }
+  } catch (err) {
+    console.warn('[Upload] Server upload fallback to compressed Data URL:', err);
+  }
+
+  return compressedDataUrl;
+}
+
+/**
+ * Uploads multiple car images in batch and returns an array of image URLs.
+ */
+export async function uploadMultipleCarImages(files: FileList | File[]): Promise<string[]> {
+  const fileArray = Array.from(files);
+  const results: string[] = [];
+
+  for (const file of fileArray) {
+    if (file.type.startsWith('image/')) {
+      try {
+        const url = await uploadCarImageFile(file);
+        results.push(url);
+      } catch (err) {
+        console.error('[Upload] Error uploading car image:', file.name, err);
+      }
+    }
+  }
+
+  return results;
+}

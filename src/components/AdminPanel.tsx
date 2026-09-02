@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { CarModel, CarColor, CommercialUser, Reservation, UserRole, UserPermissions, SiteSettings, ThemeMode, StockRequest, CarAccessory, CustomQuote, AuditLogEntry } from '../types';
 import { TechSpecModal } from './TechSpecModal';
-import { compressImageDataUrl, fileToCompressedAvatarDataUrl } from '../utils/imageCompressor';
+import { compressImageDataUrl, fileToCompressedAvatarDataUrl, uploadMultipleCarImages, uploadCarImageFile } from '../utils/imageCompressor';
 import { UserPhotoUploadModal } from './UserPhotoUploadModal';
+import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 import { StaLogo } from './StaLogo';
 import { AuditLogViewer } from './AuditLogViewer';
 import {
@@ -464,6 +465,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Car Model Edit/Create Modal State
   const [editingCarModel, setEditingCarModel] = useState<CarModel | null>(null);
+  const [adminPhotoCar, setAdminPhotoCar] = useState<CarModel | null>(null);
   const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false);
   const [newCarName, setNewCarName] = useState('');
   const [newCarCategory, setNewCarCategory] = useState<CarModel['category']>('SUV');
@@ -474,6 +476,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCarEnergy, setNewCarEnergy] = useState<CarModel['energy']>('Essence');
   const [newCarGuarantee, setNewCarGuarantee] = useState('7 ans ou 200 000 km');
   const [newCarImage, setNewCarImage] = useState('');
+  const [newCarGalleryImages, setNewCarGalleryImages] = useState<string[]>([]);
+  const [isUploadingAdminGallery, setIsUploadingAdminGallery] = useState(false);
   const [newCarDesc, setNewCarDesc] = useState('Modèle moderne équipé des dernières technologies Chery.');
   const [newCarFicheUrl, setNewCarFicheUrl] = useState('');
   
@@ -682,6 +686,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       bootCapacity: newCarBoot.trim(),
       maxSpeed: newCarMaxSpeed.trim(),
       acceleration: newCarAcceleration.trim(),
+      galleryImages: newCarGalleryImages.length > 0 ? newCarGalleryImages : undefined,
       features: parsedFeatures.length > 0 ? parsedFeatures : ['Climatisation Automatique Dual-Zone', 'Écran Tactile HD 10.25"', 'Jantes Alliage High Spec', 'Caméra de Recul 360°'],
       safetyFeatures: parsedSafety.length > 0 ? parsedSafety : ['6 Airbags', 'ABS + EBD', 'ESP Bosch 9.3', 'Isofix'],
       colors: [
@@ -695,6 +700,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsAddCarModalOpen(false);
     setNewCarName('');
     setNewCarImage('');
+    setNewCarGalleryImages([]);
     setNewCarPrice(65000);
     setNewCarRequiredDeposit(20000);
   };
@@ -1095,6 +1101,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setAdminPhotoCar(car)}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer border border-amber-500/30"
+                          title="Gérer la galerie photos de ce véhicule"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-[10px]">Photos ({1 + (car.galleryImages?.length || 0)})</span>
+                        </button>
                         {onEditCarModel && (
                           <button
                             onClick={() => setEditingCarModel(car)}
@@ -4225,59 +4240,160 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 />
               </div>
 
-              <div className="space-y-2 sm:col-span-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                <div className="flex items-center justify-between">
+              <div className="space-y-3 sm:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <label className="font-semibold text-slate-200 block text-xs">Photo / Image Principale du Véhicule</label>
-                    <p className="text-[10px] text-slate-400">Photo affichée sur le Tableau de bord, le Catalogue et les Devis</p>
+                    <label className="font-bold text-slate-200 block text-xs flex items-center gap-1.5">
+                      <Camera className="w-4 h-4 text-amber-400" />
+                      <span>Photos & Galerie Visuelle du Véhicule</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400">
+                      Gérez la photo principale et ajoutez d'autres photos dans la galerie du modèle.
+                    </p>
                   </div>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Uploader une Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleCarImageFileUpload(e, true)}
-                      className="hidden"
-                    />
-                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Photo Principale</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleCarImageFileUpload(e, true)}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-lg border border-red-500/40 cursor-pointer transition-colors shadow">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Ajouter Photos Galerie</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+                          setIsUploadingAdminGallery(true);
+                          try {
+                            const newUrls = await uploadMultipleCarImages(files);
+                            setEditingCarModel((prev) => {
+                              if (!prev) return prev;
+                              const currentGallery = prev.galleryImages || [];
+                              return {
+                                ...prev,
+                                galleryImages: [...currentGallery, ...newUrls],
+                              };
+                            });
+                          } catch (err) {
+                            console.error('Error uploading gallery photos:', err);
+                          } finally {
+                            setIsUploadingAdminGallery(false);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
+                {/* Main Photo Card */}
                 {editingCarModel.imageUrl && (
-                  <div className="flex items-center gap-3 p-2 bg-slate-900 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-3 p-2.5 bg-slate-900 rounded-lg border border-amber-500/30">
                     <img
                       src={editingCarModel.imageUrl}
-                      alt="Aperçu véhicule"
+                      alt="Photo principale"
                       className="w-24 h-16 object-cover rounded-md border border-slate-700 bg-black shrink-0"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = 'https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1';
                       }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Photo actuelle enregistrée
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-mono truncate">{editingCarModel.imageUrl}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-amber-400" /> Photo Principale (Couverture)
+                        </span>
                         <button
                           type="button"
                           onClick={() => setEditingCarModel({ ...editingCarModel, imageUrl: getCheryModelDefaultPhoto(editingCarModel.name, editingCarModel.category) })}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium"
+                          className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer"
                         >
-                          Réinitialiser avec la photo officielle
+                          Photo officielle Chery
                         </button>
                       </div>
+                      <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">{editingCarModel.imageUrl}</p>
                     </div>
                   </div>
                 )}
 
-                <input
-                  type="url"
-                  placeholder="https://... ou téléversez une photo"
-                  value={editingCarModel.imageUrl}
-                  onChange={(e) => setEditingCarModel({ ...editingCarModel, imageUrl: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-[11px]"
-                />
+                {/* Gallery Photos Grid */}
+                {editingCarModel.galleryImages && editingCarModel.galleryImages.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                    <span className="text-[11px] font-bold text-slate-300 block">
+                      Photos Additionnelles dans la Galerie ({editingCarModel.galleryImages.length}) :
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {editingCarModel.galleryImages.map((imgUrl, idx) => (
+                        <div key={idx} className="relative group bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+                          <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-20 object-cover" />
+                          <div className="p-1 flex items-center justify-between bg-slate-950/90 text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Swap this gallery image to become main image
+                                const oldMain = editingCarModel.imageUrl;
+                                const newGallery = editingCarModel.galleryImages?.filter((_, i) => i !== idx) || [];
+                                if (oldMain && !newGallery.includes(oldMain)) {
+                                  newGallery.unshift(oldMain);
+                                }
+                                setEditingCarModel({
+                                  ...editingCarModel,
+                                  imageUrl: imgUrl,
+                                  galleryImages: newGallery,
+                                });
+                              }}
+                              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5 cursor-pointer"
+                              title="Définir comme photo principale"
+                            >
+                              <Check className="w-3 h-3" /> Principale
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newGallery = (editingCarModel.galleryImages || []).filter((_, i) => i !== idx);
+                                setEditingCarModel({
+                                  ...editingCarModel,
+                                  galleryImages: newGallery,
+                                });
+                              }}
+                              className="text-red-400 hover:text-red-300 p-0.5 cursor-pointer"
+                              title="Supprimer cette photo"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isUploadingAdminGallery && (
+                  <p className="text-xs text-amber-400 animate-pulse flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Compression et téléversement des photos...
+                  </p>
+                )}
+
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 block font-medium">URL de la photo principale :</span>
+                  <input
+                    type="url"
+                    placeholder="https://... ou téléversez une photo"
+                    value={editingCarModel.imageUrl}
+                    onChange={(e) => setEditingCarModel({ ...editingCarModel, imageUrl: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono text-[11px]"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1 sm:col-span-2">
@@ -4571,22 +4687,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2 sm:col-span-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                <div className="flex items-center justify-between">
+              <div className="space-y-3 sm:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <label className="font-semibold text-slate-200 block text-xs">Photo / Image Principale du Véhicule</label>
-                    <p className="text-[10px] text-slate-400">Photo affichée sur le Tableau de bord, le Catalogue et les Devis</p>
+                    <label className="font-bold text-slate-200 block text-xs flex items-center gap-1.5">
+                      <Camera className="w-4 h-4 text-amber-400" />
+                      <span>Photos & Galerie Visuelle du Véhicule</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400">
+                      Photo principale et photos additionnelles du modèle.
+                    </p>
                   </div>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Uploader une Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleCarImageFileUpload(e, false)}
-                      className="hidden"
-                    />
-                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40 cursor-pointer transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Photo Principale</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleCarImageFileUpload(e, false)}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-lg border border-red-500/40 cursor-pointer transition-colors shadow">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Ajouter Photos Galerie</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+                          setIsUploadingAdminGallery(true);
+                          try {
+                            const newUrls = await uploadMultipleCarImages(files);
+                            setNewCarGalleryImages((prev) => [...prev, ...newUrls]);
+                          } catch (err) {
+                            console.error('Error uploading gallery photos:', err);
+                          } finally {
+                            setIsUploadingAdminGallery(false);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {newCarImage ? (
@@ -4601,13 +4749,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Photo prête pour ce véhicule
+                        <Check className="w-3.5 h-3.5" /> Photo Principale prête
                       </p>
                       <p className="text-[10px] text-slate-400 font-mono truncate">{newCarImage}</p>
                       <button
                         type="button"
                         onClick={() => setNewCarImage('')}
-                        className="text-[10px] text-red-400 hover:text-red-300 underline font-medium mt-1"
+                        className="text-[10px] text-red-400 hover:text-red-300 underline font-medium mt-1 cursor-pointer"
                       >
                         Retirer la photo
                       </button>
@@ -4622,12 +4770,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => setNewCarImage(getCheryModelDefaultPhoto(newCarName, newCarCategory))}
-                        className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold rounded border border-slate-700 shrink-0"
+                        className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold rounded border border-slate-700 shrink-0 cursor-pointer"
                       >
                         Appliquer photo Chery
                       </button>
                     )}
                   </div>
+                )}
+
+                {/* New Car Gallery Thumbnails */}
+                {newCarGalleryImages.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                    <span className="text-[11px] font-bold text-slate-300 block">
+                      Photos Additionnelles dans la Galerie ({newCarGalleryImages.length}) :
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {newCarGalleryImages.map((imgUrl, idx) => (
+                        <div key={idx} className="relative group bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+                          <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-20 object-cover" />
+                          <div className="p-1 flex items-center justify-between bg-slate-950/90 text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const oldMain = newCarImage;
+                                const newGallery = newCarGalleryImages.filter((_, i) => i !== idx);
+                                if (oldMain && !newGallery.includes(oldMain)) {
+                                  newGallery.unshift(oldMain);
+                                }
+                                setNewCarImage(imgUrl);
+                                setNewCarGalleryImages(newGallery);
+                              }}
+                              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <Check className="w-3 h-3" /> Principale
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewCarGalleryImages((prev) => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="text-red-400 hover:text-red-300 p-0.5 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isUploadingAdminGallery && (
+                  <p className="text-xs text-amber-400 animate-pulse flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Compression et téléversement des photos...
+                  </p>
                 )}
 
                 <input
@@ -5080,8 +5276,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Floating Tech Spec Sheet Modal */}
       <TechSpecModal
-        car={selectedSpecCarAdmin}
+        car={selectedSpecCarAdmin ? cars.find((c) => c.id === selectedSpecCarAdmin.id) || selectedSpecCarAdmin : null}
         onClose={() => setSelectedSpecCarAdmin(null)}
+        onEditCarModel={onEditCarModel}
+      />
+
+      {/* Dedicated Car Photo Upload & Gallery Modal */}
+      <CarPhotoUploadModal
+        car={adminPhotoCar ? cars.find((c) => c.id === adminPhotoCar.id) || adminPhotoCar : null}
+        isOpen={Boolean(adminPhotoCar)}
+        onClose={() => setAdminPhotoCar(null)}
+        onSaveCar={(updatedCar) => {
+          if (onEditCarModel) {
+            onEditCarModel(updatedCar);
+          }
+          setAdminPhotoCar(updatedCar);
+        }}
       />
 
       {/* User Photo Upload Modal */}
