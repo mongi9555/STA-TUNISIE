@@ -448,6 +448,11 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
                     <img
                       src={imgItem.url}
                       alt={`${car.name} ${idx + 1}`}
+                      onError={(e) => {
+                        if (car.imageUrl && e.currentTarget.src !== car.imageUrl) {
+                          e.currentTarget.src = car.imageUrl;
+                        }
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
 

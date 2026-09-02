@@ -4357,7 +4357,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {editingCarModel.galleryImages.map((imgUrl, idx) => (
                         <div key={idx} className="relative group bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-                          <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-20 object-cover" />
+                          <img
+                            src={imgUrl}
+                            alt={`Photo ${idx + 1}`}
+                            onError={(e) => {
+                              if (editingCarModel.imageUrl && e.currentTarget.src !== editingCarModel.imageUrl) {
+                                e.currentTarget.src = editingCarModel.imageUrl;
+                              }
+                            }}
+                            className="w-full h-20 object-cover"
+                          />
                           <div className="p-1 flex items-center justify-between bg-slate-950/90 text-[10px]">
                             <button
                               type="button"
@@ -4809,7 +4818,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {newCarGalleryImages.map((imgUrl, idx) => (
                         <div key={idx} className="relative group bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-                          <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-20 object-cover" />
+                          <img
+                            src={imgUrl}
+                            alt={`Photo ${idx + 1}`}
+                            onError={(e) => {
+                              if (newCarImage && e.currentTarget.src !== newCarImage) {
+                                e.currentTarget.src = newCarImage;
+                              }
+                            }}
+                            className="w-full h-20 object-cover"
+                          />
                           <div className="p-1 flex items-center justify-between bg-slate-950/90 text-[10px]">
                             <button
                               type="button"

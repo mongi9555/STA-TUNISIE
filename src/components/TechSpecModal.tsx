@@ -741,6 +741,11 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                     <img
                       src={selectedGalleryImage}
                       alt={car.name}
+                      onError={(e) => {
+                        if (car.imageUrl && e.currentTarget.src !== car.imageUrl) {
+                          e.currentTarget.src = car.imageUrl;
+                        }
+                      }}
                       className="max-h-full max-w-full object-contain rounded-xl"
                     />
 
@@ -786,7 +791,15 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                               : 'border-slate-800 opacity-70 hover:opacity-100'
                           }`}
                         >
-                          <img src={car.imageUrl} alt={car.name} className="w-full h-full object-cover" />
+                          <img
+                            src={car.imageUrl}
+                            alt={car.name}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = 'https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                           <div className="absolute bottom-0 inset-x-0 bg-amber-500 text-slate-950 text-[9px] font-black text-center py-0.2">
                             Principale
                           </div>
@@ -805,7 +818,16 @@ export const TechSpecModal: React.FC<TechSpecModalProps> = ({
                               : 'border-slate-800 opacity-70 hover:opacity-100'
                           }`}
                         >
-                          <img src={img} alt={`${car.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                          <img
+                            src={img}
+                            alt={`${car.name} ${idx + 1}`}
+                            onError={(e) => {
+                              if (car.imageUrl && e.currentTarget.src !== car.imageUrl) {
+                                e.currentTarget.src = car.imageUrl;
+                              }
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         </button>
                       ))}
 
