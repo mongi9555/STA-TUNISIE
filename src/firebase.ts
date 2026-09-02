@@ -246,6 +246,34 @@ export async function saveCarToFirestore(car: CarModel): Promise<boolean> {
       }
     }
 
+    // Also offload any heavy base64 gallery images
+    if (typeof window !== 'undefined' && Array.isArray(carToSave.galleryImages) && carToSave.galleryImages.length > 0) {
+      const processedGallery: string[] = [];
+      for (let i = 0; i < carToSave.galleryImages.length; i++) {
+        const img = carToSave.galleryImages[i];
+        if (typeof img === 'string' && img.startsWith('data:image') && img.length > 50000) {
+          try {
+            const res = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileName: `car_${carToSave.id}_gal_${i}.jpg`, fileData: img }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && data.url) {
+                processedGallery.push(data.url);
+                continue;
+              }
+            }
+          } catch (uploadErr) {
+            console.warn('[Firestore Car Save] Gallery image upload fallback:', uploadErr);
+          }
+        }
+        processedGallery.push(img);
+      }
+      carToSave.galleryImages = processedGallery;
+    }
+
     if (typeof window !== 'undefined' && carToSave.ficheTechniqueUrl && carToSave.ficheTechniqueUrl.startsWith('data:') && carToSave.ficheTechniqueUrl.length > 50000) {
       try {
         const res = await fetch('/api/upload', {

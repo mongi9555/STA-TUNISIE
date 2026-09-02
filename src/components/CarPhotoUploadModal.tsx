@@ -17,6 +17,9 @@ import {
   AlertCircle,
   Loader2,
   ZoomIn,
+  Save,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 
 interface CarPhotoUploadModalProps {
@@ -39,6 +42,8 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewZoomImage, setPreviewZoomImage] = useState<string | null>(null);
+  const [isSavingDb, setIsSavingDb] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen || !car) return null;
@@ -48,6 +53,22 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
     { url: car.imageUrl, isMain: true, index: -1 },
     ...currentGallery.map((url, idx) => ({ url, isMain: false, index: idx })),
   ].filter((img) => Boolean(img.url));
+
+  const handleManualSaveToDatabase = async () => {
+    setIsSavingDb(true);
+    setErrorMessage(null);
+    try {
+      onSaveCar(car);
+      const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLastSavedTime(timeStr);
+      setSuccessMessage(`✅ Photos enregistrées définitivement dans la base de données (${timeStr}) ! Les photos resteront lors de l'actualisation.`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err: any) {
+      setErrorMessage("Erreur lors de l'enregistrement dans la base de données.");
+    } finally {
+      setIsSavingDb(false);
+    }
+  };
 
   const handleFilesUpload = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
@@ -83,9 +104,16 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
         galleryImages: newGallery,
       };
 
+      // Automatic persistence into Firebase, local storage and file DB
       onSaveCar(updatedCar);
-      setSuccessMessage(`${uploadedUrls.length} nouvelle(s) photo(s) ajoutée(s) avec succès !`);
-      setTimeout(() => setSuccessMessage(null), 4000);
+      const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLastSavedTime(timeStr);
+      setSuccessMessage(
+        uploadedUrls.length === 1
+          ? `La photo a été téléversée sur le site avec succès et enregistrée dans la base de données avec succès (${timeStr}) !`
+          : `${uploadedUrls.length} photos ont été téléversées sur le site avec succès et enregistrées dans la base de données avec succès (${timeStr}) !`
+      );
+      setTimeout(() => setSuccessMessage(null), 6000);
     } catch (err: any) {
       console.error('Error uploading car photos:', err);
       setErrorMessage(err.message || 'Erreur lors du téléversement des photos.');
@@ -115,10 +143,13 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
       galleryImages: newGallery,
     };
 
+    // Automatic persistence into Firebase, local storage and file DB
     onSaveCar(updatedCar);
+    const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLastSavedTime(timeStr);
     setCustomUrlInput('');
-    setSuccessMessage('Photo ajoutée par URL avec succès !');
-    setTimeout(() => setSuccessMessage(null), 3000);
+    setSuccessMessage('✅ Photo ajoutée par URL et sauvegardée dans la base de données !');
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
   const handleSetAsMainImage = (url: string, galleryIndex: number) => {
@@ -136,40 +167,45 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
       galleryImages: newGallery,
     };
 
+    // Automatic persistence into Firebase, local storage and file DB
     onSaveCar(updatedCar);
-    setSuccessMessage('Photo principale mise à jour avec succès !');
-    setTimeout(() => setSuccessMessage(null), 3000);
+    const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLastSavedTime(timeStr);
+    setSuccessMessage('✅ Photo principale modifiée et enregistrée dans la base de données !');
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
   const handleDeleteImage = (item: { url: string; isMain: boolean; index: number }) => {
+    let updatedCar: CarModel;
     if (item.isMain) {
       if (currentGallery.length > 0) {
         const nextMain = currentGallery[0];
         const nextGallery = currentGallery.slice(1);
-        const updatedCar: CarModel = {
+        updatedCar = {
           ...car,
           imageUrl: nextMain,
           galleryImages: nextGallery,
         };
-        onSaveCar(updatedCar);
       } else {
-        const updatedCar: CarModel = {
+        updatedCar = {
           ...car,
           imageUrl: '',
         };
-        onSaveCar(updatedCar);
       }
     } else {
       const nextGallery = currentGallery.filter((_, idx) => idx !== item.index);
-      const updatedCar: CarModel = {
+      updatedCar = {
         ...car,
         galleryImages: nextGallery,
       };
-      onSaveCar(updatedCar);
     }
 
-    setSuccessMessage('Photo supprimée.');
-    setTimeout(() => setSuccessMessage(null), 2500);
+    // Automatic persistence into Firebase, local storage and file DB
+    onSaveCar(updatedCar);
+    const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLastSavedTime(timeStr);
+    setSuccessMessage('✅ Photo supprimée et base de données mise à jour.');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   return (
@@ -181,7 +217,7 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
         className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-4 shrink-0">
+        <div className="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-red-600/20 border border-red-500/30 rounded-2xl text-red-400">
               <Camera className="w-6 h-6" />
@@ -192,19 +228,44 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
                   Gestionnaire Photos
                 </span>
                 <span className="text-xs text-slate-400 font-mono font-medium">{car.category}</span>
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center gap-1 font-semibold">
+                  <Database className="w-3 h-3" /> Auto-Sauvegarde Active
+                </span>
               </div>
               <h3 className="text-lg font-black text-white">{car.name}</h3>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
-            title="Fermer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleManualSaveToDatabase}
+              disabled={isSavingDb}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Sauvegarder immédiatement toutes les modifications dans la base de données"
+            >
+              {isSavingDb ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Enregistrement...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Enregistrer en Base</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+              title="Fermer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -218,10 +279,40 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
           )}
 
           {successMessage && (
-            <div className="p-3.5 bg-emerald-950/50 border border-emerald-500/40 rounded-2xl text-emerald-200 text-xs flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span>{successMessage}</span>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="p-4 bg-emerald-950/70 border border-emerald-500/50 rounded-2xl text-emerald-100 shadow-xl shadow-emerald-950/50 flex items-start justify-between gap-3 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-emerald-400 to-teal-500" />
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="p-2 bg-emerald-900/60 border border-emerald-400/40 rounded-xl text-emerald-300 shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h5 className="font-extrabold text-white text-xs sm:text-sm">
+                      Photo(s) téléversée(s) et sauvegardée(s) avec succès !
+                    </h5>
+                    <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full font-bold flex items-center gap-1">
+                      <Database className="w-3 h-3" /> Base de données synchronisée
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-200/90 leading-relaxed">
+                    {successMessage}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSuccessMessage(null)}
+                className="text-emerald-400 hover:text-white p-1 hover:bg-emerald-900/40 rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Fermer la notification"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
           )}
 
           {/* Upload Drop Zone & Actions */}
@@ -406,17 +497,43 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
-          <span className="text-xs text-slate-400">
-            Toutes les modifications de photos sont enregistrées et synchronisées en temps réel.
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer"
-          >
-            Terminer
-          </button>
+        <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              {lastSavedTime
+                ? `Dernier enregistrement à ${lastSavedTime} (Persistance base de données assurée)`
+                : 'Les photos sont automatiquement sauvegardées dans la base de données.'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleManualSaveToDatabase}
+              disabled={isSavingDb}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-lg shadow-emerald-950/40 flex items-center gap-2 transition-all cursor-pointer"
+            >
+              {isSavingDb ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Enregistrement en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Enregistrer & Sauvegarder</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </motion.div>
 

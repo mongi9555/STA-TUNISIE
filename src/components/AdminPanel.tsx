@@ -478,6 +478,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCarImage, setNewCarImage] = useState('');
   const [newCarGalleryImages, setNewCarGalleryImages] = useState<string[]>([]);
   const [isUploadingAdminGallery, setIsUploadingAdminGallery] = useState(false);
+  const [adminPhotoToast, setAdminPhotoToast] = useState<string | null>(null);
   const [newCarDesc, setNewCarDesc] = useState('Modèle moderne équipé des dernières technologies Chery.');
   const [newCarFicheUrl, setNewCarFicheUrl] = useState('');
   
@@ -542,6 +543,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       } else {
         setNewCarImage(uploadedUrl);
       }
+      const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      setAdminPhotoToast(`Photo téléversée sur le site avec succès et enregistrée (${timeStr}) !`);
+      setTimeout(() => setAdminPhotoToast(null), 5000);
     };
     reader.readAsDataURL(file);
   };
@@ -4241,6 +4245,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-3 sm:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                {adminPhotoToast && (
+                  <div className="p-3 bg-emerald-950/70 border border-emerald-500/50 rounded-xl text-emerald-100 text-xs flex items-center justify-between gap-2 shadow-lg">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{adminPhotoToast}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAdminPhotoToast(null)}
+                      className="text-emerald-400 hover:text-white p-0.5"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <label className="font-bold text-slate-200 block text-xs flex items-center gap-1.5">
@@ -4285,6 +4304,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 galleryImages: [...currentGallery, ...newUrls],
                               };
                             });
+                            const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                            setAdminPhotoToast(`${newUrls.length} photo(s) téléversée(s) sur le site avec succès et enregistrée(s) (${timeStr}) !`);
+                            setTimeout(() => setAdminPhotoToast(null), 5000);
                           } catch (err) {
                             console.error('Error uploading gallery photos:', err);
                           } finally {
