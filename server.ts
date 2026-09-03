@@ -80,18 +80,28 @@ import { carModels, reservations, stockRequests, siteSettings, users } from "./s
 
 app.get("/api/sql/status", async (req, res) => {
   try {
+    const isNeon = Boolean(process.env.DATABASE_URL || process.env.NEON_DATABASE_URL);
     const carList = await db.select().from(carModels);
     return res.json({
       connected: true,
-      message: "Connexion Cloud SQL PostgreSQL active.",
+      provider: isNeon ? "Neon PostgreSQL" : "PostgreSQL (Cloud SQL)",
+      message: isNeon ? "Connexion Neon PostgreSQL active." : "Connexion PostgreSQL active.",
       carsCount: carList.length,
     });
   } catch (error: any) {
-    console.error("Erreur statut Cloud SQL:", error);
-    return res.status(500).json({
+    const hasConfig = Boolean(
+      process.env.DATABASE_URL ||
+      process.env.NEON_DATABASE_URL ||
+      process.env.SQL_HOST
+    );
+    return res.json({
       connected: false,
-      error: "Impossible de contacter la base Cloud SQL.",
-      details: error.message,
+      configured: hasConfig,
+      provider: (process.env.DATABASE_URL || process.env.NEON_DATABASE_URL) ? "Neon PostgreSQL" : "PostgreSQL",
+      message: hasConfig
+        ? "En attente de connexion à la base PostgreSQL."
+        : "Base PostgreSQL non configurée (utilise Firestore et data/db.json).",
+      details: error?.message || String(error),
     });
   }
 });
@@ -197,6 +207,20 @@ app.get("/api/db", (req, res) => {
 app.post("/api/db/save", (req, res) => {
   try {
     ensureDataDir();
+
+    let existingData: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      try {
+        const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
+        const parsed = safeParseJSON(fileContent);
+        if (parsed && typeof parsed === "object") {
+          existingData = parsed;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
     const {
       cars,
       reservations,
@@ -214,18 +238,18 @@ app.post("/api/db/save", (req, res) => {
     
     const dbPayload = {
       savedAt: new Date().toISOString(),
-      cars: Array.isArray(cars) ? cars : [],
-      reservations: Array.isArray(reservations) ? reservations : [],
-      commercials: Array.isArray(commercials) ? commercials : [],
-      siteSettings: siteSettings || null,
-      accessories: Array.isArray(accessories) ? accessories : [],
-      quotes: Array.isArray(quotes) ? quotes : [],
-      adminDocs: Array.isArray(adminDocs) ? adminDocs : [],
-      knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : [],
-      testDrives: Array.isArray(testDrives) ? testDrives : [],
-      stockRequests: Array.isArray(stockRequests) ? stockRequests : [],
-      docTemplate: docTemplate || null,
-      auditLogs: Array.isArray(auditLogs) ? auditLogs : [],
+      cars: Array.isArray(cars) ? cars : (existingData.cars || []),
+      reservations: Array.isArray(reservations) ? reservations : (existingData.reservations || []),
+      commercials: Array.isArray(commercials) ? commercials : (existingData.commercials || []),
+      siteSettings: siteSettings !== undefined ? siteSettings : (existingData.siteSettings || null),
+      accessories: Array.isArray(accessories) ? accessories : (existingData.accessories || []),
+      quotes: Array.isArray(quotes) ? quotes : (existingData.quotes || []),
+      adminDocs: Array.isArray(adminDocs) ? adminDocs : (existingData.adminDocs || []),
+      knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : (existingData.knowledgeBase || []),
+      testDrives: Array.isArray(testDrives) ? testDrives : (existingData.testDrives || []),
+      stockRequests: Array.isArray(stockRequests) ? stockRequests : (existingData.stockRequests || []),
+      docTemplate: docTemplate !== undefined ? docTemplate : (existingData.docTemplate || null),
+      auditLogs: Array.isArray(auditLogs) ? auditLogs : (existingData.auditLogs || []),
     };
 
     const jsonString = JSON.stringify(dbPayload, null, 2);

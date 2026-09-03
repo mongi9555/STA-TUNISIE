@@ -140,28 +140,32 @@ export const Header: React.FC<HeaderProps> = ({
     }, 1800);
   };
 
-  // Dynamic Header CSS according to active theme
-  const isLightTheme = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
+  // Dark Automotive Themes Only (Strictly dark mode)
+  const isLightTheme = false;
 
   const headerBgClass =
-    theme === 'light'
-      ? 'bg-white text-slate-900 border-slate-200 shadow-md'
-      : theme === 'nordic_clean'
-      ? 'bg-slate-50 text-slate-900 border-blue-200/80 shadow-md'
-      : theme === 'pearl_luxury'
-      ? 'bg-stone-50 text-stone-900 border-amber-200/80 shadow-md'
-      : theme === 'crystal_cyan'
-      ? 'bg-teal-50 text-slate-900 border-teal-200/80 shadow-md'
-      : theme === 'red'
+    theme === 'red'
       ? 'bg-gradient-to-r from-red-950 via-slate-950 to-red-950 text-white border-red-900/50 shadow-xl shadow-red-950/40'
-      : 'bg-slate-900 text-white border-slate-800 shadow-lg';
+      : theme === 'carbon'
+      ? 'bg-neutral-950 text-white border-neutral-800 shadow-xl shadow-black/60'
+      : theme === 'electric_cyan'
+      ? 'bg-[#03131A] text-white border-cyan-900/40 shadow-xl shadow-cyan-950/30'
+      : theme === 'luxury_gold'
+      ? 'bg-[#0E0B07] text-white border-amber-900/40 shadow-xl shadow-amber-950/30'
+      : theme === 'titanium'
+      ? 'bg-slate-900 text-white border-slate-700/60 shadow-xl'
+      : 'bg-slate-950 text-white border-slate-800 shadow-lg';
 
   const subHeaderBgClass =
-    isLightTheme
-      ? 'bg-white/90 border-slate-200'
-      : theme === 'red'
+    theme === 'red'
       ? 'bg-red-950/60 border-red-900/40'
-      : 'bg-slate-950/80 border-slate-800';
+      : theme === 'carbon'
+      ? 'bg-neutral-950/90 border-neutral-800'
+      : theme === 'electric_cyan'
+      ? 'bg-[#041724]/90 border-cyan-950'
+      : theme === 'luxury_gold'
+      ? 'bg-[#141008]/90 border-amber-950'
+      : 'bg-slate-950/90 border-slate-800';
 
   const selectBgClass =
     isLightTheme
@@ -249,15 +253,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Automotive Theme Selector */}
+          {/* Automotive Theme Selector (Thèmes Noirs Uniquement) */}
           <div className="flex items-center gap-1.5">
             <select
               value={theme}
               onChange={(e) => onThemeChange(e.target.value as ThemeMode)}
               className={`text-xs font-bold py-2 px-3 rounded-xl border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                isLightTheme
-                  ? 'bg-white border-slate-300 text-slate-900 shadow-sm'
-                  : theme === 'carbon'
+                theme === 'carbon'
                   ? 'bg-neutral-950 border-red-500/40 text-red-400'
                   : theme === 'electric_cyan'
                   ? 'bg-cyan-950 border-cyan-500/40 text-cyan-300'
@@ -269,18 +271,12 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-red-950 border-red-700 text-red-200'
                   : 'bg-slate-950 border-slate-800 text-white'
               }`}
-              title="Sélectionner le Thème Automobile Professionnel"
+              title="Sélectionner le Thème Automobile (Thème Noir 100% Exclusif)"
             >
-              <optgroup label="✨ Thèmes Très Clairs & Professionnels">
-                <option value="light">☀️ Showroom Blanc Pur & Platine</option>
-                <option value="nordic_clean">❄️ Blanc Polaire & Cobalt Pro</option>
-                <option value="pearl_luxury">💎 Perle Blanche & Or Champagne</option>
-                <option value="crystal_cyan">🌊 Blanc Cristal & Cyan Tech</option>
-              </optgroup>
-              <optgroup label="🌙 Thèmes Sombres & High-Tech">
-                <option value="dark">🌑 Nuit Carbone (Sombre)</option>
+              <optgroup label="🌙 Thèmes Sombres Automobiles (Exclusif)">
+                <option value="carbon">🏎️ Fibre de Carbone Sport (Défaut)</option>
+                <option value="dark">🌑 Noir Obsidienne Pur</option>
                 <option value="red">🔴 Chery Crimson Racing</option>
-                <option value="carbon">🏎️ Fibre de Carbone Sport</option>
                 <option value="electric_cyan">⚡ Omoda EV Cyber Cyan</option>
                 <option value="luxury_gold">👑 Tiggo Gold Prestige</option>
                 <option value="titanium">🛡️ Titanium High-Tech</option>
@@ -535,11 +531,7 @@ export const Header: React.FC<HeaderProps> = ({
               transition={{ duration: 0.2 }}
               onSubmit={handleVerifyAndSwitch}
               autoComplete="off"
-              className={`border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 ${
-                theme === 'light'
-                  ? 'bg-white text-slate-900 border-slate-200'
-                  : 'bg-slate-900 text-white border-slate-800'
-              }`}
+              className="border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 bg-slate-900 text-white border-slate-800"
             >
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
                 <div className="flex items-center gap-2">
@@ -555,7 +547,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
 
-              <div className={`flex items-center gap-3 p-3 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
+              <div className="flex items-center gap-3 p-3 rounded-xl border bg-slate-950 border-slate-800">
                 <img
                   src={pendingUserToSwitch.avatar}
                   alt={pendingUserToSwitch.name}
@@ -589,9 +581,7 @@ export const Header: React.FC<HeaderProps> = ({
                     placeholder="Saisissez votre mot de passe..."
                     value={inputPassword}
                     onChange={(e) => setInputPassword(e.target.value)}
-                    className={`w-full border rounded-xl pl-3 pr-10 py-2.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      theme === 'light' ? 'bg-slate-100 text-slate-900 border-slate-300' : 'bg-slate-950 text-white border-slate-700'
-                    }`}
+                    className="w-full border rounded-xl pl-3 pr-10 py-2.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-950 text-white border-slate-700"
                   />
                   <button
                     type="button"

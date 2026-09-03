@@ -30,6 +30,7 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSettings }) => {
   const [selectedRoleChoice, setSelectedRoleChoice] = useState<UserRole | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   // Nom, Prénom, Mot de passe
   const [nomInput, setNomInput] = useState<string>('');
@@ -45,6 +46,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
     }
     return INITIAL_COMMERCIALS;
   }, [users]);
+
+  // Selected user object if quick select is active
+  const selectedUserObj = useMemo(() => {
+    if (!selectedUserId) return null;
+    return allUsers.find((u) => u.id === selectedUserId) || null;
+  }, [selectedUserId, allUsers]);
 
   // Filter users based on selected role choice or show all
   const filteredUsers = useMemo(() => {
@@ -66,20 +73,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRoleChoice(role);
-    const firstRoleUser = allUsers.find((u) => u.role === role);
-    if (firstRoleUser) {
-      const { prenom, nom } = parseUserNames(firstRoleUser.name);
-      setPrenomInput(prenom);
-      setNomInput(nom);
-    } else {
-      setPrenomInput('');
-      setNomInput('');
-    }
+    setSelectedUserId(null);
+    setPrenomInput('');
+    setNomInput('');
     setPassword('');
     setError(null);
   };
 
   const handleSelectUserQuick = (u: CommercialUser) => {
+    setSelectedUserId(u.id);
     const { prenom, nom } = parseUserNames(u.name);
     setPrenomInput(prenom);
     setNomInput(nom);
@@ -91,55 +93,63 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
     e.preventDefault();
     setError(null);
 
-    const normPrenom = prenomInput.trim().toLowerCase();
-    const normNom = nomInput.trim().toLowerCase();
-    const fullTyped = `${normPrenom} ${normNom}`.trim();
-    const fullTypedReverse = `${normNom} ${normPrenom}`.trim();
+    let matchedUser: CommercialUser | undefined;
 
-    if (!normNom && !normPrenom) {
-      setError('Veuillez saisir votre Nom et votre Prénom.');
-      return;
+    // 1. Priorité absolue : utilisateur directement sélectionné par son identifiant unique
+    if (selectedUserId) {
+      matchedUser = allUsers.find((u) => u.id === selectedUserId);
     }
 
-    // Find user in matching role or across all users
-    const pool = selectedRoleChoice ? filteredUsers : allUsers;
-    
-    let matchedUser = pool.find((u) => {
-      const uNameNorm = (u.name || '').trim().toLowerCase();
-      if (uNameNorm === fullTyped || uNameNorm === fullTypedReverse) return true;
-      
-      const { prenom: uPrenom, nom: uNom } = parseUserNames(u.name);
-      const uPrenomNorm = uPrenom.toLowerCase();
-      const uNomNorm = uNom.toLowerCase();
+    // 2. Si non sélectionné par clic, recherche exacte par nom et prénom saisis
+    if (!matchedUser) {
+      const normPrenom = prenomInput.trim().toLowerCase();
+      const normNom = nomInput.trim().toLowerCase();
+      const fullTyped = `${normPrenom} ${normNom}`.trim();
+      const fullTypedReverse = `${normNom} ${normPrenom}`.trim();
 
-      if (normNom && normPrenom) {
-        return (
-          (uNomNorm.includes(normNom) && uPrenomNorm.includes(normPrenom)) ||
-          (uNomNorm.includes(normPrenom) && uPrenomNorm.includes(normNom)) ||
-          uNameNorm.includes(normNom) && uNameNorm.includes(normPrenom)
-        );
-      } else if (normNom) {
-        return uNomNorm.includes(normNom) || uNameNorm.includes(normNom);
-      } else {
-        return uPrenomNorm.includes(normPrenom) || uNameNorm.includes(normPrenom);
+      if (!normNom && !normPrenom) {
+        setError('Veuillez saisir votre Nom et votre Prénom ou choisir votre compte dans la liste.');
+        return;
       }
-    });
 
-    if (!matchedUser) {
-      // Fallback search in all users if role was selected
-      matchedUser = allUsers.find((u) => {
+      const pool = selectedRoleChoice ? filteredUsers : allUsers;
+      matchedUser = pool.find((u) => {
         const uNameNorm = (u.name || '').trim().toLowerCase();
-        return (
-          uNameNorm.includes(normNom) ||
-          uNameNorm.includes(normPrenom) ||
-          uNameNorm === fullTyped ||
-          uNameNorm === fullTypedReverse
-        );
+        if (uNameNorm === fullTyped || uNameNorm === fullTypedReverse) return true;
+        
+        const { prenom: uPrenom, nom: uNom } = parseUserNames(u.name);
+        const uPrenomNorm = uPrenom.toLowerCase();
+        const uNomNorm = uNom.toLowerCase();
+
+        if (normNom && normPrenom) {
+          return (
+            (uNomNorm === normNom && uPrenomNorm === normPrenom) ||
+            (uNomNorm === normPrenom && uPrenomNorm === normNom) ||
+            uNameNorm === fullTyped ||
+            uNameNorm === fullTypedReverse
+          );
+        } else if (normNom) {
+          return uNomNorm === normNom || uNameNorm === normNom;
+        } else {
+          return uPrenomNorm === normPrenom || uNameNorm === normPrenom;
+        }
       });
+
+      if (!matchedUser) {
+        matchedUser = allUsers.find((u) => {
+          const uNameNorm = (u.name || '').trim().toLowerCase();
+          return (
+            uNameNorm === fullTyped ||
+            uNameNorm === fullTypedReverse ||
+            uNameNorm === normNom ||
+            uNameNorm === normPrenom
+          );
+        });
+      }
     }
 
     if (!matchedUser) {
-      setError(`Aucun compte trouvé pour "${prenomInput} ${nomInput}". Veuillez vérifier l'orthographe.`);
+      setError(`Aucun compte trouvé pour "${prenomInput} ${nomInput}". Veuillez cliquer directement sur votre profil dans la liste ci-dessous.`);
       return;
     }
 
@@ -395,6 +405,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
               )}
 
               <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
+                {/* Selected User Indicator */}
+                {selectedUserObj && (
+                  <div className="p-3 bg-red-950/40 border border-red-500/50 rounded-xl flex items-center justify-between gap-3 shadow-inner">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-red-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-md">
+                        {selectedUserObj.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-extrabold text-xs text-white">{selectedUserObj.name}</p>
+                          <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 font-mono text-[9px] rounded font-bold border border-emerald-500/30">
+                            Sélectionné
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-300">{selectedUserObj.agency || selectedUserObj.title}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserId(null);
+                        setNomInput('');
+                        setPrenomInput('');
+                        setPassword('');
+                      }}
+                      className="text-[10px] text-slate-400 hover:text-white px-2 py-1 bg-slate-800/80 hover:bg-slate-700 rounded-lg cursor-pointer transition-all"
+                    >
+                      Désélectionner
+                    </button>
+                  </div>
+                )}
+
                 {/* 2-column Nom & Prénom */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -407,7 +449,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                         required
                         placeholder="Ex: Gharbi, Abbasi..."
                         value={nomInput}
-                        onChange={(e) => setNomInput(e.target.value)}
+                        onChange={(e) => {
+                          setNomInput(e.target.value);
+                          setSelectedUserId(null);
+                        }}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-slate-500"
                       />
                     </div>
@@ -423,7 +468,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                         required
                         placeholder="Ex: Arbi, Lamine..."
                         value={prenomInput}
-                        onChange={(e) => setPrenomInput(e.target.value)}
+                        onChange={(e) => {
+                          setPrenomInput(e.target.value);
+                          setSelectedUserId(null);
+                        }}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-medium focus:outline-none focus:ring-2 focus:ring-red-500 placeholder:text-slate-500"
                       />
                     </div>
@@ -481,9 +529,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                       .slice(0, 2)
                       .join('')
                       .toUpperCase();
-                    const isSelected =
-                      (nomInput && u.name.toLowerCase().includes(nomInput.toLowerCase())) ||
-                      (prenomInput && u.name.toLowerCase().includes(prenomInput.toLowerCase()));
+                    // Exactly match by unique user ID to prevent any duplicate selection
+                    const isSelected = selectedUserId === u.id;
 
                     return (
                       <button
@@ -492,11 +539,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLogin, siteSe
                         onClick={() => handleSelectUserQuick(u)}
                         className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-2.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-red-950/40 border-red-500/60 text-white shadow'
+                            ? 'bg-red-950/50 border-red-500 ring-2 ring-red-500/40 text-white shadow-lg shadow-red-950/50'
                             : 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
                         }`}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-red-400 font-extrabold text-xs flex items-center justify-center shrink-0">
+                        <div className={`w-8 h-8 rounded-lg border text-xs font-extrabold flex items-center justify-center shrink-0 transition-all ${
+                          isSelected
+                            ? 'bg-red-600 border-red-400 text-white'
+                            : 'bg-slate-800 border-slate-700 text-red-400'
+                        }`}>
                           {initials}
                         </div>
                         <div className="truncate flex-1">

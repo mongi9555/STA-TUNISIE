@@ -172,28 +172,36 @@ export function fileToCompressedCarImageDataUrl(
 }
 
 /**
- * Uploads a car image file: compresses it into a high-efficiency Data URL (~40-60KB)
- * that is persistent across reloads, and simultaneously writes a server copy.
+ * Uploads a car image file: compresses it into high quality and saves it to the server /uploads folder
+ * returning a lightweight, permanent URL (e.g. /uploads/170000_photo.jpg).
+ * Falls back to optimized Data URL if server upload fails.
  */
 export async function uploadCarImageFile(file: File): Promise<string> {
   const compressedDataUrl = await fileToCompressedCarImageDataUrl(file);
 
-  // Background server upload for filesystem backup
+  // Primary: Upload to server to get permanent lightweight static URL
   try {
-    fetch('/api/upload', {
+    const res = await fetch('/api/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fileName: file.name || 'car_photo.jpg',
         fileData: compressedDataUrl,
       }),
-    }).catch(() => {});
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.url) {
+        console.log('[Upload] Photo enregistrée de manière permanente sur le serveur:', data.url);
+        return data.url;
+      }
+    }
   } catch (err) {
-    // Non-blocking
+    console.warn('[Upload] Serveur upload indisponible, repli sur Data URL compressée:', err);
   }
 
-  // Return the compressed Data URL directly: it works 100% reliably in any iframe,
-  // survives page refreshes, and does not depend on ephemeral container disks.
+  // Fallback to compressed Data URL if server upload endpoint is unavailable
   return compressedDataUrl;
 }
 

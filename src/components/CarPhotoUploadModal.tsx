@@ -110,10 +110,10 @@ export const CarPhotoUploadModal: React.FC<CarPhotoUploadModalProps> = ({
       setLastSavedTime(timeStr);
       setSuccessMessage(
         uploadedUrls.length === 1
-          ? `La photo a été téléversée sur le site avec succès et enregistrée dans la base de données avec succès (${timeStr}) !`
-          : `${uploadedUrls.length} photos ont été téléversées sur le site avec succès et enregistrées dans la base de données avec succès (${timeStr}) !`
+          ? `La photo a été uploadée dans le site avec succès et sauvegardée dans la base de données avec succès (${timeStr}) !`
+          : `${uploadedUrls.length} photos ont été uploadées dans le site avec succès et sauvegardées dans la base de données avec succès (${timeStr}) !`
       );
-      setTimeout(() => setSuccessMessage(null), 6000);
+      setTimeout(() => setSuccessMessage(null), 8000);
     } catch (err: any) {
       console.error('Error uploading car photos:', err);
       setErrorMessage(err.message || 'Erreur lors du téléversement des photos.');

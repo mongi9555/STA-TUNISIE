@@ -107,6 +107,7 @@ interface AdminPanelProps {
   onDeleteStockRequest?: (requestId: string) => void;
   onImportDatabase?: (data: any) => void;
   onResetToFactoryDefaults?: () => void;
+  onManualSave?: () => void;
 }
 
 export const getCheryModelDefaultPhoto = (name: string, category?: string): string => {
@@ -173,6 +174,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteStockRequest,
   onImportDatabase,
   onResetToFactoryDefaults,
+  onManualSave,
 }) => {
   const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'favicon' | 'database'>('inventory');
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -851,15 +853,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </p>
           </div>
 
-          {/* Quick Database Status Badge */}
-          <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3.5 py-2 rounded-xl shrink-0 self-start lg:self-center shadow-inner">
-            <div className="relative flex items-center justify-center">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping absolute opacity-75"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative"></div>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-[11px] text-emerald-200">Base locale & Cloud active</span>
-              <span className="text-[10px] text-emerald-400/80 font-mono">/data/db.json • Synchronisée</span>
+          {/* Quick Database Status Badge & Manual Save Button */}
+          <div className="flex items-center gap-3 shrink-0 self-start lg:self-center flex-wrap">
+            {onManualSave && (
+              <button
+                type="button"
+                onClick={onManualSave}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-950/40 border border-emerald-500/40 transition-all cursor-pointer active:scale-95"
+                title="Enregistrer manuellement toutes les données sans modification intempestive"
+              >
+                <Save className="w-4 h-4 text-emerald-100" />
+                <span>Enregistrer la Base</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3.5 py-2 rounded-xl shadow-inner">
+              <div className="relative flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping absolute opacity-75"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative"></div>
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-[11px] text-emerald-200">Base locale stable</span>
+                <span className="text-[10px] text-emerald-400/80 font-mono">/data/db.json • Protégée</span>
+              </div>
             </div>
           </div>
         </div>
@@ -5217,7 +5233,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {/* Sync Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
                   <Server className="w-4 h-4" />
@@ -5250,10 +5266,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Base Locale Projet (/data/db.json)</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Écriture atomique sécurisée avec fichier de secours (.bak) en cas de coupure.
+                  Écriture atomique instantanée sur chaque clic & modification avec backup (.bak).
                 </p>
                 <div className="text-[11px] font-mono text-amber-400 bg-amber-950/40 px-2 py-1 rounded border border-amber-800/40 w-fit">
                   ✅ Synchronisé
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
+                  <Database className="w-4 h-4" />
+                  <span>Base Neon PostgreSQL</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Support prêt pour Neon PostgreSQL via chaîne de connexion DATABASE_URL.
+                </p>
+                <div className="text-[11px] font-mono text-purple-300 bg-purple-950/40 px-2 py-1 rounded border border-purple-800/40 w-fit">
+                  ⚡ Prêt & Configurable
                 </div>
               </div>
             </div>

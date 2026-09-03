@@ -227,40 +227,70 @@ export async function saveCarToFirestore(car: CarModel): Promise<boolean> {
   try {
     let carToSave: CarModel = { ...car };
 
-    // Only offload excessively large files (> 450KB) to prevent Firestore document overflow, while keeping crisp compressed images (~40-80KB) inline
-    if (typeof window !== 'undefined' && carToSave.imageUrl && carToSave.imageUrl.startsWith('data:image') && carToSave.imageUrl.length > 450000) {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: `car_${carToSave.id}.jpg`, fileData: carToSave.imageUrl }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.url) {
-            carToSave.imageUrl = data.url;
+    // Offload any data URL images (both main imageUrl and galleryImages) to the server upload directory
+    // to keep documents small, fast, permanent, and prevent Firestore 1MB document limit or LocalStorage overflow
+    if (typeof window !== 'undefined') {
+      if (carToSave.imageUrl && carToSave.imageUrl.startsWith('data:image')) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: `car_${carToSave.id}_main.jpg`, fileData: carToSave.imageUrl }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.url) {
+              carToSave.imageUrl = data.url;
+            }
           }
+        } catch (uploadErr) {
+          console.warn('[Firestore Car Save] Image upload fallback:', uploadErr);
         }
-      } catch (uploadErr) {
-        console.warn('[Firestore Car Save] Image upload fallback:', uploadErr);
       }
-    }
 
-    if (typeof window !== 'undefined' && carToSave.ficheTechniqueUrl && carToSave.ficheTechniqueUrl.startsWith('data:') && carToSave.ficheTechniqueUrl.length > 450000) {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: `fiche_${carToSave.id}`, fileData: carToSave.ficheTechniqueUrl }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.url) {
-            carToSave.ficheTechniqueUrl = data.url;
+      if (Array.isArray(carToSave.galleryImages) && carToSave.galleryImages.length > 0) {
+        const convertedGallery: string[] = [];
+        for (let i = 0; i < carToSave.galleryImages.length; i++) {
+          const imgUrl = carToSave.galleryImages[i];
+          if (imgUrl && imgUrl.startsWith('data:image')) {
+            try {
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileName: `car_${carToSave.id}_gallery_${i}.jpg`, fileData: imgUrl }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.url) {
+                  convertedGallery.push(data.url);
+                  continue;
+                }
+              }
+            } catch (err) {
+              console.warn('[Firestore Car Save] Gallery upload fallback:', err);
+            }
           }
+          convertedGallery.push(imgUrl);
         }
-      } catch (uploadErr) {
-        console.warn('[Firestore Car Save] Fiche upload fallback:', uploadErr);
+        carToSave.galleryImages = convertedGallery;
+      }
+
+      if (carToSave.ficheTechniqueUrl && carToSave.ficheTechniqueUrl.startsWith('data:')) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: `fiche_${carToSave.id}`, fileData: carToSave.ficheTechniqueUrl }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.url) {
+              carToSave.ficheTechniqueUrl = data.url;
+            }
+          }
+        } catch (uploadErr) {
+          console.warn('[Firestore Car Save] Fiche upload fallback:', uploadErr);
+        }
       }
     }
 

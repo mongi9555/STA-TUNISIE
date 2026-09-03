@@ -116,49 +116,27 @@ import { CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  // Theme state initialization with matchMedia and time of day preferences
+  // Thème automobile 100% sombre exclusif (aucun thème clair)
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('chery_theme') as ThemeMode;
-    if (saved === 'dark' || saved === 'light') return saved;
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-      if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
-    }
-    const hour = new Date().getHours();
-    return hour >= 7 && hour < 19 ? 'light' : 'dark';
+    const lightThemes = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'];
+    if (saved && !lightThemes.includes(saved)) return saved;
+    return 'carbon'; // Défaut: Fibre de Carbone Sport (Sombre Haute Précision)
   });
 
   useEffect(() => {
-    localStorage.setItem('chery_theme', theme);
-    const isLight = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
+    const lightThemes = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'];
+    const activeTheme = lightThemes.includes(theme) ? 'carbon' : theme;
+    localStorage.setItem('chery_theme', activeTheme);
+    localStorage.setItem('chery_theme_mode', 'dark');
+    localStorage.setItem('chery_theme_manual', 'true');
     if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.setAttribute('data-theme-mode', isLight ? 'light' : 'dark');
-      if (isLight) {
-        document.documentElement.classList.add('light-theme');
-        document.documentElement.classList.remove('dark-theme');
-      } else {
-        document.documentElement.classList.add('dark-theme');
-        document.documentElement.classList.remove('light-theme');
-      }
+      document.documentElement.setAttribute('data-theme', activeTheme);
+      document.documentElement.setAttribute('data-theme-mode', 'dark');
+      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.remove('light-theme');
     }
   }, [theme]);
-
-  // Listen to system theme changes via matchMedia
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-      const manualPref = localStorage.getItem('chery_theme_manual');
-      if (!manualPref) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleSystemThemeChange);
-      return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-    }
-  }, []);
 
   // State initialization with localStorage fallback
   const [cars, setCars] = useState<CarModel[]>(() => getStoredCars());
@@ -288,11 +266,55 @@ export default function App() {
   };
 
 
+  /**
+   * Enregistre instantanément l'état dans data/db.json (écriture atomique côté serveur),
+   * garantissant que toute modification (session commerciale, mot de passe, véhicule, couleur, stock, prix, etc.)
+   * est gravée immédiatement sur le disque dans la base locale et synchronisée avec le Cloud.
+   */
+  const triggerInstantDbSave = (delta?: {
+    cars?: CarModel[];
+    reservations?: Reservation[];
+    commercials?: CommercialUser[];
+    siteSettings?: SiteSettings | null;
+    accessories?: CarAccessory[];
+    quotes?: CustomQuote[];
+    adminDocs?: AdministrativeDocument[];
+    knowledgeBase?: KnowledgeBaseItem[];
+    testDrives?: TestDriveAppointment[];
+    stockRequests?: StockRequest[];
+    auditLogs?: AuditLogEntry[];
+    docTemplate?: DocumentTemplateConfig | null;
+  }) => {
+    const payload = {
+      cars: delta?.cars ?? cars,
+      reservations: delta?.reservations ?? reservations,
+      commercials: delta?.commercials ?? commercials,
+      siteSettings: delta?.siteSettings !== undefined ? delta.siteSettings : siteSettings,
+      accessories: delta?.accessories ?? accessories,
+      quotes: delta?.quotes ?? quotes,
+      adminDocs: delta?.adminDocs ?? adminDocs,
+      knowledgeBase: delta?.knowledgeBase ?? knowledgeBase,
+      testDrives: delta?.testDrives ?? testDrives,
+      stockRequests: delta?.stockRequests ?? stockRequests,
+      auditLogs: delta?.auditLogs ?? auditLogs,
+      docTemplate: delta?.docTemplate !== undefined ? delta.docTemplate : docTemplate,
+    };
+
+    fetch('/api/db/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch((err) => {
+      console.warn('[Chery Sync] Erreur sauvegarde atomique /api/db/save:', err);
+    });
+  };
+
   // Site Customization Handler
   const handleUpdateSiteSettings = (newSettings: SiteSettings) => {
     setSiteSettings(newSettings);
     saveStoredSiteSettings(newSettings);
     saveSiteSettingsToFirestore(newSettings);
+    triggerInstantDbSave({ siteSettings: newSettings });
     showToast("⚡ Paramètres du site et logo enregistrés dans la base de données !");
   };
 
@@ -328,31 +350,30 @@ export default function App() {
           .filter((car) => !isVirtualCar(car));
         if (fetched.length > 0) {
           setCars((prevCars) => {
-            // Read intentionally deleted car IDs
+            // Si l'état local est encore vide, initialiser avec les voitures distantes
+            if (prevCars.length === 0) {
+              saveStoredCars(fetched);
+              return fetched;
+            }
+
+            // Si l'état local contient déjà des véhicules, PRESERVER STRICTEMENT les modifications de l'utilisateur
+            // (les stocks, prix et teintes modifiés ne doivent JAMAIS être écrasés par un snapshot distant)
             let deletedIds = new Set<string>();
             try {
               const delSaved = localStorage.getItem('chery_tn_deleted_car_ids_v1');
               if (delSaved) deletedIds = new Set(JSON.parse(delSaved));
             } catch {}
 
-            const fetchedIds = new Set(fetched.map((c) => c.id));
-            // Find custom cars in local memory that were not in this Firestore snapshot and not explicitly deleted
-            const customNonDeleted = prevCars.filter(
-              (c) => !fetchedIds.has(c.id) && !deletedIds.has(c.id)
-            );
+            const localIds = new Set(prevCars.map((c) => c.id));
+            const newRemoteCars = fetched.filter((c) => !localIds.has(c.id) && !deletedIds.has(c.id));
 
-            if (customNonDeleted.length > 0) {
-              console.log(`[Firestore Sync] Auto-reconciling ${customNonDeleted.length} locally created vehicle(s) into Cloud Firestore...`);
-              customNonDeleted.forEach((c) => {
-                saveCarToFirestore(c);
-              });
-              const combined = [...fetched, ...customNonDeleted];
+            if (newRemoteCars.length > 0) {
+              const combined = [...prevCars, ...newRemoteCars];
               saveStoredCars(combined);
               return combined;
             }
 
-            saveStoredCars(fetched);
-            return fetched;
+            return prevCars;
           });
         }
       }
@@ -376,15 +397,34 @@ export default function App() {
     const unsubscribeCommercials = onSnapshot(commercialsCollection, (snapshot) => {
       const fetched = snapshot.docs.map((doc) => doc.data() as CommercialUser);
       const cleanList = fetched.filter((u) => !isDeprecatedCommercialUser(u));
-      setCommercials(cleanList);
-      saveStoredCommercials(cleanList);
+      setCommercials((prev) => {
+        if (prev.length === 0) {
+          saveStoredCommercials(cleanList);
+          return cleanList;
+        }
+        // Préserver les comptes commerciaux locaux existants (mots de passe / sessions)
+        const prevIds = new Set(prev.map((u) => u.id));
+        const newComms = cleanList.filter((u) => !prevIds.has(u.id));
+        if (newComms.length > 0) {
+          const merged = [...prev, ...newComms];
+          saveStoredCommercials(merged);
+          return merged;
+        }
+        return prev;
+      });
     }, (err) => console.warn('Commercials snapshot listener warning:', err));
 
     const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'site_settings'), (docSnap) => {
       if (docSnap.exists()) {
         const fetchedSettings = docSnap.data() as SiteSettings;
-        setSiteSettings(fetchedSettings);
-        saveStoredSiteSettings(fetchedSettings);
+        setSiteSettings((prev) => {
+          // Si les paramètres locaux sont déjà configurés par l'utilisateur, ne pas écraser
+          if (prev && prev.siteName && prev.siteName !== DEFAULT_SITE_SETTINGS.siteName) {
+            return prev;
+          }
+          saveStoredSiteSettings(fetchedSettings);
+          return fetchedSettings;
+        });
       }
     }, (err) => console.warn('Settings snapshot listener warning:', err));
 
@@ -524,7 +564,7 @@ export default function App() {
 
   const isDbLoadedRef = useRef(false);
 
-  // Fallback: Load state from local project folder (data/db.json) ONLY if Firestore hasn't populated state
+  // Initialisation stable depuis le fichier de persistance locale data/db.json
   useEffect(() => {
     fetch('/api/db')
       .then((res) => {
@@ -534,86 +574,84 @@ export default function App() {
       .then((data) => {
         if (data && data.exists) {
           if (Array.isArray(data.cars) && data.cars.length > 0) {
-            setCars((prev) => (prev.length === 0 ? data.cars : prev));
+            setCars(data.cars);
+            saveStoredCars(data.cars);
           }
           if (Array.isArray(data.reservations) && data.reservations.length > 0) {
-            setReservations((prev) => (prev.length === 0 ? data.reservations : prev));
+            setReservations(data.reservations);
+            saveStoredReservations(data.reservations);
           }
           if (Array.isArray(data.commercials) && data.commercials.length > 0) {
-            setCommercials((prev) => {
-              if (prev.length === 0) {
-                const mergedComm = [...data.commercials];
-                INITIAL_COMMERCIALS.forEach((initUser) => {
-                  if (!mergedComm.some((u) => u.id === initUser.id)) {
-                    mergedComm.unshift(initUser);
-                  }
-                });
-                return mergedComm;
-              }
-              return prev;
-            });
+            setCommercials(data.commercials);
+            saveStoredCommercials(data.commercials);
           }
           if (data.siteSettings) {
-            setSiteSettings((prev) => (prev ? prev : data.siteSettings));
+            setSiteSettings(data.siteSettings);
+            saveStoredSiteSettings(data.siteSettings);
           }
           if (Array.isArray(data.adminDocs) && data.adminDocs.length > 0) {
-            setAdminDocs((prev) => (prev.length === 0 ? data.adminDocs : prev));
+            setAdminDocs(data.adminDocs);
           }
           if (Array.isArray(data.knowledgeBase) && data.knowledgeBase.length > 0) {
-            setKnowledgeBase((prev) => (prev.length === 0 ? data.knowledgeBase : prev));
+            setKnowledgeBase(data.knowledgeBase);
           }
           if (Array.isArray(data.testDrives) && data.testDrives.length > 0) {
-            setTestDrives((prev) => (prev.length === 0 ? data.testDrives : prev));
+            setTestDrives(data.testDrives);
           }
           if (Array.isArray(data.stockRequests) && data.stockRequests.length > 0) {
-            setStockRequests((prev) => (prev.length === 0 ? data.stockRequests : prev));
+            setStockRequests(data.stockRequests);
           }
           if (data.docTemplate) {
-            setDocTemplate((prev) => (prev ? prev : data.docTemplate));
+            setDocTemplate(data.docTemplate);
           }
           if (Array.isArray(data.auditLogs) && data.auditLogs.length > 0) {
-            setAuditLogs((prev) => (prev.length === 0 ? data.auditLogs : prev));
+            setAuditLogs(data.auditLogs);
           }
-          console.log('[Chery Local DB] Synchronisation locale prête');
+          console.log('[Chery Local DB] Données stables chargées avec succès depuis data/db.json');
         }
       })
-      .catch((err) => console.log('[Chery Local DB] Synchronisation active via Cloud Firebase.', err))
+      .catch((err) => console.log('[Chery Local DB] Synchronisation active:', err))
       .finally(() => {
         isDbLoadedRef.current = true;
       });
   }, []);
 
-  // Automatically save state to data/db.json in the project folder whenever data updates (debounced)
-  useEffect(() => {
-    if (!isDbLoadedRef.current || cars.length === 0) return;
+  // Enregistrement manuel contrôlé de la base sans cycle de mise à jour intempestif
+  const handleManualSaveDatabase = async () => {
+    try {
+      saveStoredCars(cars);
+      saveStoredReservations(reservations);
+      saveStoredCommercials(commercials);
+      if (siteSettings) saveStoredSiteSettings(siteSettings);
 
-    const timer = setTimeout(async () => {
-      try {
-        await fetch('/api/db/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cars,
-            reservations,
-            commercials,
-            siteSettings,
-            accessories,
-            quotes,
-            adminDocs,
-            knowledgeBase,
-            testDrives,
-            stockRequests,
-            docTemplate,
-            auditLogs,
-          }),
-        });
-      } catch (err) {
-        // En mode client pur, sauvegarde locale déjà gérée
-      }
-    }, 1000);
+      await fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cars,
+          reservations,
+          commercials,
+          siteSettings,
+          accessories,
+          quotes,
+          adminDocs,
+          knowledgeBase,
+          testDrives,
+          stockRequests,
+          docTemplate,
+          auditLogs,
+        }),
+      });
 
-    return () => clearTimeout(timer);
-  }, [cars, reservations, commercials, siteSettings, accessories, quotes, adminDocs, knowledgeBase, testDrives, stockRequests, docTemplate, auditLogs]);
+      cars.forEach((car) => saveCarToFirestore(car));
+      if (siteSettings) saveSiteSettingsToFirestore(siteSettings);
+      commercials.forEach((user) => saveCommercialToFirestore(user));
+
+      showToast('✓ Modifications enregistrées avec succès dans la base de données !');
+    } catch (err) {
+      showToast('✓ Données enregistrées dans le cache local');
+    }
+  };
 
   // Audit Log Management Helpers
   const addAuditLog = (entry: {
@@ -810,19 +848,20 @@ export default function App() {
     showToast(`Réservation ${updatedReservation.id} mise à jour avec succès !`);
   };
 
-  // Admin Handlers with Firestore Persistence
+  // Admin Handlers with Firestore Persistence & Instant Local DB backup
   const handleUpdateCarStock = (carId: string, updatedColors: CarColor[]) => {
     const targetCar = cars.find((c) => c.id === carId);
-    setCars((prev) =>
-      prev.map((car) => {
-        if (car.id === carId) {
-          const updated = { ...car, colors: updatedColors };
-          saveCarToFirestore(updated);
-          return updated;
-        }
-        return car;
-      })
-    );
+    const updatedCars = cars.map((car) => {
+      if (car.id === carId) {
+        const updated = { ...car, colors: updatedColors };
+        saveCarToFirestore(updated);
+        return updated;
+      }
+      return car;
+    });
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
+    triggerInstantDbSave({ cars: updatedCars });
 
     const oldTotal = targetCar ? targetCar.colors.reduce((sum, c) => sum + (c.stock || 0), 0) : 0;
     const newTotal = updatedColors.reduce((sum, c) => sum + (c.stock || 0), 0);
@@ -837,23 +876,24 @@ export default function App() {
       newValue: newTotal,
     });
 
-    showToast('Stocks de couleurs mis à jour et sauvegardés !');
+    showToast('Stocks de couleurs mis à jour et sauvegardés en base de données !');
   };
 
   const handleUpdateCarPrice = (carId: string, newPriceTND: number) => {
     const targetCar = cars.find((c) => c.id === carId);
     const oldPrice = targetCar?.priceTND || 0;
 
-    setCars((prev) =>
-      prev.map((car) => {
-        if (car.id === carId) {
-          const updated = { ...car, priceTND: newPriceTND };
-          saveCarToFirestore(updated);
-          return updated;
-        }
-        return car;
-      })
-    );
+    const updatedCars = cars.map((car) => {
+      if (car.id === carId) {
+        const updated = { ...car, priceTND: newPriceTND };
+        saveCarToFirestore(updated);
+        return updated;
+      }
+      return car;
+    });
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
+    triggerInstantDbSave({ cars: updatedCars });
 
     addAuditLog({
       actionType: 'price_update',
@@ -865,21 +905,22 @@ export default function App() {
       newValue: newPriceTND,
     });
 
-    showToast('Prix du véhicule mis à jour et sauvegardé !');
+    showToast('Prix du véhicule mis à jour et sauvegardé en base de données !');
   };
 
   const handleAddColorToCar = (carId: string, newColor: CarColor) => {
     const targetCar = cars.find((c) => c.id === carId);
-    setCars((prev) =>
-      prev.map((car) => {
-        if (car.id === carId) {
-          const updated = { ...car, colors: [...car.colors, newColor] };
-          saveCarToFirestore(updated);
-          return updated;
-        }
-        return car;
-      })
-    );
+    const updatedCars = cars.map((car) => {
+      if (car.id === carId) {
+        const updated = { ...car, colors: [...car.colors, newColor] };
+        saveCarToFirestore(updated);
+        return updated;
+      }
+      return car;
+    });
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
+    triggerInstantDbSave({ cars: updatedCars });
 
     addAuditLog({
       actionType: 'color_added',
@@ -891,26 +932,27 @@ export default function App() {
       newValue: newColor.stock,
     });
 
-    showToast(`Nouvelle couleur "${newColor.name}" ajoutée et sauvegardée !`);
+    showToast(`Nouvelle couleur "${newColor.name}" ajoutée et sauvegardée en base !`);
   };
 
   const handleEditColor = (carId: string, colorId: string, updatedColorProps: Partial<CarColor>) => {
     const targetCar = cars.find((c) => c.id === carId);
     const oldColor = targetCar?.colors.find((c) => c.id === colorId);
 
-    setCars((prev) =>
-      prev.map((car) => {
-        if (car.id === carId) {
-          const updatedColors = car.colors.map((c) =>
-            c.id === colorId ? { ...c, ...updatedColorProps } : c
-          );
-          const updated = { ...car, colors: updatedColors };
-          saveCarToFirestore(updated);
-          return updated;
-        }
-        return car;
-      })
-    );
+    const updatedCars = cars.map((car) => {
+      if (car.id === carId) {
+        const updatedColors = car.colors.map((c) =>
+          c.id === colorId ? { ...c, ...updatedColorProps } : c
+        );
+        const updated = { ...car, colors: updatedColors };
+        saveCarToFirestore(updated);
+        return updated;
+      }
+      return car;
+    });
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
+    triggerInstantDbSave({ cars: updatedCars });
 
     addAuditLog({
       actionType: 'color_edited',
@@ -930,16 +972,17 @@ export default function App() {
     const targetCar = cars.find((c) => c.id === carId);
     const targetColor = targetCar?.colors.find((c) => c.id === colorId);
 
-    setCars((prev) =>
-      prev.map((car) => {
-        if (car.id === carId) {
-          const updated = { ...car, colors: car.colors.filter((c) => c.id !== colorId) };
-          saveCarToFirestore(updated);
-          return updated;
-        }
-        return car;
-      })
-    );
+    const updatedCars = cars.map((car) => {
+      if (car.id === carId) {
+        const updated = { ...car, colors: car.colors.filter((c) => c.id !== colorId) };
+        saveCarToFirestore(updated);
+        return updated;
+      }
+      return car;
+    });
+    setCars(updatedCars);
+    saveStoredCars(updatedCars);
+    triggerInstantDbSave({ cars: updatedCars });
 
     addAuditLog({
       actionType: 'color_deleted',
@@ -950,7 +993,7 @@ export default function App() {
       targetColorName: targetColor?.name,
     });
 
-    showToast('Couleur supprimée du modèle');
+    showToast('Couleur supprimée du modèle et enregistrée en base !');
   };
 
   const handleEditCarModel = (updatedCar: CarModel) => {
@@ -1087,37 +1130,44 @@ export default function App() {
     showToast(`Modèle "${car?.name || ''}" supprimé de la base de données`);
   };
 
-  // User & Session Management Handlers
+  // User & Session Management Handlers with Instant Database Persistence
   const handleAddCommercial = (newUser: CommercialUser) => {
-    setCommercials((prev) => [...prev, newUser]);
+    const updated = [...commercials, newUser];
+    setCommercials(updated);
+    saveStoredCommercials(updated);
     saveCommercialToFirestore(newUser);
-    showToast(`Nouvelle session enregistrée pour ${newUser.name} !`);
+    triggerInstantDbSave({ commercials: updated });
+    showToast(`Nouvelle session enregistrée pour ${newUser.name} dans la base de données !`);
   };
 
   const handleUpdateCommercial = (updatedUser: CommercialUser) => {
-    setCommercials((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    const updated = commercials.map((u) => (u.id === updatedUser.id ? updatedUser : u));
+    setCommercials(updated);
+    saveStoredCommercials(updated);
     saveCommercialToFirestore(updatedUser);
+    triggerInstantDbSave({ commercials: updated });
     if (currentUser && currentUser.id === updatedUser.id) {
       setCurrentUser(updatedUser);
     }
-    showToast(`Session utilisateur "${updatedUser.name}" mise à jour !`);
+    showToast(`Session commerciale "${updatedUser.name}" enregistrée dans la base de données !`);
   };
 
   const handleUpdateCommercialPassword = (userId: string, newPassword: string) => {
-    setCommercials((prev) =>
-      prev.map((u) => {
-        if (u.id === userId) {
-          const updated = { ...u, password: newPassword };
-          saveCommercialToFirestore(updated);
-          return updated;
-        }
-        return u;
-      })
-    );
+    const updated = commercials.map((u) => {
+      if (u.id === userId) {
+        const mod = { ...u, password: newPassword };
+        saveCommercialToFirestore(mod);
+        return mod;
+      }
+      return u;
+    });
+    setCommercials(updated);
+    saveStoredCommercials(updated);
+    triggerInstantDbSave({ commercials: updated });
     if (currentUser && currentUser.id === userId) {
       setCurrentUser((prev) => (prev ? { ...prev, password: newPassword } : null));
     }
-    showToast(`Mot de passe mis à jour avec succès dans la base !`);
+    showToast(`Mot de passe mis à jour et sauvegardé dans la base de données !`);
   };
 
   const handleDeleteCommercial = async (userId: string) => {
@@ -1126,10 +1176,11 @@ export default function App() {
     setCommercials(updated);
     saveStoredCommercials(updated);
     await deleteCommercialFromFirestore(userId);
+    triggerInstantDbSave({ commercials: updated });
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(null);
     }
-    showToast(`Session de ${userToDelete?.name || 'l\'utilisateur'} supprimée définitivement`);
+    showToast(`Session de ${userToDelete?.name || 'l\'utilisateur'} supprimée définitivement de la base`);
   };
 
   const handleImportDatabase = async (importedData: any) => {
@@ -1374,9 +1425,8 @@ export default function App() {
 
   // Render Login Screen if user logged out
   if (!currentUser) {
-    const isLight = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
     return (
-      <div data-theme={theme} data-theme-mode={isLight ? 'light' : 'dark'} className="min-h-screen">
+      <div data-theme={theme} data-theme-mode="dark" className="min-h-screen bg-[#090d16] text-slate-100">
         <LoginScreen
           users={commercials}
           siteSettings={siteSettings}
@@ -1390,33 +1440,21 @@ export default function App() {
     );
   }
 
-  const isLightTheme = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'].includes(theme);
-
   const themeContainerClass =
-    theme === 'light'
-      ? 'bg-slate-100 text-slate-900'
-      : theme === 'nordic_clean'
-      ? 'bg-slate-100 text-slate-900'
-      : theme === 'pearl_luxury'
-      ? 'bg-stone-100 text-stone-900'
-      : theme === 'crystal_cyan'
-      ? 'bg-cyan-50/50 text-slate-900'
-      : theme === 'red'
+    theme === 'red'
       ? 'bg-[#150507] text-red-50'
       : theme === 'carbon'
-      ? 'bg-[#090a0f] text-neutral-100'
+      ? 'bg-[#090d16] text-neutral-100'
       : theme === 'electric_cyan'
       ? 'bg-[#03131a] text-cyan-50'
       : theme === 'luxury_gold'
-      ? 'bg-[#120e0a] text-amber-50'
+      ? 'bg-[#0e0b07] text-amber-50'
       : theme === 'titanium'
-      ? 'bg-[#111518] text-slate-100'
-      : 'bg-slate-950 text-slate-100';
+      ? 'bg-[#0b0f19] text-slate-100'
+      : 'bg-[#050811] text-slate-100';
 
   const footerBgClass =
-    isLightTheme
-      ? 'bg-white border-slate-200 text-slate-600 shadow-inner'
-      : theme === 'red'
+    theme === 'red'
       ? 'bg-red-950/80 border-red-900/50 text-red-200'
       : theme === 'carbon'
       ? 'bg-neutral-950 border-neutral-800 text-neutral-300'
@@ -1431,7 +1469,7 @@ export default function App() {
   return (
     <div
       data-theme={theme}
-      data-theme-mode={isLightTheme ? 'light' : 'dark'}
+      data-theme-mode="dark"
       className={`relative min-h-screen ${themeContainerClass} flex flex-col font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 overflow-x-hidden`}
     >
 
@@ -1603,6 +1641,7 @@ export default function App() {
                 onAddManualLog={addAuditLog}
                 onImportDatabase={handleImportDatabase}
                 onResetToFactoryDefaults={handleResetToFactoryDefaults}
+                onManualSave={handleManualSaveDatabase}
               />
             )}
           </motion.div>

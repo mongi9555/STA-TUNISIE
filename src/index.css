@@ -1,408 +1,87 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   CHERY TUNISIE — SYSTÈME DE THÈMES AUTOMOBILES PROFESSIONNELS & MODERNES
-   Adaptation dynamique et contraste parfait de toutes les écritures et couleurs
+   CHERY TUNISIE — SYSTÈME 100% THÈME NOIR / SOMBRE AUTOMOBILE HAUTE PRÉCISION
+   Aucun mode clair — Fond noir profond, lisibilité et contraste premium
    ========================================================================== */
 
 :root {
   --color-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color-scheme: dark;
+  background-color: #090d16;
+  color: #f8fafc;
 }
 
-/* --------------------------------------------------------------------------
-   1. THÈMES TRÈS CLAIRS & MODERNES (GLOBAL SITE STYLES)
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] {
-  color-scheme: light;
-  background-color: #f8fafc;
-  color: #0f172a;
+html, body, #root {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+  color-scheme: dark !important;
 }
 
-/* Variations de nuances pour chaque thème clair */
-[data-theme="light"] {
-  --theme-bg: #f8fafc;
-  --theme-card: #ffffff;
-  --theme-subtle: #f1f5f9;
-  --theme-border: #e2e8f0;
-  --theme-accent: #dc2626;
-  --theme-accent-dark: #991b1b;
+[data-theme-mode="dark"],
+[data-theme-mode="light"],
+:root {
+  color-scheme: dark;
 }
 
-[data-theme="nordic_clean"] {
-  --theme-bg: #f1f5f9;
-  --theme-card: #ffffff;
-  --theme-subtle: #e2e8f0;
-  --theme-border: #cbd5e1;
-  --theme-accent: #2563eb;
-  --theme-accent-dark: #1d4ed8;
+/* Thème 1: Fibre de Carbone Sport (Défaut) */
+[data-theme="carbon"] {
+  --theme-bg: #090d16;
+  --theme-card: #131b2e;
+  --theme-subtle: #1e293b;
+  --theme-border: #334155;
+  --theme-accent: #ef4444;
+  --theme-accent-dark: #dc2626;
 }
 
-[data-theme="pearl_luxury"] {
-  --theme-bg: #fafaf9;
-  --theme-card: #ffffff;
-  --theme-subtle: #f5f5f4;
-  --theme-border: #e7e5e4;
-  --theme-accent: #d97706;
-  --theme-accent-dark: #92400e;
+/* Thème 2: Noir Obsidienne Pur */
+[data-theme="dark"] {
+  --theme-bg: #050811;
+  --theme-card: #0f172a;
+  --theme-subtle: #1e293b;
+  --theme-border: #334155;
+  --theme-accent: #f59e0b;
+  --theme-accent-dark: #d97706;
 }
 
-[data-theme="crystal_cyan"] {
-  --theme-bg: #f0fdfa;
-  --theme-card: #ffffff;
-  --theme-subtle: #ccfbf1;
-  --theme-border: #99f6e4;
-  --theme-accent: #0d9488;
-  --theme-accent-dark: #0f766e;
+/* Thème 3: Chery Crimson Racing */
+[data-theme="red"] {
+  --theme-bg: #14080a;
+  --theme-card: #220d12;
+  --theme-subtle: #3b141d;
+  --theme-border: #5c1d28;
+  --theme-accent: #ef4444;
+  --theme-accent-dark: #b91c1c;
 }
 
-/* --------------------------------------------------------------------------
-   2. SURFACES, CARTES ET CONTENEURS EN MODE CLAIR
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .bg-slate-900,
-[data-theme-mode="light"] .bg-slate-950,
-[data-theme-mode="light"] .bg-neutral-900,
-[data-theme-mode="light"] .bg-neutral-950,
-[data-theme-mode="light"] .bg-zinc-900,
-[data-theme-mode="light"] .bg-stone-900 {
-  background-color: #ffffff !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+/* Thème 4: Omoda EV Cyber Cyan */
+[data-theme="electric_cyan"] {
+  --theme-bg: #03131a;
+  --theme-card: #082535;
+  --theme-subtle: #0f374e;
+  --theme-border: #155e75;
+  --theme-accent: #06b6d4;
+  --theme-accent-dark: #0891b2;
 }
 
-[data-theme-mode="light"] .bg-slate-900\/90,
-[data-theme-mode="light"] .bg-slate-900\/80,
-[data-theme-mode="light"] .bg-slate-950\/90,
-[data-theme-mode="light"] .bg-slate-950\/80,
-[data-theme-mode="light"] .bg-slate-950\/70,
-[data-theme-mode="light"] .bg-black\/60,
-[data-theme-mode="light"] .bg-black\/50 {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  backdrop-filter: blur(12px);
+/* Thème 5: Tiggo Gold Prestige VIP */
+[data-theme="luxury_gold"] {
+  --theme-bg: #0e0b07;
+  --theme-card: #1f180f;
+  --theme-subtle: #332717;
+  --theme-border: #523f24;
+  --theme-accent: #eab308;
+  --theme-accent-dark: #ca8a04;
 }
 
-[data-theme-mode="light"] .bg-slate-800,
-[data-theme-mode="light"] .bg-slate-800\/80,
-[data-theme-mode="light"] .bg-slate-800\/50,
-[data-theme-mode="light"] .bg-slate-800\/60,
-[data-theme-mode="light"] .bg-neutral-800 {
-  background-color: #f8fafc !important;
-}
-
-[data-theme-mode="light"] .bg-slate-950\/40,
-[data-theme-mode="light"] .bg-slate-900\/50,
-[data-theme-mode="light"] .bg-slate-900\/60,
-[data-theme-mode="light"] .bg-slate-900\/40 {
-  background-color: #f1f5f9 !important;
-}
-
-/* --------------------------------------------------------------------------
-   3. BORDURES ET SÉPARATEURS
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .border-slate-800,
-[data-theme-mode="light"] .border-slate-700,
-[data-theme-mode="light"] .border-slate-850,
-[data-theme-mode="light"] .border-neutral-800,
-[data-theme-mode="light"] .border-neutral-700,
-[data-theme-mode="light"] .border-zinc-800 {
-  border-color: #e2e8f0 !important;
-}
-
-[data-theme-mode="light"] .border-slate-800\/50,
-[data-theme-mode="light"] .border-slate-700\/50,
-[data-theme-mode="light"] .border-slate-800\/60 {
-  border-color: #f1f5f9 !important;
-}
-
-[data-theme-mode="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-[data-theme-mode="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
-}
-
-/* --------------------------------------------------------------------------
-   4. TYPOGRAPHIE STANDARD & HAUTE LISIBILITÉ
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .text-white,
-[data-theme-mode="light"] .text-slate-100 {
-  color: #0f172a !important;
-}
-
-[data-theme-mode="light"] .text-slate-200,
-[data-theme-mode="light"] .text-slate-300 {
-  color: #1e293b !important;
-}
-
-[data-theme-mode="light"] .text-slate-400 {
-  color: #475569 !important;
-}
-
-[data-theme-mode="light"] .text-slate-500 {
-  color: #64748b !important;
-}
-
-/* --------------------------------------------------------------------------
-   5. ADAPTATION AUTOMATIQUE DES ÉCRITURES COLORÉES POUR THÈMES CLAIRS
-   Les teintes pastel (jaune, ambre, vert clair, cyan) deviennent profondes
-   et ultra-lisibles sur fond clair avec un contraste certifié WCAG AAA
-   -------------------------------------------------------------------------- */
-
-/* AMBRE / JAUNE / COGNAC / GOLD -> Foncé riche et lisible */
-[data-theme-mode="light"] .text-amber-300,
-[data-theme-mode="light"] .text-amber-400,
-[data-theme-mode="light"] .text-yellow-300,
-[data-theme-mode="light"] .text-yellow-400 {
-  color: #92400e !important; /* Amber 800 profond */
-  font-weight: 700 !important;
-}
-
-[data-theme-mode="light"] .text-amber-500,
-[data-theme-mode="light"] .text-amber-200 {
-  color: #b45309 !important; /* Amber 700 */
-}
-
-/* VERT / EMERAUDE / PRIX / STOCK -> Vert émeraude profond */
-[data-theme-mode="light"] .text-emerald-300,
-[data-theme-mode="light"] .text-emerald-400,
-[data-theme-mode="light"] .text-green-300,
-[data-theme-mode="light"] .text-green-400 {
-  color: #065f46 !important; /* Emerald 800 */
-  font-weight: 700 !important;
-}
-
-[data-theme-mode="light"] .text-emerald-500,
-[data-theme-mode="light"] .text-emerald-200 {
-  color: #047857 !important; /* Emerald 700 */
-}
-
-/* CYAN / TEAL / EV / HYBRIDE -> Cyan marin profond */
-[data-theme-mode="light"] .text-cyan-300,
-[data-theme-mode="light"] .text-cyan-400,
-[data-theme-mode="light"] .text-teal-300,
-[data-theme-mode="light"] .text-teal-400 {
-  color: #0e7490 !important; /* Cyan 700 */
-  font-weight: 700 !important;
-}
-
-/* BLEU / COBALT / SAPHIR -> Bleu saphir franc */
-[data-theme-mode="light"] .text-blue-300,
-[data-theme-mode="light"] .text-blue-400,
-[data-theme-mode="light"] .text-sky-300,
-[data-theme-mode="light"] .text-sky-400 {
-  color: #1d4ed8 !important; /* Blue 700 */
-  font-weight: 700 !important;
-}
-
-/* ROUGE / CRIMSON / ALERTE -> Rouge officiel vif et contrasté */
-[data-theme-mode="light"] .text-red-300,
-[data-theme-mode="light"] .text-red-400,
-[data-theme-mode="light"] .text-rose-300,
-[data-theme-mode="light"] .text-rose-400 {
-  color: #dc2626 !important; /* Red 600 */
-  font-weight: 700 !important;
-}
-
-/* VIOLET / PURPLE / SUPER ADMIN -> Violet impérial */
-[data-theme-mode="light"] .text-purple-300,
-[data-theme-mode="light"] .text-purple-400,
-[data-theme-mode="light"] .text-indigo-300,
-[data-theme-mode="light"] .text-indigo-400 {
-  color: #6d28d9 !important; /* Purple 700 */
-  font-weight: 700 !important;
-}
-
-/* --------------------------------------------------------------------------
-   6. PASTILLES ET BADGES COLORÉS EN MODE CLAIR
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .bg-amber-500\/20,
-[data-theme-mode="light"] .bg-amber-500\/10,
-[data-theme-mode="light"] .bg-amber-950\/40,
-[data-theme-mode="light"] .bg-amber-950\/20 {
-  background-color: #fef3c7 !important; /* Amber 100 */
-  border-color: #fcd34d !important;     /* Amber 300 */
-  color: #92400e !important;            /* Amber 800 */
-}
-
-[data-theme-mode="light"] .bg-emerald-500\/20,
-[data-theme-mode="light"] .bg-emerald-500\/10,
-[data-theme-mode="light"] .bg-emerald-950\/40,
-[data-theme-mode="light"] .bg-emerald-950\/20 {
-  background-color: #d1fae5 !important; /* Emerald 100 */
-  border-color: #6ee7b7 !important;     /* Emerald 300 */
-  color: #065f46 !important;            /* Emerald 800 */
-}
-
-[data-theme-mode="light"] .bg-blue-500\/20,
-[data-theme-mode="light"] .bg-blue-500\/10,
-[data-theme-mode="light"] .bg-blue-950\/40,
-[data-theme-mode="light"] .bg-blue-950\/20 {
-  background-color: #dbeafe !important; /* Blue 100 */
-  border-color: #93c5fd !important;     /* Blue 300 */
-  color: #1e40af !important;            /* Blue 800 */
-}
-
-[data-theme-mode="light"] .bg-red-500\/20,
-[data-theme-mode="light"] .bg-red-500\/10,
-[data-theme-mode="light"] .bg-red-950\/40,
-[data-theme-mode="light"] .bg-red-950\/20 {
-  background-color: #fee2e2 !important; /* Red 100 */
-  border-color: #fca5a5 !important;     /* Red 300 */
-  color: #991b1b !important;            /* Red 800 */
-}
-
-[data-theme-mode="light"] .bg-purple-500\/20,
-[data-theme-mode="light"] .bg-purple-500\/10,
-[data-theme-mode="light"] .bg-purple-950\/40 {
-  background-color: #f3e8ff !important; /* Purple 100 */
-  border-color: #d8b4fe !important;     /* Purple 300 */
-  color: #581c87 !important;            /* Purple 900 */
-}
-
-[data-theme-mode="light"] .bg-cyan-500\/20,
-[data-theme-mode="light"] .bg-cyan-500\/10,
-[data-theme-mode="light"] .bg-cyan-950\/40 {
-  background-color: #cffafe !important; /* Cyan 100 */
-  border-color: #67e8f9 !important;     /* Cyan 300 */
-  color: #155e75 !important;            /* Cyan 800 */
-}
-
-/* --------------------------------------------------------------------------
-   7. FORMULAIRES, INPUTS ET SÉLECTEURS
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
-[data-theme-mode="light"] select,
-[data-theme-mode="light"] textarea {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-
-[data-theme-mode="light"] input::placeholder,
-[data-theme-mode="light"] textarea::placeholder {
-  color: #94a3b8 !important;
-}
-
-[data-theme-mode="light"] input:focus,
-[data-theme-mode="light"] select:focus,
-[data-theme-mode="light"] textarea:focus {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
-}
-
-/* --------------------------------------------------------------------------
-   8. PRÉSERVATION DU TEXTE BLANC DANS LES BOUTONS D'ACTION PLEINS
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .bg-red-600,
-[data-theme-mode="light"] .bg-red-500,
-[data-theme-mode="light"] .bg-emerald-600,
-[data-theme-mode="light"] .bg-emerald-500,
-[data-theme-mode="light"] .bg-blue-600,
-[data-theme-mode="light"] .bg-blue-500,
-[data-theme-mode="light"] .bg-amber-600,
-[data-theme-mode="light"] .bg-amber-500,
-[data-theme-mode="light"] .bg-purple-600,
-[data-theme-mode="light"] .bg-indigo-600,
-[data-theme-mode="light"] .bg-rose-600,
-[data-theme-mode="light"] .bg-rose-500,
-[data-theme-mode="light"] .bg-cyan-600,
-[data-theme-mode="light"] .bg-teal-600 {
-  color: #ffffff !important;
-}
-
-[data-theme-mode="light"] .bg-red-600 span,
-[data-theme-mode="light"] .bg-red-500 span,
-[data-theme-mode="light"] .bg-emerald-600 span,
-[data-theme-mode="light"] .bg-blue-600 span,
-[data-theme-mode="light"] .bg-amber-600 span,
-[data-theme-mode="light"] .bg-purple-600 span,
-[data-theme-mode="light"] .bg-indigo-600 span,
-[data-theme-mode="light"] .bg-rose-600 span,
-[data-theme-mode="light"] .bg-red-600 p,
-[data-theme-mode="light"] .bg-emerald-600 p,
-[data-theme-mode="light"] .bg-blue-600 p {
-  color: #ffffff !important;
-}
-
-/* --------------------------------------------------------------------------
-   9. MODALES ET SURVOLS EN MODE CLAIR
-   -------------------------------------------------------------------------- */
-
-[data-theme-mode="light"] .fixed.inset-0.bg-black\/70,
-[data-theme-mode="light"] .fixed.inset-0.bg-black\/80,
-[data-theme-mode="light"] .fixed.inset-0.bg-slate-950\/80 {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-  backdrop-filter: blur(8px);
-}
-
-[data-theme-mode="light"] nav button:not(.bg-red-600):not(.bg-red-500) {
-  color: #334155;
-}
-
-[data-theme-mode="light"] nav button:hover:not(.bg-red-600):not(.bg-red-500) {
-  background-color: #f1f5f9;
-  color: #0f172a;
-}
-
-[data-theme-mode="light"] thead tr {
-  background-color: #f8fafc !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-}
-
-[data-theme-mode="light"] thead th {
-  color: #334155 !important;
-  font-weight: 700 !important;
-}
-
-[data-theme-mode="light"] tbody tr {
-  border-bottom: 1px solid #f1f5f9 !important;
-}
-
-[data-theme-mode="light"] tbody tr:hover {
-  background-color: #f8fafc !important;
-}
-
-[data-theme-mode="light"] .group:hover {
-  border-color: #cbd5e1;
-}
-
-/* --------------------------------------------------------------------------
-   10. HARMONISATION SPÉCIFIQUE PAR THÈME CLAIR
-   -------------------------------------------------------------------------- */
-
-/* Showroom Blanc Pur & Platine */
-[data-theme="light"] {
-  --active-accent-color: #dc2626;
-}
-
-/* Blanc Polaire & Cobalt Pro */
-[data-theme="nordic_clean"] {
-  --active-accent-color: #2563eb;
-}
-[data-theme="nordic_clean"] .text-blue-300,
-[data-theme="nordic_clean"] .text-blue-400 {
-  color: #1d4ed8 !important;
-}
-
-/* Perle Blanche & Or Champagne */
-[data-theme="pearl_luxury"] {
-  --active-accent-color: #d97706;
-}
-[data-theme="pearl_luxury"] .text-amber-300,
-[data-theme="pearl_luxury"] .text-amber-400 {
-  color: #92400e !important;
-}
-
-/* Blanc Cristal & Cyan Tech */
-[data-theme="crystal_cyan"] {
-  --active-accent-color: #0d9488;
-}
-[data-theme="crystal_cyan"] .text-cyan-300,
-[data-theme="crystal_cyan"] .text-cyan-400 {
-  color: #0f766e !important;
+/* Thème 6: Titanium High-Tech */
+[data-theme="titanium"] {
+  --theme-bg: #0b0f19;
+  --theme-card: #182234;
+  --theme-subtle: #24334a;
+  --theme-border: #384d6b;
+  --theme-accent: #94a3b8;
+  --theme-accent-dark: #64748b;
 }
 
 /* Animation de transition fluide globale */
