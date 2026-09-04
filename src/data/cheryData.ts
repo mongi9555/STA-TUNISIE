@@ -1213,17 +1213,37 @@ export function getStoredSiteSettings(): SiteSettings {
   return DEFAULT_SITE_SETTINGS;
 }
 
+export function getDeletedCarIds(): Set<string> {
+  try {
+    if (typeof localStorage === 'undefined') return new Set();
+    const data = localStorage.getItem('chery_tn_deleted_car_ids_v1');
+    if (data) {
+      const arr = JSON.parse(data);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+}
+
+export function saveDeletedCarIds(set: Set<string>): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem('chery_tn_deleted_car_ids_v1', JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 export function saveStoredSiteSettings(settings: SiteSettings): void {
   safeLocalStorageSet(STORAGE_KEYS.SITE_SETTINGS, JSON.stringify(settings));
 }
 
 export function getStoredCars(): CarModel[] {
+  const deletedIds = getDeletedCarIds();
   try {
     const data = localStorage.getItem(STORAGE_KEYS.CARS);
     if (data) {
       const parsed: CarModel[] = JSON.parse(data);
-      // Filter out any virtual mock cars from localStorage
-      const filtered = parsed.filter((car) => !isVirtualCar(car));
+      // Filter out any virtual mock cars and deleted cars from localStorage
+      const filtered = parsed.filter((car) => !isVirtualCar(car) && !deletedIds.has(car.id));
       if (filtered.length > 0) {
         return filtered.map((car) => ({
           ...car,
@@ -1237,7 +1257,7 @@ export function getStoredCars(): CarModel[] {
   } catch (e) {
     console.error('Error loading cars from storage', e);
   }
-  return INITIAL_CARS;
+  return INITIAL_CARS.filter((c) => !deletedIds.has(c.id));
 }
 
 export function saveStoredCars(cars: CarModel[]): void {
