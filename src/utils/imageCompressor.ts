@@ -56,9 +56,9 @@ export function fileToCompressedAvatarDataUrl(
  */
 export function compressImageDataUrl(
   dataUrl: string,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.8
+  maxWidth = 900,
+  maxHeight = 900,
+  quality = 0.72
 ): Promise<string> {
   return new Promise((resolve) => {
     if (!dataUrl || !dataUrl.startsWith('data:image/')) {
@@ -66,8 +66,8 @@ export function compressImageDataUrl(
       return;
     }
 
-    // Skip compression if already very small (< 100KB)
-    if (dataUrl.length < 100000) {
+    // Skip compression only if already very small (< 40KB)
+    if (dataUrl.length < 40000) {
       resolve(dataUrl);
       return;
     }

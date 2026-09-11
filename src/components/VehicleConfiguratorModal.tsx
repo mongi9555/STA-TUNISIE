@@ -275,37 +275,6 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                     })}
                   </div>
                 </div>
-
-                {/* Interior Color Picker */}
-                {selectedCar.interiorColors && selectedCar.interiorColors.length > 0 && (
-                  <div>
-                    <label className="font-extrabold text-xs uppercase tracking-wider text-slate-400 block mb-2">
-                      2B. Ambiance & Sellerie Intérieure :
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {selectedCar.interiorColors.map((intCol) => {
-                        const isSel = selectedInterior?.id === intCol.id;
-                        return (
-                          <button
-                            key={intCol.id}
-                            onClick={() => setSelectedInterior(intCol)}
-                            className={`p-3 rounded-xl border flex items-center gap-2 text-left cursor-pointer transition ${
-                              isSel
-                                ? 'bg-red-600/20 border-red-500 text-white ring-2 ring-red-500'
-                                : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
-                            }`}
-                          >
-                            <span
-                              className="w-5 h-5 rounded-full border border-white/40 shrink-0 shadow"
-                              style={{ backgroundColor: intCol.hexCode }}
-                            />
-                            <p className="font-bold text-xs">{intCol.name}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Step 3: Accessories Catalogue */}

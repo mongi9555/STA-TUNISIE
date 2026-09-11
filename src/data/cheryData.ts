@@ -232,19 +232,19 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     name: 'Lamine Abbasi',
     email: 'lamine.abbasi@chery-tunisie.tn',
     password: 'STA@2026+',
-    role: 'commercial',
+    role: 'admin',
     phone: '+216 71 800 902',
     agency: 'STA Showroom Ariana / Ennasr',
     avatar: '',
     permissions: {
       canCreateReservation: true,
-      canCancelReservation: false,
-      canEditValidatedReservations: false,
-      canEditPrices: false,
-      canManageStock: false,
-      canAccessAdminPanel: false,
+      canCancelReservation: true,
+      canEditValidatedReservations: true,
+      canEditPrices: true,
+      canManageStock: true,
+      canAccessAdminPanel: true,
       canPrintVouchers: true,
-      canExportReports: false,
+      canExportReports: true,
     }
   },
   {
@@ -252,19 +252,19 @@ export const INITIAL_COMMERCIALS: CommercialUser[] = [
     name: 'Sami Chaker',
     email: 'sami.chaker@chery-tunisie.tn',
     password: 'STA@2026+',
-    role: 'commercial',
+    role: 'admin',
     phone: '+216 73 800 903',
     agency: 'STA Agence Sousse / Kantaoui',
     avatar: '',
     permissions: {
       canCreateReservation: true,
-      canCancelReservation: false,
-      canEditValidatedReservations: false,
-      canEditPrices: false,
-      canManageStock: false,
-      canAccessAdminPanel: false,
+      canCancelReservation: true,
+      canEditValidatedReservations: true,
+      canEditPrices: true,
+      canManageStock: true,
+      canAccessAdminPanel: true,
       canPrintVouchers: true,
-      canExportReports: false,
+      canExportReports: true,
     }
   }
 ];
@@ -531,6 +531,77 @@ export function formatVoucherDate(dateStr?: string): string {
   }
 }
 
+/**
+ * Vérifie si l'utilisateur courant possède les droits d'administration pour modifier la Date d'Arrivage Prévisionnel (ETA)
+ * Autorisé uniquement pour les Administrateurs (ex: Sami Chaker, Lamine Abbasi, etc.)
+ */
+export function canUserEditEta(user?: CommercialUser | null): boolean {
+  if (!user) return false;
+  const role = user.role;
+  const name = (user.name || '').toLowerCase();
+  const id = user.id || '';
+  return (
+    role === 'admin' ||
+    role === 'super_admin' ||
+    id === 'comm-sami' ||
+    id === 'comm-lamine' ||
+    id === 'comm-admin' ||
+    id === 'comm-superadmin' ||
+    name.includes('sami chaker') ||
+    name.includes('lamine abbasi') ||
+    name.includes('lamine abassi')
+  );
+}
+
+/**
+ * Génère un numéro de bon de réservation chronologique et séquentiel (ex: RES-2026-001, RES-2026-002, ...)
+ * Garanti sans collision d'identifiants
+ */
+export function generateChronologicalReservationId(
+  reservations: Reservation[] = [],
+  extraIds: string[] = []
+): string {
+  const currentYear = new Date().getFullYear();
+  const yearPrefix = `RES-${currentYear}-`;
+
+  const existingIds = new Set<string>();
+  let maxSeq = 0;
+
+  const processId = (idStr?: string) => {
+    if (!idStr) return;
+    const cleanId = idStr.trim();
+    existingIds.add(cleanId);
+    if (cleanId.startsWith(yearPrefix)) {
+      const numPart = cleanId.substring(yearPrefix.length);
+      const parsed = parseInt(numPart, 10);
+      if (!isNaN(parsed) && parsed > maxSeq) {
+        maxSeq = parsed;
+      }
+    } else if (cleanId.startsWith('RES-')) {
+      const parts = cleanId.split('-');
+      if (parts.length >= 3) {
+        const parsed = parseInt(parts[2], 10);
+        if (!isNaN(parsed) && parsed > maxSeq) {
+          maxSeq = parsed;
+        }
+      }
+    }
+  };
+
+  reservations.forEach((r) => processId(r.id));
+  extraIds.forEach((id) => processId(id));
+
+  let nextSeq = Math.max(maxSeq + 1, 1);
+  let candidate = `RES-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
+
+  while (existingIds.has(candidate)) {
+    nextSeq++;
+    candidate = `RES-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
+  }
+
+  return candidate;
+}
+
 export function isPickupCar(car?: CarModel | { name?: string; category?: string } | string | null): boolean {
   if (!car) return false;
   if (typeof car === 'string') {
@@ -644,11 +715,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-3-1785512735025", name: "Noir Carbone", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 15, reserved: 0 },
       { id: "col-4-1785512735025", name: "Bleu Électrique", hexCode: "#1D4ED8", interiorColor: "Cuir Beige & Bleu", stock: 6, reserved: 0 }
     ],
-    interiorColors: [
-      { id: "int-1787043676942-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
-      { id: "int-1787043676942-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 10, reserved: 0 },
-      { id: "int-1787043676942-3", name: "Beige Nappa & Bleu", hexCode: "#D4B996", stock: 8, reserved: 0 }
-    ],
     ficheTechniqueUrl: ""
   },
   {
@@ -686,10 +752,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-2-arrizo8-2", name: "Gris Anthracite", hexCode: "#475569", interiorColor: "Cuir Cognac", stock: 9, reserved: 0 },
       { id: "col-3-arrizo8-3", name: "Noir Intense", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
       { id: "col-4-arrizo8-4", name: "Rouge Rubis", hexCode: "#991B1B", interiorColor: "Cuir Noir & Rouge", stock: 5, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-arrizo8-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
-      { id: "int-arrizo8-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 12, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   },
@@ -730,11 +792,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-1786981421374", name: "Black CM", hexCode: "#030303", interiorColor: "Cuir Beige & Bleu", stock: 16, reserved: 0 },
       { id: "col-1786981512703", name: "Huanyu Gray", hexCode: "#A1A1A1", interiorColor: "Cuir Noir", stock: 11, reserved: 0 }
     ],
-    interiorColors: [
-      { id: "int-1787043707010-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
-      { id: "int-1787043707010-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 12, reserved: 0 },
-      { id: "int-1787043707010-3", name: "Beige Nappa & Sable", hexCode: "#D4B996", stock: 10, reserved: 0 }
-    ],
     ficheTechniqueUrl: ""
   },
   {
@@ -772,10 +829,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-1-1785513939488", name: "Blanc Pur", hexCode: "#F0F2F4", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
       { id: "col-2-1785513939488", name: "Gris Argent", hexCode: "#94A3B8", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
       { id: "col-3-1785513939488", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-1787041462294-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
-      { id: "int-1787041462294-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 10, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   },
@@ -816,10 +869,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-3-1785514106502", name: "Orange DU", hexCode: "#FF9500", interiorColor: "Cuir Marron", stock: 5, reserved: 0 },
       { id: "col-1786981947069", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Marron", stock: 14, reserved: 0 }
     ],
-    interiorColors: [
-      { id: "int-himla4x4-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 15, reserved: 0 },
-      { id: "int-himla4x4-2", name: "Cuir Marron", hexCode: "#78350F", stock: 12, reserved: 0 }
-    ],
     ficheTechniqueUrl: ""
   },
   {
@@ -857,9 +906,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-2-1785753010029", name: "Gris Météore", hexCode: "#5A626C", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
       { id: "col-3-1785753010029", name: "Noir Onyx", hexCode: "#161618", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
       { id: "col-1786983375958", name: "Blanc Glacier", hexCode: "#EDF0F7", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-tiggo2-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   },
@@ -899,9 +945,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-3-1785753066750", name: "Gray GV", hexCode: "#6E6F72", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
       { id: "col-1786982272954", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
     ],
-    interiorColors: [
-      { id: "int-tiggo4-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 18, reserved: 0 }
-    ],
     ficheTechniqueUrl: ""
   },
   {
@@ -938,10 +981,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-1-1785753150277", name: "Noir Cosmos", hexCode: "#000000", interiorColor: "Cuir Marron", stock: 18, reserved: 0 },
       { id: "col-2-1785753150277", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
       { id: "col-3-1785753150277", name: "Vert Émeraude", hexCode: "#0E775C", interiorColor: "Cuir Vert & Marron", stock: 9, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-i03-4x2-1", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 15, reserved: 0 },
-      { id: "int-i03-4x2-2", name: "Noir Carbone", hexCode: "#0F172A", stock: 12, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   },
@@ -980,10 +1019,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-2-1785753208837", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 23, reserved: 0 },
       { id: "col-1786454499484", name: "Vert Safari", hexCode: "#0E775C", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
       { id: "col-1786454514433", name: "Gris Titane", hexCode: "#6F7585", interiorColor: "Cuir Marron", stock: 28, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-i03-4x4-1", name: "Cuir Marron", hexCode: "#78350F", stock: 30, reserved: 0 },
-      { id: "int-i03-4x4-2", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   },
@@ -1024,10 +1059,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-1786454139529", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 30, reserved: 0 },
       { id: "col-1786454192522", name: "Exclusive Blue WE", hexCode: "#217CB5", interiorColor: "Cuir Noir", stock: 20, reserved: 0 }
     ],
-    interiorColors: [
-      { id: "int-tiggo7-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 30, reserved: 0 },
-      { id: "int-tiggo7-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 25, reserved: 0 }
-    ],
     ficheTechniqueUrl: ""
   },
   {
@@ -1065,10 +1096,6 @@ export const INITIAL_CARS: CarModel[] = [
       { id: "col-2-1785753367152", name: "Gray UM", hexCode: "#668F88", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
       { id: "col-3-1785753367152", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 22, reserved: 0 },
       { id: "col-1786454375127", name: "Green SJ", hexCode: "#087252", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
-    ],
-    interiorColors: [
-      { id: "int-tiggo8-1", name: "Noir Carbone", hexCode: "#0F172A", stock: 20, reserved: 0 },
-      { id: "int-tiggo8-2", name: "Cuir Marron Cognac", hexCode: "#78350F", stock: 15, reserved: 0 }
     ],
     ficheTechniqueUrl: ""
   }

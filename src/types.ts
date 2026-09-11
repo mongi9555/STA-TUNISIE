@@ -194,8 +194,8 @@ export interface PersonnePhysiqueInfo {
 export interface SocieteInfo {
   raisonSociale: string;
   matriculeFiscale: string; // Matricule fiscale Tunisie (ex: 1234567/A/M/000)
-  gerantNomPrenom: string;
-  gerantCin: string;
+  gerantNomPrenom?: string;
+  gerantCin?: string;
   ville: string;
   telephone: string;
   email: string;
@@ -241,8 +241,28 @@ export interface TestDriveAppointment {
   createdAt: string;
 }
 
+export interface ReservationVehicleItem {
+  id: string;
+  carId: string;
+  carName: string;
+  colorChosen: {
+    id: string;
+    name: string;
+    hexCode: string;
+  };
+  interiorColorChosen?: {
+    id: string;
+    name: string;
+    hexCode: string;
+  };
+  quantity: number;
+  unitPriceTND: number;
+  totalPriceTND: number;
+  requiredDepositTND?: number;
+}
+
 export interface Reservation {
-  id: string; // ex: RES-2026-104
+  id: string; // ex: RES-2026-001
   commercialId: string;
   commercialName: string;
   agency: string;
@@ -258,14 +278,16 @@ export interface Reservation {
     name: string;
     hexCode: string;
   };
+  vehicles?: ReservationVehicleItem[]; // Support multi-modèles / multi-véhicules
   client: ClientInfo;
   documents: UploadedDocument[];
   priceTND: number;
-  registrationFeeTND: number;
+  registrationFeeTND?: number;
   depositPaidTND: number;
   paymentMethod: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing';
   status: ReservationStatus;
   createdAt: string;
+  updatedAt?: string; // Date de dernière modification
   etaDate?: string; // Date ETA / Arrivage prévisionnel
   expectedDeliveryDate?: string; // Date de livraison estimée (date ETA + 30 jours)
   notes?: string;

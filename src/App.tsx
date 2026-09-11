@@ -114,7 +114,7 @@ import { AdministrativeDocuments } from './components/AdministrativeDocuments';
 import { TestDriveList } from './components/TestDriveList';
 import { TestDriveModal } from './components/TestDriveModal';
 import { StaLogo } from './components/StaLogo';
-import { CheckCircle2, X } from 'lucide-react';
+import { CheckCircle2, X, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -364,6 +364,8 @@ export default function App() {
 
   // Success Toast Banner State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [firestoreQuotaExceeded, setFirestoreQuotaExceeded] = useState(false);
+  const [quotaBannerDismissed, setQuotaBannerDismissed] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -379,11 +381,29 @@ export default function App() {
       if (isMounted) setIsDbSynced(true);
     });
 
+    const handleSnapshotError = (collectionName: string, err: any) => {
+      const isQuota =
+        err?.code === 'resource-exhausted' ||
+        err?.message?.includes('Quota') ||
+        err?.message?.includes('quota') ||
+        String(err).includes('Quota');
+      if (isQuota) {
+        setFirestoreQuotaExceeded(true);
+        console.warn(`[Firestore Quota] Quota de requêtes journalier Firestore atteint sur ${collectionName}. Mode local sécurisé actif.`);
+      } else {
+        console.warn(`${collectionName} snapshot listener warning:`, err);
+      }
+    };
+
     const unsubscribeCars = onSnapshot(carsCollection, (snapshot) => {
       if (!snapshot.empty) {
         const deletedIds = getDeletedCarIds();
         const fetched = snapshot.docs
-          .map((doc) => doc.data() as CarModel)
+          .map((doc) => {
+            const c = doc.data() as CarModel;
+            if (c.interiorColors) delete c.interiorColors;
+            return c;
+          })
           .filter((car) => !isVirtualCar(car) && !deletedIds.has(car.id));
         if (fetched.length > 0) {
           setCars(fetched);
@@ -391,28 +411,28 @@ export default function App() {
           triggerInstantDbSave({ cars: fetched });
         }
       }
-    }, (err) => console.warn('Cars snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('cars', err));
 
     const unsubscribeReservations = onSnapshot(reservationsCollection, (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => doc.data() as Reservation);
+      const fetched = snapshot.docs.map((d) => ({ ...d.data(), id: d.data().id || d.id } as Reservation));
       setReservations(fetched);
       saveStoredReservations(fetched);
       triggerInstantDbSave({ reservations: fetched });
-    }, (err) => console.warn('Reservations snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('reservations', err));
 
     const unsubscribeTestDrives = onSnapshot(testDrivesCollection, (snapshot) => {
       const fetched = snapshot.docs.map((doc) => doc.data() as TestDriveAppointment);
       setTestDrives(fetched);
       saveStoredTestDrives(fetched);
       triggerInstantDbSave({ testDrives: fetched });
-    }, (err) => console.warn('TestDrives snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('testDrives', err));
 
     const unsubscribeStockRequests = onSnapshot(stockRequestsCollection, (snapshot) => {
       const fetched = snapshot.docs.map((doc) => doc.data() as StockRequest);
       setStockRequests(fetched);
       saveStoredStockRequests(fetched);
       triggerInstantDbSave({ stockRequests: fetched });
-    }, (err) => console.warn('StockRequests snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('stockRequests', err));
 
     const unsubscribeCommercials = onSnapshot(commercialsCollection, (snapshot) => {
       if (!snapshot.empty) {
@@ -424,7 +444,7 @@ export default function App() {
           triggerInstantDbSave({ commercials: cleanList });
         }
       }
-    }, (err) => console.warn('Commercials snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('commercials', err));
 
     const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'site_settings'), (docSnap) => {
       if (docSnap.exists()) {
@@ -433,7 +453,7 @@ export default function App() {
         saveStoredSiteSettings(fetchedSettings);
         triggerInstantDbSave({ siteSettings: fetchedSettings });
       }
-    }, (err) => console.warn('Settings snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('settings', err));
 
     const unsubscribeDocTemplate = onSnapshot(doc(db, 'settings', 'doc_template'), (docSnap) => {
       if (docSnap.exists()) {
@@ -442,7 +462,7 @@ export default function App() {
         saveStoredDocumentTemplate(fetchedTemplate);
         triggerInstantDbSave({ docTemplate: fetchedTemplate });
       }
-    }, (err) => console.warn('DocTemplate snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('docTemplate', err));
 
     const unsubscribeAccessories = onSnapshot(accessoriesCollection, (snapshot) => {
       if (!snapshot.empty) {
@@ -451,7 +471,7 @@ export default function App() {
         saveStoredAccessories(fetched);
         triggerInstantDbSave({ accessories: fetched });
       }
-    }, (err) => console.warn('Accessories snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('accessories', err));
 
     const unsubscribeQuotes = onSnapshot(quotesCollection, (snapshot) => {
       if (!snapshot.empty) {
@@ -460,7 +480,7 @@ export default function App() {
         saveStoredQuotes(fetched);
         triggerInstantDbSave({ quotes: fetched });
       }
-    }, (err) => console.warn('Quotes snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('quotes', err));
 
     const unsubscribeAdminDocs = onSnapshot(adminDocsCollection, (snapshot) => {
       if (!snapshot.empty) {
@@ -469,7 +489,7 @@ export default function App() {
         saveStoredAdminDocuments(fetched);
         triggerInstantDbSave({ adminDocs: fetched });
       }
-    }, (err) => console.warn('Admin docs snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('adminDocs', err));
 
     const unsubscribeKnowledgeBase = onSnapshot(knowledgeBaseCollection, (snapshot) => {
       if (!snapshot.empty) {
@@ -478,7 +498,7 @@ export default function App() {
         saveStoredKnowledgeBase(fetched);
         triggerInstantDbSave({ knowledgeBase: fetched });
       }
-    }, (err) => console.warn('Knowledge base snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('knowledgeBase', err));
 
     const unsubscribeAuditLogs = onSnapshot(auditLogsCollection, (snapshot) => {
       const fetched = snapshot.docs
@@ -488,7 +508,7 @@ export default function App() {
       setAuditLogs(fetched);
       saveStoredAuditLogs(fetched);
       triggerInstantDbSave({ auditLogs: fetched });
-    }, (err) => console.warn('Audit logs snapshot listener warning:', err));
+    }, (err) => handleSnapshotError('auditLogs', err));
 
     return () => {
       isMounted = false;
@@ -597,7 +617,12 @@ export default function App() {
         if (data && data.exists) {
           const deletedIds = getDeletedCarIds();
           if (Array.isArray(data.cars) && data.cars.length > 0) {
-            const cleanCars = data.cars.filter((c: CarModel) => !isVirtualCar(c) && !deletedIds.has(c.id));
+            const cleanCars = data.cars
+              .filter((c: CarModel) => !isVirtualCar(c) && !deletedIds.has(c.id))
+              .map((c: CarModel) => {
+                if (c.interiorColors) delete c.interiorColors;
+                return c;
+              });
             if (cleanCars.length > 0) {
               setCars(cleanCars);
               saveStoredCars(cleanCars);
@@ -776,26 +801,52 @@ export default function App() {
     setIsReservationModalOpen(true);
   };
 
-  // Handler: Save New Reservation & Automatically Decrement Stock for the chosen color
-  const handleSaveReservation = (newReservation: Reservation) => {
-    // 1. Add to reservation list in Firestore & state
-    const updatedReservations = [newReservation, ...reservations];
-    setReservations(updatedReservations);
-    saveStoredReservations(updatedReservations);
-    saveReservationToFirestore(newReservation);
+  // Helper: Extract all vehicle items (with carId, colorId, quantity) from a reservation
+  const getReservationVehicleItems = (res: Reservation): { carId: string; colorId: string; quantity: number }[] => {
+    if (res.vehicles && res.vehicles.length > 0) {
+      return res.vehicles.map((v) => ({
+        carId: v.carId,
+        colorId: v.colorChosen.id,
+        quantity: v.quantity,
+      }));
+    }
+    return [
+      {
+        carId: res.carId,
+        colorId: res.colorChosen.id,
+        quantity: 1,
+      },
+    ];
+  };
 
-    // 2. Decrement stock for chosen color code & update in Firestore
-    const updatedCars = cars.map((car) => {
-      if (car.id === newReservation.carId) {
-        const updatedColors = car.colors.map((col) => {
-          if (col.id === newReservation.colorChosen.id) {
-            return {
-              ...col,
-              stock: Math.max(0, col.stock - 1),
-              reserved: col.reserved + 1,
-            };
-          }
-          return col;
+  // Helper: A reservation only holds deducted stock if its status is 'Confirmée' or 'Livrée'
+  // RÈGLE : Tant qu'une réservation est "En attente", AUCUN véhicule n'est déduit du stock !
+  const isStatusHoldingStock = (status: Reservation['status']): boolean => {
+    return status === 'Confirmée' || status === 'Livrée';
+  };
+
+  // Helper: Adjust car stock (deduct or restore) and persist updated models to Firestore
+  const applyStockChanges = (
+    baseCars: CarModel[],
+    items: { carId: string; colorId: string; quantity: number }[],
+    action: 'deduct' | 'restore'
+  ): CarModel[] => {
+    const multiplier = action === 'deduct' ? -1 : 1;
+    return baseCars.map((car) => {
+      const matchItems = items.filter((item) => item.carId === car.id);
+      if (matchItems.length > 0) {
+        let updatedColors = [...car.colors];
+        matchItems.forEach((item) => {
+          updatedColors = updatedColors.map((col) => {
+            if (col.id === item.colorId) {
+              return {
+                ...col,
+                stock: Math.max(0, col.stock + multiplier * item.quantity),
+                reserved: Math.max(0, col.reserved - multiplier * item.quantity),
+              };
+            }
+            return col;
+          });
         });
         const updatedCar = { ...car, colors: updatedColors };
         saveCarToFirestore(updatedCar);
@@ -803,14 +854,17 @@ export default function App() {
       }
       return car;
     });
+  };
 
-    setCars(updatedCars);
-    saveStoredCars(updatedCars);
-
-    triggerInstantDbSave({
-      reservations: updatedReservations,
-      cars: updatedCars,
-    });
+  // Handler: Save New Reservation
+  // RÈGLE : Tant que la réservation est "En attente", AUCUNE voiture n'est déduite du stock.
+  // La déduction n'intervient que si le statut est "Confirmée" (ou "Livrée").
+  const handleSaveReservation = (newReservation: Reservation) => {
+    // 1. Add to reservation list in Firestore & state
+    const updatedReservations = [newReservation, ...reservations];
+    setReservations(updatedReservations);
+    saveStoredReservations(updatedReservations);
+    saveReservationToFirestore(newReservation);
 
     const clientDisplayName =
       newReservation.client.type === 'personne_physique'
@@ -821,88 +875,164 @@ export default function App() {
         ? newReservation.client.personnePhysique?.telephone || ''
         : newReservation.client.societe?.telephone || '';
 
-    // 3. Record Audit Log for reservation stock decrement
-    addAuditLog({
-      actionType: 'reservation_stock_deduct',
-      actionLabel: 'Déduction Stock (Réservation)',
-      details: `Déduction de 1 unité de stock pour le bon de réservation #${newReservation.id} au nom de ${clientDisplayName} (${clientPhone})`,
-      targetCarId: newReservation.carId,
-      targetCarName: newReservation.carName,
-      targetColorName: newReservation.colorChosen.name,
-    });
+    let updatedCars = cars;
+    const isConfirmed = isStatusHoldingStock(newReservation.status);
 
-    // 4. Show Toast notification & open Printable Voucher
-    showToast(`Réservation ${newReservation.id} créée avec succès et enregistrée dans la base de données !`);
-    setActiveVoucher(newReservation);
-  };
+    if (isConfirmed) {
+      // Déduire du stock uniquement si confirmée dès la création
+      const itemsToDeduct = getReservationVehicleItems(newReservation);
+      updatedCars = applyStockChanges(cars, itemsToDeduct, 'deduct');
+      setCars(updatedCars);
+      saveStoredCars(updatedCars);
 
-  // Handler: Update Reservation Status
-  const handleUpdateStatus = (reservationId: string, newStatus: Reservation['status']) => {
-    let updatedItem: Reservation | null = null;
-    const updated = reservations.map((res) => {
-      if (res.id === reservationId) {
-        const mod = { ...res, status: newStatus };
-        updatedItem = mod;
-        return mod;
-      }
-      return res;
-    });
-    setReservations(updated);
-    saveStoredReservations(updated);
-    if (updatedItem) {
-      saveReservationToFirestore(updatedItem);
+      addAuditLog({
+        actionType: 'reservation_stock_deduct',
+        actionLabel: 'Déduction Stock (Réservation Confirmée)',
+        details: `Déduction de stock pour la réservation confirmée #${newReservation.id} au nom de ${clientDisplayName} (${clientPhone})`,
+        targetCarId: newReservation.carId,
+        targetCarName: newReservation.carName,
+        targetColorName: newReservation.colorChosen.name,
+      });
+
+      showToast(`Réservation ${newReservation.id} confirmée et créée avec succès !`);
+    } else {
+      // RÈGLE : Statut "En attente" -> AUCUN VÉHICULE DÉDUIT DU STOCK
+      addAuditLog({
+        actionType: 'reservation_stock_deduct',
+        actionLabel: 'Réservation En attente (Stock préservé)',
+        details: `Réservation #${newReservation.id} créée au statut "${newReservation.status}" pour ${clientDisplayName} (${clientPhone}). Aucun véhicule déduit du stock tant qu'elle n'est pas confirmée.`,
+        targetCarId: newReservation.carId,
+        targetCarName: newReservation.carName,
+        targetColorName: newReservation.colorChosen.name,
+      });
+
+      showToast(`Réservation ${newReservation.id} enregistrée en attente. Le stock n'est pas déduit tant qu'elle n'est pas confirmée.`);
     }
-    triggerInstantDbSave({ reservations: updated });
-    showToast(`Statut de la réservation mis à jour: ${newStatus}`);
+
+    triggerInstantDbSave({
+      reservations: updatedReservations,
+      cars: updatedCars,
+    });
   };
 
-  // Handler: Edit Existing Reservation
+  // Handler: Update Reservation Status with Automated Stock Deduction / Restoration
+  const handleUpdateStatus = (reservationId: string, newStatus: Reservation['status']) => {
+    const targetReservation = reservations.find((r) => r.id === reservationId);
+    if (!targetReservation) return;
+
+    const oldStatus = targetReservation.status;
+    if (oldStatus === newStatus) return;
+
+    const now = new Date().toISOString();
+    const mod: Reservation = { ...targetReservation, status: newStatus, updatedAt: now };
+    const remaining = reservations.filter((r) => r.id !== reservationId);
+    const updatedReservations = [mod, ...remaining];
+
+    setReservations(updatedReservations);
+    saveStoredReservations(updatedReservations);
+    saveReservationToFirestore(mod);
+
+    const wasHolding = isStatusHoldingStock(oldStatus);
+    const willHold = isStatusHoldingStock(newStatus);
+    let updatedCars = cars;
+
+    // Transition 1 : Passage de non-confirmée ('En attente' / 'Annulée') -> confirmée ('Confirmée' / 'Livrée')
+    // DÉDUCTION IMMÉDIATE DU STOCK !
+    if (!wasHolding && willHold) {
+      const itemsToDeduct = getReservationVehicleItems(targetReservation);
+      updatedCars = applyStockChanges(cars, itemsToDeduct, 'deduct');
+      setCars(updatedCars);
+      saveStoredCars(updatedCars);
+
+      addAuditLog({
+        actionType: 'reservation_stock_deduct',
+        actionLabel: 'Confirmation & Déduction Stock',
+        details: `Réservation #${reservationId} confirmée : déduction des véhicules du stock disponible.`,
+        targetCarId: targetReservation.carId,
+        targetCarName: targetReservation.carName,
+        targetColorName: targetReservation.colorChosen.name,
+      });
+      showToast(`Réservation #${reservationId} confirmée : stock déduit et bon d'impression débloqué !`);
+    }
+    // Transition 2 : Passage de confirmée ('Confirmée' / 'Livrée') -> non-confirmée ('En attente' / 'Annulée')
+    // RESTITUTION IMMÉDIATE AU STOCK !
+    else if (wasHolding && !willHold) {
+      const itemsToRestore = getReservationVehicleItems(targetReservation);
+      updatedCars = applyStockChanges(cars, itemsToRestore, 'restore');
+      setCars(updatedCars);
+      saveStoredCars(updatedCars);
+
+      addAuditLog({
+        actionType: 'stock_update',
+        actionLabel: 'Restitution Stock',
+        details: `Réservation #${reservationId} passée en "${newStatus}" : véhicules restitués au stock.`,
+        targetCarId: targetReservation.carId,
+        targetCarName: targetReservation.carName,
+        targetColorName: targetReservation.colorChosen.name,
+      });
+      showToast(`Réservation #${reservationId} passée en "${newStatus}" : véhicules restitués au stock disponible.`);
+    } else {
+      showToast(`Statut de la réservation #${reservationId} mis à jour : ${newStatus}`);
+    }
+
+    triggerInstantDbSave({
+      reservations: updatedReservations,
+      cars: updatedCars,
+    });
+  };
+
+  // Handler: Edit Existing Reservation with Stock Synchronization
   const handleEditReservation = (updatedReservation: Reservation) => {
     const oldReservation = reservations.find((r) => r.id === updatedReservation.id);
 
     let updatedCars = cars;
-    // If color changed, update stock counts for old and new colors
-    if (oldReservation && oldReservation.colorChosen?.id !== updatedReservation.colorChosen?.id) {
-      updatedCars = cars.map((car) => {
-        if (car.id === updatedReservation.carId) {
-          const updatedColors = car.colors.map((col) => {
-            if (col.id === oldReservation.colorChosen?.id) {
-              return {
-                ...col,
-                stock: col.stock + 1,
-                reserved: Math.max(0, col.reserved - 1),
-              };
-            }
-            if (col.id === updatedReservation.colorChosen?.id) {
-              return {
-                ...col,
-                stock: Math.max(0, col.stock - 1),
-                reserved: col.reserved + 1,
-              };
-            }
-            return col;
-          });
-          const updatedCar = { ...car, colors: updatedColors };
-          saveCarToFirestore(updatedCar);
-          return updatedCar;
+    if (oldReservation) {
+      const wasHolding = isStatusHoldingStock(oldReservation.status);
+      const willHold = isStatusHoldingStock(updatedReservation.status);
+
+      if (wasHolding && !willHold) {
+        // Était confirmée, devient non-confirmée : restituer stock ancien
+        updatedCars = applyStockChanges(cars, getReservationVehicleItems(oldReservation), 'restore');
+      } else if (!wasHolding && willHold) {
+        // Était non-confirmée, devient confirmée : déduire stock nouveau
+        updatedCars = applyStockChanges(cars, getReservationVehicleItems(updatedReservation), 'deduct');
+      } else if (wasHolding && willHold) {
+        // Était confirmée et reste confirmée : synchroniser si le véhicule ou la teinte a changé
+        const oldColorId = oldReservation.colorChosen?.id;
+        const newColorId = updatedReservation.colorChosen?.id;
+        if (oldReservation.carId !== updatedReservation.carId || oldColorId !== newColorId) {
+          const restoredCars = applyStockChanges(cars, getReservationVehicleItems(oldReservation), 'restore');
+          updatedCars = applyStockChanges(restoredCars, getReservationVehicleItems(updatedReservation), 'deduct');
         }
-        return car;
-      });
-      setCars(updatedCars);
-      saveStoredCars(updatedCars);
+      }
+      // Si !wasHolding && !willHold ('En attente' -> 'En attente'), aucun stock n'est déduit !
+
+      if (updatedCars !== cars) {
+        setCars(updatedCars);
+        saveStoredCars(updatedCars);
+      }
     }
 
-    const updatedRes = reservations.map((res) => (res.id === updatedReservation.id ? updatedReservation : res));
+    const now = new Date().toISOString();
+    const reservationWithUpdatedDate: Reservation = {
+      ...updatedReservation,
+      updatedAt: now,
+    };
+
+    // Placer la réservation modifiée en premier dans la liste
+    const remaining = reservations.filter((res) => res.id !== reservationWithUpdatedDate.id);
+    const updatedRes = [reservationWithUpdatedDate, ...remaining];
+
     setReservations(updatedRes);
     saveStoredReservations(updatedRes);
-    saveReservationToFirestore(updatedReservation);
+    saveReservationToFirestore(reservationWithUpdatedDate);
 
     triggerInstantDbSave({
       reservations: updatedRes,
       cars: updatedCars,
     });
 
-    showToast(`Réservation ${updatedReservation.id} mise à jour avec succès !`);
+    showToast(`Réservation ${updatedReservation.id} mise à jour avec succès.`);
   };
 
   // Admin Handlers with Firestore Persistence & Instant Local DB backup
@@ -1381,36 +1511,83 @@ export default function App() {
   };
 
   const handleDeleteReservation = (reservationId: string) => {
+    const target = reservations.find((r) => r.id === reservationId);
+    let updatedCars = cars;
+
+    // Seules les réservations confirmées/livrées ont déduit du stock qu'il faut restituer
+    if (target && isStatusHoldingStock(target.status)) {
+      const itemsToRestore = getReservationVehicleItems(target);
+      updatedCars = applyStockChanges(cars, itemsToRestore, 'restore');
+      setCars(updatedCars);
+      saveStoredCars(updatedCars);
+      addAuditLog({
+        actionType: 'stock_update',
+        actionLabel: 'Restitution Stock (Suppression)',
+        details: `Suppression de la réservation confirmée #${reservationId} : restitution des véhicules au stock.`,
+        targetCarId: target.carId,
+        targetCarName: target.carName,
+        targetColorName: target.colorChosen.name,
+      });
+    }
+
     const updated = reservations.filter((r) => r.id !== reservationId);
     setReservations(updated);
     saveStoredReservations(updated);
     deleteReservationFromFirestore(reservationId);
-    triggerInstantDbSave({ reservations: updated });
+    triggerInstantDbSave({ reservations: updated, cars: updatedCars });
     showToast(`Réservation ${reservationId} supprimée de la base de données`);
   };
 
   const handleAddDocumentToReservation = (reservationId: string, doc: UploadedDocument) => {
-    const updated = reservations.map((r) => {
+    const now = new Date().toISOString();
+    let updatedItem: Reservation | null = null;
+    const remaining: Reservation[] = [];
+    let updatedCars = cars;
+
+    reservations.forEach((r) => {
       if (r.id === reservationId) {
         const newDocs = [...(r.documents || []), doc];
         const isBonCommande = doc.category === 'bon_commande' || doc.name.toLowerCase().includes('bon de commande');
         const newStatus = isBonCommande ? 'Confirmée' : r.status;
+
+        const wasHolding = isStatusHoldingStock(r.status);
+        const willHold = isStatusHoldingStock(newStatus);
+
+        if (!wasHolding && willHold) {
+          const itemsToDeduct = getReservationVehicleItems(r);
+          updatedCars = applyStockChanges(cars, itemsToDeduct, 'deduct');
+          setCars(updatedCars);
+          saveStoredCars(updatedCars);
+          addAuditLog({
+            actionType: 'reservation_stock_deduct',
+            actionLabel: 'Validation Leasing & Déduction Stock',
+            details: `Réservation #${reservationId} validée automatiquement par Bon de Commande : déduction des véhicules du stock.`,
+            targetCarId: r.carId,
+            targetCarName: r.carName,
+            targetColorName: r.colorChosen.name,
+          });
+        }
+
         const updatedRes: Reservation = {
           ...r,
           documents: newDocs,
           status: newStatus,
+          updatedAt: now,
           notes: isBonCommande
             ? (r.notes ? r.notes + ' | ' : '') + '⚡ Validée automatiquement par la réception du Bon de Commande Leasing.'
             : r.notes,
         };
+        updatedItem = updatedRes;
         saveReservationToFirestore(updatedRes);
-        return updatedRes;
+      } else {
+        remaining.push(r);
       }
-      return r;
     });
+
+    const updated = updatedItem ? [updatedItem, ...remaining] : reservations;
     setReservations(updated);
     saveStoredReservations(updated);
-    triggerInstantDbSave({ reservations: updated });
+    triggerInstantDbSave({ reservations: updated, cars: updatedCars });
     showToast(`Fichier "${doc.name}" ajouté à la réservation ${reservationId}`);
   };
 
@@ -1538,6 +1715,44 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Firestore Free Tier Quota Notice Banner */}
+      {firestoreQuotaExceeded && !quotaBannerDismissed && (
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="p-4 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg backdrop-blur-sm">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-500/20 text-amber-300 rounded-xl shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-200">
+                  Mode local sécurisé actif — Quota de requêtes journalières Firestore Free Tier atteint
+                </p>
+                <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
+                  L'application continue de fonctionner : vos réservations, véhicules et données sont enregistrés localement dans votre navigateur et le serveur. Le quota Firestore se réinitialise automatiquement le lendemain.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <a
+                href="https://console.firebase.google.com/project/solid-compiler-n9v0l/firestore/databases/ai-studio-cherytunisierser-31ef1dc0-2eb3-4096-af83-1d65c3033f08/data?openUpgradeDialog=true"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition-colors inline-flex items-center gap-1.5"
+              >
+                Gérer le quota Firestore
+              </a>
+              <button
+                onClick={() => setQuotaBannerDismissed(true)}
+                className="p-1.5 text-amber-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                title="Masquer cet avertissement"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area with Animated Tab Transitions */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <AnimatePresence mode="wait">
@@ -1571,7 +1786,13 @@ export default function App() {
                 onDeleteReservation={handleDeleteReservation}
                 onDeleteAllReservations={handleDeleteAllReservations}
                 onAddDocument={handleAddDocumentToReservation}
-                onViewVoucher={(res) => setActiveVoucher(res)}
+                onViewVoucher={(res) => {
+                  if (res.status === 'Confirmée' || res.status === 'Livrée') {
+                    setActiveVoucher(res);
+                  } else {
+                    showToast("⚠️ L'impression du bon de réservation est uniquement possible lorsque la réservation est confirmée.");
+                  }
+                }}
                 onViewDocument={(doc) => setActiveDocument(doc)}
               />
             )}

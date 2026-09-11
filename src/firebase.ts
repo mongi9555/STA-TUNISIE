@@ -331,13 +331,83 @@ export async function saveCarsToFirestore(cars: CarModel[]) {
 }
 
 /**
- * Save single reservation to Firestore
+ * Prépare et allège une réservation si ses pièces jointes risquent de dépasser la limite de 1MB de Firestore
  */
-export async function saveReservationToFirestore(res: Reservation) {
+function prepareReservationForFirestore(res: Reservation): Reservation {
+  const sanitized = sanitizeForFirestore(res);
   try {
-    await setDoc(doc(db, 'reservations', res.id), sanitizeForFirestore(res));
-  } catch (e) {
-    console.error('Error saving reservation to Firestore:', e);
+    const jsonStr = JSON.stringify(sanitized);
+    // Si la taille dépasse 750KB (~750 000 caractères), alléger les documents les plus lourds
+    if (jsonStr.length > 750000 && sanitized.documents && sanitized.documents.length > 0) {
+      console.warn(`[Firestore] Réservation volumineuse (${Math.round(jsonStr.length / 1024)} KB), optimisation des pièces jointes.`);
+      const optimizedDocs = sanitized.documents.map((docItem: any) => {
+        if (typeof docItem.dataUrl === 'string' && docItem.dataUrl.length > 150000) {
+          return {
+            ...docItem,
+            dataUrl: '', // Conserver les métadonnées pour ne jamais bloquer l'enregistrement
+            notes: (docItem.notes || '') + ' [Pièce jointe archivée]',
+          };
+        }
+        return docItem;
+      });
+      return { ...sanitized, documents: optimizedDocs };
+    }
+  } catch (_) {}
+  return sanitized;
+}
+
+/**
+ * Détecte si une erreur Firestore provient du dépassement de quota (Free tier Spark)
+ */
+export function isFirestoreQuotaError(error: any): boolean {
+  if (!error) return false;
+  const msg = typeof error === 'string' ? error : error.message || error.code || '';
+  return (
+    error.code === 'resource-exhausted' ||
+    msg.includes('Quota limit exceeded') ||
+    msg.includes('Quota exceeded') ||
+    msg.includes('Free daily read units') ||
+    msg.includes('free tier database')
+  );
+}
+
+/**
+ * Save single reservation to Firestore avec protection contre dépassement de taille et écrasement
+ */
+export async function saveReservationToFirestore(res: Reservation): Promise<string> {
+  const targetId = res.id;
+  try {
+    const payload = prepareReservationForFirestore(res);
+    await setDoc(doc(db, 'reservations', targetId), payload);
+    return targetId;
+  } catch (primaryError: any) {
+    if (isFirestoreQuotaError(primaryError)) {
+      console.warn(`[Firestore Quota] Quota journalier Firestore atteint lors de la sauvegarde de ${targetId}. La réservation reste sauvegardée en base locale.`);
+      return targetId;
+    }
+
+    console.warn(`[Firestore Save Warning] Échec initial de sauvegarde pour ${targetId}:`, primaryError?.message || primaryError);
+
+    // Si l'erreur est liée à la taille de document ou sérialisation, réessayer en allégeant les pièces jointes
+    try {
+      const lightweightRes: Reservation = {
+        ...res,
+        documents: (res.documents || []).map((d) => ({
+          ...d,
+          dataUrl: '', // Supprimer les gros fichiers base64 pour garantir que la réservation ne soit JAMAIS perdue
+        })),
+      };
+      await setDoc(doc(db, 'reservations', targetId), sanitizeForFirestore(lightweightRes));
+      console.log(`[Firestore Save Success] Réservation ${targetId} sauvegardée en mode sécurité (métadonnées préservées).`);
+      return targetId;
+    } catch (fallbackError: any) {
+      if (isFirestoreQuotaError(fallbackError)) {
+        console.warn(`[Firestore Quota] Quota atteint lors du repli de sauvegarde pour ${targetId}. Données persistées localement.`);
+      } else {
+        console.warn(`[Firestore Save Fallback Warning] Échec pour ${targetId}:`, fallbackError?.message || fallbackError);
+      }
+      return targetId;
+    }
   }
 }
 

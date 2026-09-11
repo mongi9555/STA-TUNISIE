@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Reservation, SiteSettings } from '../types';
-import { Printer, Download, X, CheckCircle2, Shield, Building, User, FileText, Phone, Mail, MapPin, Palette, Upload, Image as ImageIcon, RotateCcw, Check, Sparkles, Calendar, Clock } from 'lucide-react';
+import { Printer, Download, X, CheckCircle2, Shield, Building, User, FileText, Phone, Mail, MapPin, Palette, Upload, Image as ImageIcon, RotateCcw, Check, Sparkles, Calendar, Clock, Lock, AlertTriangle } from 'lucide-react';
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
@@ -25,9 +26,22 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
   const [urlInput, setUrlInput] = useState<string>('');
   const [customizerSuccess, setCustomizerSuccess] = useState(false);
 
+  // RÈGLE : L'impression n'est permise que si la réservation est confirmée
+  const isConfirmed = reservation?.status === 'Confirmée' || reservation?.status === 'Livrée';
+
   React.useEffect(() => {
+    document.body.classList.add('printing-voucher-active');
     if (!reservation) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Bloquer le raccourci Ctrl+P / Cmd+P si la réservation n'est pas confirmée
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        if (!isConfirmed) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert("L'impression du bon de réservation est uniquement possible lorsque la réservation est confirmée.");
+          return;
+        }
+      }
       if (e.key === 'Escape' || e.key === 'Esc') {
         if (showLogoCustomizer) {
           setShowLogoCustomizer(false);
@@ -37,11 +51,26 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [reservation, onClose, showLogoCustomizer]);
+    return () => {
+      document.body.classList.remove('printing-voucher-active');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [reservation, onClose, showLogoCustomizer, isConfirmed]);
 
   const handlePrint = () => {
+    if (!isConfirmed) {
+      alert("L'impression du bon de réservation est uniquement possible lorsque la réservation est confirmée.");
+      return;
+    }
+    const originalTitle = document.title;
+    const clientName = reservation.client.type === 'societe'
+      ? (reservation.client.societe?.raisonSociale || 'Societe')
+      : (reservation.client.personnePhysique?.nom || 'Client');
+    document.title = `Bon_Reservation_${reservation.id}_${clientName.replace(/\s+/g, '_')}`;
     window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1500);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,8 +124,9 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
   const physique = client.personnePhysique;
   const societe = client.societe;
 
-  const totalWithFees = reservation.priceTND + reservation.registrationFeeTND;
-  const remaining = totalWithFees - reservation.depositPaidTND;
+  const totalCarPrice = reservation.priceTND;
+  const remaining = totalCarPrice - reservation.depositPaidTND;
+  const hasMultipleVehicles = reservation.vehicles && reservation.vehicles.length > 0;
 
   // Calcul automatique de la date de livraison estimée (Date ETA + 30 jours)
   const baseEtaDate = reservation.etaDate || reservation.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
@@ -108,9 +138,9 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
   const companyTitle = siteSettings?.voucherCompanyName || 'CHERY TUNISIE';
   const companySubtitle = siteSettings?.voucherCompanySubtitle || "Société Tunisienne d'Automobiles (STA)";
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-      <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden print:border-none print:shadow-none print:rounded-none">
+  return createPortal(
+    <div className="reservation-voucher-portal fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:inset-auto print:overflow-visible print:block print:w-full print:h-auto">
+      <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden print:border-none print:shadow-none print:rounded-none print:max-w-none print:w-full">
         {/* Top Controls Bar (Hidden during print) */}
         <div className="p-4 bg-slate-900 text-white border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex items-center gap-2">
@@ -131,10 +161,20 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
 
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow"
+              disabled={!isConfirmed}
+              title={
+                !isConfirmed
+                  ? "Impression bloquée : La réservation doit être confirmée au préalable"
+                  : "Imprimer / Télécharger PDF"
+              }
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow ${
+                isConfirmed
+                  ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+              }`}
             >
-              <Printer className="w-4 h-4" />
-              <span>Imprimer / Télécharger PDF</span>
+              {!isConfirmed ? <Lock className="w-4 h-4 text-amber-400" /> : <Printer className="w-4 h-4" />}
+              <span>{isConfirmed ? 'Imprimer / Télécharger PDF' : 'Impression bloquée (Non confirmée)'}</span>
             </button>
             <button
               onClick={onClose}
@@ -144,6 +184,25 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Warning Banner if Reservation is Not Confirmed (Hidden during print) */}
+        {!isConfirmed && (
+          <div className="p-3.5 bg-amber-950/90 border-b border-amber-500/50 text-amber-200 text-xs flex items-center gap-2.5 print:hidden">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="flex-1 leading-relaxed">
+              <strong>Impression non autorisée :</strong> Cette réservation est actuellement au statut <strong>« {reservation.status} »</strong>. Conformément aux règles de gestion commerciale, l'impression du bon officiel de réservation est réservée aux dossiers <strong>Confirmés</strong>.
+            </div>
+          </div>
+        )}
+
+        {/* Print Block Notice (Only visible if browser print is forced while unconfirmed) */}
+        {!isConfirmed && (
+          <div className="hidden print:block p-8 m-6 border-2 border-red-600 bg-red-50 text-red-700 rounded-lg text-center font-bold">
+            DOCUMENT NON IMPRIMABLE : La réservation #{reservation.id} est actuellement au statut « {reservation.status} ».
+            <br />
+            L'émission et l'impression du bon de réservation officiel ne sont autorisées qu'après confirmation officielle de la réservation.
+          </div>
+        )}
 
         {/* Logo Customizer Drawer (Interactive Panel, Hidden during print) */}
         {showLogoCustomizer && (
@@ -247,16 +306,16 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
         )}
 
         {/* Printable Document Body */}
-        <div id="printable-voucher" className="p-8 space-y-6 text-slate-900 bg-white">
+        <div id="printable-voucher" className={`p-6 sm:p-8 space-y-4 print:p-2 print:space-y-2 text-slate-900 bg-white print:w-full ${!isConfirmed ? 'print:hidden' : ''}`}>
           {/* Header */}
-          <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+          <div className="flex items-start justify-between border-b-2 border-slate-900 pb-3 print:pb-1.5">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <div className="relative group">
                   <img
                     src={displayLogo}
                     alt="Logo Concessionnaire"
-                    className="h-12 w-auto max-w-[150px] object-contain rounded-xl border border-slate-200 shadow-sm p-0.5 bg-white"
+                    className="h-11 print:h-8 w-auto max-w-[140px] object-contain rounded-lg border border-slate-200 shadow-xs p-0.5 bg-white"
                   />
                   <button
                     type="button"
@@ -268,22 +327,22 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                   </button>
                 </div>
                 <div>
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight">{companyTitle}</h1>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-600">
+                  <h1 className="text-lg print:text-base font-black text-slate-900 tracking-tight">{companyTitle}</h1>
+                  <p className="text-[10px] print:text-[8.5px] uppercase tracking-wider font-semibold text-slate-600">
                     {companySubtitle}
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 pt-1">
+              <p className="text-xs print:text-[9.5px] text-slate-600 pt-0.5">
                 {reservation.agency}
               </p>
             </div>
 
             <div className="text-right">
-              <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-md font-mono text-xs font-bold">
+              <span className="inline-block px-3 py-1 print:px-2 print:py-0.5 bg-red-100 text-red-800 rounded-md font-mono text-xs print:text-[10px] font-bold">
                 N° BON : {reservation.id}
               </span>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs print:text-[9.5px] text-slate-500 mt-1">
                 Date : {new Date(reservation.createdAt).toLocaleDateString('fr-FR', {
                   day: '2-digit',
                   month: '2-digit',
@@ -292,29 +351,29 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                   minute: '2-digit'
                 })}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs print:text-[9.5px] text-slate-500">
                 Commercial : <strong className="text-slate-800">{reservation.commercialName}</strong>
               </p>
             </div>
           </div>
 
-          <div className="text-center bg-slate-100 p-2 rounded-lg border border-slate-200">
-            <h2 className="text-lg font-black uppercase text-slate-800 tracking-wide">
+          <div className="text-center bg-slate-100 p-1.5 print:p-1 rounded-lg border border-slate-200">
+            <h2 className="text-base print:text-sm font-black uppercase text-slate-800 tracking-wide">
               BON DE RÉSERVATION VÉHICULE NEUF
             </h2>
           </div>
 
           {/* Grid 2 Columns: Client Info & Vehicle Details */}
-          <div className="grid grid-cols-2 gap-6 text-xs">
+          <div className="grid grid-cols-2 gap-4 print:gap-2 text-xs print:text-[10px]">
             {/* Column 1: Client Info */}
-            <div className="border border-slate-300 rounded-xl p-4 bg-slate-50/50 space-y-2">
-              <h3 className="font-bold text-slate-900 uppercase border-b border-slate-300 pb-1 flex items-center gap-1.5">
-                {isSociete ? <Building className="w-4 h-4 text-red-600" /> : <User className="w-4 h-4 text-red-600" />}
+            <div className="border border-slate-300 rounded-xl p-3 print:p-2 bg-slate-50/50 space-y-1.5 print:space-y-0.5">
+              <h3 className="font-bold text-slate-900 uppercase border-b border-slate-300 pb-1 print:pb-0.5 flex items-center gap-1.5">
+                {isSociete ? <Building className="w-3.5 h-3.5 text-red-600" /> : <User className="w-3.5 h-3.5 text-red-600" />}
                 <span>IDENTIFICATION CLIENT ({isSociete ? 'SOCIÉTÉ' : 'PERSONNE PHYSIQUE'})</span>
               </h3>
 
               {!isSociete && physique ? (
-                <div className="space-y-1">
+                <div className="space-y-1 print:space-y-0.5">
                   <p><span className="text-slate-500">Nom & Prénom :</span> <strong className="text-slate-900">{physique.nom} {physique.prenom}</strong></p>
                   <p><span className="text-slate-500">N° CIN :</span> <strong className="font-mono">{physique.cin}</strong></p>
                   <p><span className="text-slate-500">Téléphone :</span> {physique.telephone}</p>
@@ -323,11 +382,11 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                   <p><span className="text-slate-500">Adresse :</span> {physique.adresse || 'N/A'}</p>
                 </div>
               ) : isSociete && societe ? (
-                <div className="space-y-1">
+                <div className="space-y-1 print:space-y-0.5">
                   <p><span className="text-slate-500">Raison Sociale :</span> <strong className="text-slate-900">{societe.raisonSociale}</strong></p>
                   <p><span className="text-slate-500">Matricule Fiscale :</span> <strong className="font-mono text-red-700">{societe.matriculeFiscale}</strong></p>
-                  <p><span className="text-slate-500">Gérant / Représentant :</span> {societe.gerantNomPrenom}</p>
-                  <p><span className="text-slate-500">CIN Gérant :</span> <strong className="font-mono">{societe.gerantCin}</strong></p>
+                  {societe.gerantNomPrenom && <p><span className="text-slate-500">Gérant / Représentant :</span> {societe.gerantNomPrenom}</p>}
+                  {societe.gerantCin && <p><span className="text-slate-500">CIN Gérant :</span> <strong className="font-mono">{societe.gerantCin}</strong></p>}
                   <p><span className="text-slate-500">Téléphone :</span> {societe.telephone}</p>
                   <p><span className="text-slate-500">Registre Commerce :</span> {societe.registreCommerce || 'N/A'}</p>
                 </div>
@@ -335,108 +394,142 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
             </div>
 
             {/* Column 2: Vehicle Specs & Color Chosen */}
-            <div className="border border-slate-300 rounded-xl p-4 bg-slate-50/50 space-y-2">
-              <h3 className="font-bold text-slate-900 uppercase border-b border-slate-300 pb-1 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-red-600" />
-                <span>DÉTAILS DU VÉHICULE SÉLECTIONNÉ</span>
+            <div className="border border-slate-300 rounded-xl p-3 print:p-2 bg-slate-50/50 space-y-1.5 print:space-y-0.5">
+              <h3 className="font-bold text-slate-900 uppercase border-b border-slate-300 pb-1 print:pb-0.5 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-red-600" />
+                <span>
+                  {hasMultipleVehicles && (reservation.vehicles?.length || 0) > 1
+                    ? `DÉTAILS DES VÉHICULES (${reservation.vehicles?.length} MODÈLES)`
+                    : 'DÉTAILS DU VÉHICULE SÉLECTIONNÉ'}
+                </span>
               </h3>
 
-              <div className="space-y-1.5">
-                <p><span className="text-slate-500">Modèle :</span> <strong className="text-slate-900 text-sm">{reservation.carName}</strong></p>
-                
-                {/* Colors */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 w-28 shrink-0">Teinte extérieure :</span>
-                    <div className="flex items-center gap-1.5 bg-white border border-slate-300 px-2 py-0.5 rounded-md">
-                      <span
-                        className="w-4 h-4 rounded-full border border-slate-400 inline-block shadow-inner"
-                        style={{ backgroundColor: reservation.colorChosen.hexCode }}
-                      />
-                      <strong className="text-slate-900 font-medium">{reservation.colorChosen.name}</strong>
-                      <span className="font-mono text-[10px] text-slate-500">({reservation.colorChosen.hexCode})</span>
-                    </div>
+              {hasMultipleVehicles && (reservation.vehicles?.length || 0) > 1 ? (
+                <div className="space-y-2 print:space-y-1">
+                  <div className="divide-y divide-slate-200 border border-slate-200 rounded-lg bg-white overflow-hidden">
+                    {reservation.vehicles?.map((v, idx) => (
+                      <div key={v.id || idx} className="p-1.5 print:p-1 flex items-center justify-between text-[11px] print:text-[9px]">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-3 h-3 rounded-full border border-slate-300 shrink-0 inline-block shadow-inner"
+                            style={{ backgroundColor: v.colorChosen.hexCode }}
+                          />
+                          <span className="font-bold text-slate-900">{v.carName}</span>
+                          <span className="text-slate-500">({v.colorChosen.name})</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-700 font-bold">Qté: {v.quantity}</span>
+                          <span className="text-slate-800 font-bold">{v.totalPriceTND.toLocaleString()} TND</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {reservation.interiorColorChosen && (
+                  <p className="text-[10px] print:text-[8.5px] text-slate-600"><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
+                </div>
+              ) : (
+                <div className="space-y-1 print:space-y-0.5">
+                  <p><span className="text-slate-500">Modèle :</span> <strong className="text-slate-900 text-xs sm:text-sm print:text-xs">{reservation.carName}</strong></p>
+                  
+                  {/* Colors */}
+                  <div className="space-y-1 print:space-y-0.5 pt-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500 w-28 shrink-0">Finition intérieure :</span>
-                      <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-md text-amber-900">
+                      <span className="text-slate-500 w-24 shrink-0">Teinte extérieure :</span>
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-300 px-2 py-0.5 print:py-0 rounded-md">
                         <span
-                          className="w-4 h-4 rounded-md border border-slate-400 inline-block shadow-inner"
-                          style={{ backgroundColor: reservation.interiorColorChosen.hexCode }}
+                          className="w-3.5 h-3.5 print:w-3 print:h-3 rounded-full border border-slate-400 inline-block shadow-inner"
+                          style={{ backgroundColor: reservation.colorChosen.hexCode }}
                         />
-                        <strong className="font-medium">{reservation.interiorColorChosen.name}</strong>
+                        <strong className="text-slate-900 font-medium">{reservation.colorChosen.name}</strong>
+                        <span className="font-mono text-[9px] text-slate-500">({reservation.colorChosen.hexCode})</span>
                       </div>
                     </div>
-                  )}
+
+                    {reservation.interiorColorChosen && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 w-24 shrink-0">Finition intérieure :</span>
+                        <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-300 px-2 py-0.5 print:py-0 rounded-md text-amber-900">
+                          <span
+                            className="w-3.5 h-3.5 print:w-3 print:h-3 rounded-md border border-slate-400 inline-block shadow-inner"
+                            style={{ backgroundColor: reservation.interiorColorChosen.hexCode }}
+                          />
+                          <strong className="font-medium">{reservation.interiorColorChosen.name}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <p><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
                 </div>
+              )}
 
-                <p><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
-                <p><span className="text-slate-500">Statut réservation :</span> <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold">{reservation.status}</span></p>
+              {/* Section Date ETA & Date de Livraison Estimée */}
+              <div className="pt-1.5 print:pt-1 border-t border-slate-300 space-y-1 print:space-y-0.5">
+                {reservation.etaDate && (
+                  <div className="flex items-center justify-between text-[11px] print:text-[9.5px]">
+                    <span className="text-slate-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      <span>Arrivage prévisionnel (ETA) :</span>
+                    </span>
+                    <strong className="font-mono text-slate-900 font-bold">{formattedEtaDate}</strong>
+                  </div>
+                )}
 
-                {/* Section Date ETA & Date de Livraison Estimée */}
-                <div className="pt-2 border-t border-slate-300 space-y-1.5">
-                  {reservation.etaDate && (
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-600 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-500" />
-                        <span>Arrivage prévisionnel (ETA) :</span>
-                      </span>
-                      <strong className="font-mono text-slate-900 font-bold">{formattedEtaDate}</strong>
-                    </div>
-                  )}
-
-                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between shadow-xs">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-extrabold text-red-950 uppercase tracking-wider block flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-red-600" />
-                        <span>Date de Livraison Estimée :</span>
-                      </span>
-                      <span className="text-[9px] text-red-700 font-medium italic block">
-                        (Délai sécurisé : Date ETA + 30 jours)
-                      </span>
-                    </div>
-                    <span className="font-mono font-black text-xs sm:text-sm text-red-800 bg-white px-2.5 py-1 rounded-md border border-red-300 shadow-sm">
-                      {formattedDeliveryDate}
+                <div className="p-2 print:p-1 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between shadow-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] print:text-[9px] font-extrabold text-red-950 uppercase tracking-wider flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-red-600" />
+                      <span>Date de Livraison Estimée :</span>
+                    </span>
+                    <span className="text-[9px] print:text-[8px] text-red-700 font-medium italic block">
+                      (Délai sécurisé : Date ETA + 30 jours)
                     </span>
                   </div>
+                  <span className="font-mono font-black text-xs sm:text-sm print:text-xs text-red-800 bg-white px-2 py-0.5 rounded border border-red-300 shadow-xs">
+                    {formattedDeliveryDate}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Financial Breakdown Table */}
-          <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
+          <div className="border border-slate-300 rounded-xl overflow-hidden text-xs print:text-[10px]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white">
-                  <th className="p-2.5">Désignation</th>
-                  <th className="p-2.5 text-right">Montant (TND)</th>
+                  <th className="py-2 px-2.5 print:py-1 print:px-2">Désignation</th>
+                  <th className="py-2 px-2.5 print:py-1 print:px-2 text-right">Montant (TND)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                <tr>
-                  <td className="p-2.5">Prix Public Véhicule Neuf TTC ({reservation.carName})</td>
-                  <td className="p-2.5 text-right font-mono font-bold">{reservation.priceTND.toLocaleString()} TND</td>
-                </tr>
-                {reservation.registrationFeeTND > 0 && (
+                {hasMultipleVehicles && (reservation.vehicles?.length || 0) > 1 ? (
+                  reservation.vehicles?.map((v, i) => (
+                    <tr key={v.id || i}>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2">
+                        {v.quantity}x {v.carName} — Teinte : {v.colorChosen.name} (Prix unitaire: {v.unitPriceTND.toLocaleString()} TND)
+                      </td>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono font-bold">
+                        {v.totalPriceTND.toLocaleString()} TND
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
-                    <td className="p-2.5">Frais d'Immatriculation, Carte Grise & Timbre Fiscal</td>
-                    <td className="p-2.5 text-right font-mono">{reservation.registrationFeeTND.toLocaleString()} TND</td>
+                    <td className="py-1.5 px-2.5 print:py-1 print:px-2">Prix Public Véhicule Neuf TTC ({reservation.carName})</td>
+                    <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono font-bold">{reservation.priceTND.toLocaleString()} TND</td>
                   </tr>
                 )}
                 <tr className="bg-slate-50 font-bold">
-                  <td className="p-2.5">TOTAL TTC CLEF EN MAIN :</td>
-                  <td className="p-2.5 text-right font-mono text-sm">{totalWithFees.toLocaleString()} TND</td>
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2">TOTAL TTC CLEF EN MAIN :</td>
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">{totalCarPrice.toLocaleString()} TND</td>
                 </tr>
                 <tr className="bg-emerald-50 text-emerald-900 font-bold">
-                  <td className="p-2.5">Acompte Perçu ({reservation.paymentMethod}) :</td>
-                  <td className="p-2.5 text-right font-mono text-sm">{reservation.depositPaidTND.toLocaleString()} TND</td>
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2">Acompte Perçu ({reservation.paymentMethod}) :</td>
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">{reservation.depositPaidTND.toLocaleString()} TND</td>
                 </tr>
-                <tr className="bg-red-50 text-red-900 font-black text-sm">
-                  <td className="p-2.5">SOLDE RESTANT À PAYER À LA LIVRAISON :</td>
-                  <td className="p-2.5 text-right font-mono">{remaining.toLocaleString()} TND</td>
+                <tr className="bg-red-50 text-red-900 font-black text-sm print:text-xs">
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2">SOLDE RESTANT À PAYER À LA LIVRAISON :</td>
+                  <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono">{remaining.toLocaleString()} TND</td>
                 </tr>
               </tbody>
             </table>
@@ -444,11 +537,11 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
 
           {/* List of Joined Documents */}
           {reservation.documents && reservation.documents.length > 0 && (
-            <div className="text-xs space-y-1">
+            <div className="text-xs print:text-[9px] space-y-1 print:space-y-0.5">
               <p className="font-bold text-slate-700">Pièces justificatives jointes au dossier :</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {reservation.documents.map((doc) => (
-                  <span key={doc.id} className="bg-slate-100 border border-slate-300 px-2 py-1 rounded text-[11px] text-slate-700">
+                  <span key={doc.id} className="bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-[10px] print:text-[8.5px] text-slate-700">
                     • {doc.name} ({doc.category.toUpperCase().replace('_', ' ')})
                   </span>
                 ))}
@@ -457,25 +550,36 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
           )}
 
           {/* Observations / Conditions */}
-          <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-            <div className="flex items-start gap-1.5 pb-1.5 border-b border-slate-200 text-slate-800">
-              <Calendar className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div className="text-xs print:text-[9px] bg-slate-50 p-2.5 print:p-1.5 rounded-lg border border-slate-200 space-y-2 print:space-y-1">
+            <div className="flex items-start gap-1.5 pb-1 border-b border-slate-200 text-slate-800">
+              <Calendar className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-slate-900">Délai & Date de Livraison Estimée : </span>
                 <strong className="text-red-700 font-bold">{formattedDeliveryDate}</strong>
-                <span className="text-slate-600 text-[11px] block mt-0.5">
+                <span className="text-slate-600 text-[10px] print:text-[8.5px] block">
                   (Délai indicatif calculé : Date d'Arrivage ETA + 30 jours de sécurité pour dédouanement, transport, préparation PDI en atelier et formalités administratives d'immatriculation).
                 </span>
               </div>
             </div>
+
+            {/* Clause Légale Spécifique : Délai de 30 jours pour le solde */}
+            <div className="p-2 print:p-1.5 bg-amber-50/80 border border-amber-200 rounded-lg text-amber-950 space-y-0.5">
+              <span className="font-bold uppercase tracking-wider text-[10px] print:text-[8.5px] text-amber-900 block">
+                Condition Réglementaire de Paiement du Solde :
+              </span>
+              <p className="text-slate-800 font-medium leading-relaxed italic text-[11px] print:text-[9px]">
+                « Le client dispose d’un délai de 30 jours à compter de la date d’arrivée de l’arrivage concerné pour compléter le paiement de son véhicule. Passé ce délai, et en cas de non-règlement du solde, la réservation sera reportée à l’arrivage suivant, sous réserve des disponibilités. »
+              </p>
+            </div>
+
             <div>
-              <span className="font-bold text-slate-800">Observations / Conditions : </span>
+              <span className="font-bold text-slate-800">Conditions Tarifaires : </span>
               <span className="text-slate-700 leading-relaxed italic">
                 « Le prix est communiqué à titre indicatif. Le prix final sera établi au moment de la facturation et pourra varier selon le taux de change, le coût du transport et les taxes en vigueur. »
               </span>
             </div>
             {reservation.notes && reservation.notes.trim() !== '' && (
-              <div className="pt-1.5 border-t border-slate-200 text-slate-600">
+              <div className="pt-1 border-t border-slate-200 text-slate-600">
                 <span className="font-semibold text-slate-700">Remarques complémentaires : </span>
                 <span>{reservation.notes}</span>
               </div>
@@ -483,18 +587,19 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
           </div>
 
           {/* Signatures & Stamps */}
-          <div className="pt-8 grid grid-cols-2 gap-8 text-xs text-center border-t border-slate-300">
+          <div className="pt-4 print:pt-2 grid grid-cols-2 gap-6 print:gap-4 text-xs print:text-[10px] text-center border-t border-slate-300">
             <div>
-              <p className="font-bold text-slate-800 mb-12">SIGNATURE ET CACHET DU CLIENT</p>
-              <p className="text-[10px] text-slate-400">Lu et approuvé (Mention manuscrite)</p>
+              <p className="font-bold text-slate-800 mb-8 print:mb-5">SIGNATURE ET CACHET DU CLIENT</p>
+              <p className="text-[10px] print:text-[8.5px] text-slate-400">Lu et approuvé (Mention manuscrite)</p>
             </div>
             <div>
-              <p className="font-bold text-slate-800 mb-12">POUR CHERY TUNISIE (COMMERCIAL)</p>
-              <p className="text-[10px] text-slate-500 font-semibold">{reservation.commercialName} — {reservation.agency}</p>
+              <p className="font-bold text-slate-800 mb-8 print:mb-5">POUR CHERY TUNISIE (COMMERCIAL)</p>
+              <p className="text-[10px] print:text-[8.5px] text-slate-500 font-semibold">{reservation.commercialName} — {reservation.agency}</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

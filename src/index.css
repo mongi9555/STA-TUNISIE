@@ -88,3 +88,72 @@ html, body, #root {
 body, #root, main, header, footer, div, card, span, p, h1, h2, h3, h4 {
   transition: background-color var(--color-transition), border-color var(--color-transition), color var(--color-transition);
 }
+
+/* ==========================================================================
+   IMPRESSION DU BON DE RÉSERVATION — 1 SEULE PAGE A4 STRICTEMENT GARANTIE
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm 8mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Masque l'ensemble de l'application et les éléments d'arrière-plan */
+  body.printing-voucher-active > #root,
+  body.printing-voucher-active > *:not(.reservation-voucher-portal) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Affiche uniquement le portail du bon de réservation de façon statique */
+  body.printing-voucher-active > .reservation-voucher-portal {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  body.printing-voucher-active .reservation-voucher-portal * {
+    visibility: visible !important;
+  }
+
+  body.printing-voucher-active .print\:hidden {
+    display: none !important;
+  }
+
+  /* Contraintes strictes pour éviter tout saut de page */
+  #printable-voucher {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

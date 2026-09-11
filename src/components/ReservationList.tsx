@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Reservation, CommercialUser, UploadedDocument, Car as CarModel } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
 import { EditReservationModal } from './EditReservationModal';
+import { recoverMissingReservationsFromAudit } from '../services/reservationRecovery';
 import {
   Search,
   Filter,
@@ -30,6 +31,9 @@ import {
   AlertTriangle,
   Edit3,
   Lock,
+  RefreshCw,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 
 interface ReservationListProps {
@@ -57,8 +61,27 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   onViewVoucher,
   onViewDocument,
 }) => {
+  // Détection du niveau de privilèges : seuls les administrateurs et super-administrateurs peuvent voir toutes les réservations
+  const isAdminOrSuperAdmin =
+    currentCommercial.role === 'admin' || currentCommercial.role === 'super_admin';
+
+  // Chaque commercial voit EXCLUSIVEMENT sa propre liste de bons de réservation
+  // Seuls les administrateurs et super-administrateurs ont accès à l'ensemble du réseau
+  const accessibleReservations = isAdminOrSuperAdmin
+    ? reservations
+    : reservations.filter((r) => {
+        const matchId = Boolean(r.commercialId && currentCommercial.id && r.commercialId === currentCommercial.id);
+        const matchName = Boolean(
+          r.commercialName &&
+          currentCommercial.name &&
+          r.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase()
+        );
+        return matchId || matchName;
+      });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'agency' | 'mine'>(isAdminOrSuperAdmin ? 'all' : 'mine');
   const [carModelFilter, setCarModelFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
@@ -66,21 +89,64 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [dateEnd, setDateEnd] = useState<string>('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
+  const [reservationToConfirm, setReservationToConfirm] = useState<Reservation | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+
+  // Sécurité renforcée : forcer le scope à "mine" pour les commerciaux non-administrateurs
+  useEffect(() => {
+    if (!isAdminOrSuperAdmin && scopeFilter !== 'mine') {
+      setScopeFilter('mine');
+    }
+  }, [isAdminOrSuperAdmin, scopeFilter]);
 
   // Permission: modifier une réservation après validation
   const canEditValidated =
     currentCommercial.role === 'super_admin' ||
     Boolean(currentCommercial.permissions?.canEditValidatedReservations);
 
-  // Dynamic dropdown lists
-  const uniqueCarModels = Array.from(new Set(reservations.map((r) => r.carName))).sort();
-  const uniqueAgencies = Array.from(new Set(reservations.map((r) => r.agency))).filter(Boolean).sort();
+  // Dynamic dropdown lists basées sur les réservations accessibles
+  const uniqueCarModels = Array.from(new Set(accessibleReservations.map((r) => r.carName))).sort();
+  const uniqueAgencies = isAdminOrSuperAdmin
+    ? Array.from(new Set(reservations.map((r) => r.agency))).filter(Boolean).sort()
+    : [currentCommercial.agency].filter(Boolean);
   const paymentMethods = ['Espèces', 'Chèque Certifié', 'Virement Bancaire', 'Leasing'];
+
+  // Handler: synchroniser et restaurer depuis la traçabilité
+  const handleRunRecovery = async () => {
+    setIsRecovering(true);
+    setRecoveryMessage(null);
+    try {
+      const res = await recoverMissingReservationsFromAudit();
+      const hasQuotaError = res.errors.some((e) => e.includes('Quota') || e.includes('quota'));
+      if (res.recoveredCount > 0) {
+        setRecoveryMessage(`✅ ${res.recoveredCount} réservation(s) manquante(s) restaurée(s) avec succès depuis la traçabilité.`);
+      } else if (hasQuotaError) {
+        setRecoveryMessage(`⚠️ Le quota de requêtes journalières Firestore est atteint. Vos réservations restent consultables et sécurisées dans la base locale.`);
+      } else {
+        setRecoveryMessage(`ℹ️ Traçabilité vérifiée : Toutes les réservations (${res.totalAuditEntriesScanned} actions auditées) sont déjà présentes.`);
+      }
+      setTimeout(() => setRecoveryMessage(null), 8000);
+    } catch (err: any) {
+      const isQuota =
+        err?.code === 'resource-exhausted' ||
+        err?.message?.includes('Quota') ||
+        err?.message?.includes('quota');
+      if (isQuota) {
+        setRecoveryMessage(`⚠️ Quota de requêtes journalier Firestore atteint. Les réservations restent enregistrées et consultables localement.`);
+      } else {
+        setRecoveryMessage(`❌ Erreur de synchronisation: ${err?.message || 'Erreur inconnue'}`);
+      }
+    } finally {
+      setIsRecovering(false);
+    }
+  };
 
   // Reset filters
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
+    setScopeFilter(isAdminOrSuperAdmin ? 'all' : 'mine');
     setCarModelFilter('all');
     setPaymentMethodFilter('all');
     setAgencyFilter('all');
@@ -91,55 +157,84 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const hasActiveFilters =
     searchTerm !== '' ||
     statusFilter !== 'all' ||
+    (isAdminOrSuperAdmin && scopeFilter !== 'all') ||
     carModelFilter !== 'all' ||
     paymentMethodFilter !== 'all' ||
-    agencyFilter !== 'all' ||
+    (isAdminOrSuperAdmin && agencyFilter !== 'all') ||
     dateStart !== '' ||
     dateEnd !== '';
 
-  // Filter reservations
-  const filteredReservations = reservations.filter((res) => {
-    const isOwner = res.commercialId === currentCommercial.id || currentCommercial.role === 'admin' || currentCommercial.role === 'super_admin';
-
-    const clientName =
-      res.client.type === 'personne_physique'
-        ? `${res.client.personnePhysique?.nom || ''} ${res.client.personnePhysique?.prenom || ''}`
-        : res.client.societe?.raisonSociale || '';
-
-    const cinOrMf =
-      res.client.type === 'personne_physique'
-        ? res.client.personnePhysique?.cin || ''
-        : res.client.societe?.matriculeFiscale || '';
-
-    const matchesSearch =
-      res.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      res.carName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cinOrMf.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      res.commercialName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (res.agency && res.agency.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesStatus = statusFilter === 'all' || res.status === statusFilter;
-    const matchesModel = carModelFilter === 'all' || res.carName === carModelFilter;
-    const matchesPayment = paymentMethodFilter === 'all' || res.paymentMethod === paymentMethodFilter;
-    const matchesAgency = agencyFilter === 'all' || res.agency === agencyFilter;
-
-    // Date range filter
-    let matchesDate = true;
-    if (dateStart || dateEnd) {
-      const resDate = new Date(res.createdAt).getTime();
-      if (dateStart) {
-        const start = new Date(dateStart).getTime();
-        if (resDate < start) matchesDate = false;
+  // Filter and sort reservations: la dernière réservation modifiée ou créée en premier
+  const filteredReservations = accessibleReservations
+    .filter((res) => {
+      let isOwner = true;
+      if (isAdminOrSuperAdmin) {
+        if (scopeFilter === 'agency') {
+          isOwner = res.agency === currentCommercial.agency;
+        } else if (scopeFilter === 'mine') {
+          isOwner =
+            res.commercialId === currentCommercial.id ||
+            (res.commercialName && currentCommercial.name && res.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase());
+        }
       }
-      if (dateEnd) {
-        const end = new Date(dateEnd).setHours(23, 59, 59, 999);
-        if (resDate > end) matchesDate = false;
-      }
-    }
 
-    return isOwner && matchesSearch && matchesStatus && matchesModel && matchesPayment && matchesAgency && matchesDate;
-  });
+      const clientName =
+        res.client.type === 'personne_physique'
+          ? `${res.client.personnePhysique?.nom || ''} ${res.client.personnePhysique?.prenom || ''}`
+          : res.client.societe?.raisonSociale || '';
+
+      const clientPhone =
+        res.client.type === 'personne_physique'
+          ? res.client.personnePhysique?.telephone || ''
+          : res.client.societe?.telephone || '';
+
+      const cinOrMf =
+        res.client.type === 'personne_physique'
+          ? res.client.personnePhysique?.cin || ''
+          : res.client.societe?.matriculeFiscale || '';
+
+      const matchesSearch =
+        res.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        res.carName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        clientPhone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cinOrMf.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        res.commercialName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (res.agency && res.agency.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (res.notes && res.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesStatus = statusFilter === 'all' || res.status === statusFilter;
+      const matchesModel =
+        carModelFilter === 'all' ||
+        res.carName === carModelFilter ||
+        res.carName.toLowerCase().includes(carModelFilter.toLowerCase());
+      const matchesPayment = paymentMethodFilter === 'all' || res.paymentMethod === paymentMethodFilter;
+      const matchesAgency = !isAdminOrSuperAdmin || agencyFilter === 'all' || res.agency === agencyFilter;
+
+      // Date range filter
+      let matchesDate = true;
+      if (dateStart || dateEnd) {
+        const resDate = new Date(res.createdAt).getTime();
+        if (dateStart) {
+          const start = new Date(dateStart).getTime();
+          if (resDate < start) matchesDate = false;
+        }
+        if (dateEnd) {
+          const end = new Date(dateEnd).setHours(23, 59, 59, 999);
+          if (resDate > end) matchesDate = false;
+        }
+      }
+
+      return isOwner && matchesSearch && matchesStatus && matchesModel && matchesPayment && matchesAgency && matchesDate;
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      if (timeB !== timeA) {
+        return timeB - timeA; // Dernière modifiée/créée en premier
+      }
+      return b.id.localeCompare(a.id);
+    });
 
   // Export to Excel / CSV file compatible with Microsoft Excel
   const exportToExcel = () => {
@@ -314,8 +409,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({
     e.target.value = '';
   };
 
-  // Compute Leasing statistics
-  const leasingEvals = reservations.map((r) => ({ reservation: r, eval: evaluateLeasingStatus(r) }));
+  // Compute Leasing statistics sur les réservations accessibles
+  const leasingEvals = accessibleReservations.map((r) => ({ reservation: r, eval: evaluateLeasingStatus(r) }));
   const validatedLeasingCount = leasingEvals.filter((x) => x.eval.state === 'VALIDATED').length;
   const provisionalLeasingCount = leasingEvals.filter((x) => x.eval.state === 'PROVISIONAL_ACTIVE').length;
   const gracePeriodLeasingCount = leasingEvals.filter((x) => x.eval.state === 'GRACE_PERIOD_ACTIVE').length;
@@ -326,17 +421,39 @@ export const ReservationList: React.FC<ReservationListProps> = ({
       {/* Header with Title & Excel Export Button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-red-500" />
-            Liste des Réservations & Bons de Commande
-          </h2>
-          <p className="text-xs text-slate-400">
-            {filteredReservations.length} sur {reservations.length} réservation(s) affichée(s)
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-red-600/10 text-red-500 rounded-xl border border-red-500/20">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                {isAdminOrSuperAdmin
+                  ? 'Liste des Bons de Réservation & Commandes (Réseau National)'
+                  : 'Mes Bons de Réservation Personnels'}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {isAdminOrSuperAdmin
+                  ? `${filteredReservations.length} sur ${reservations.length} réservation(s) affichée(s) • Administration STA`
+                  : `${filteredReservations.length} sur ${accessibleReservations.length} réservation(s) affichée(s) • Conseiller : ${currentCommercial.name} (${currentCommercial.agency})`}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {onDeleteAllReservations && reservations.length > 0 && (
+          {/* Synchroniser Traçabilité Button */}
+          <button
+            onClick={handleRunRecovery}
+            disabled={isRecovering}
+            className="flex-1 sm:flex-none px-3.5 py-2.5 bg-blue-950/80 hover:bg-blue-800 text-blue-200 hover:text-white font-bold text-xs rounded-xl shadow border border-blue-700/60 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            title="Vérifier la traçabilité et restaurer automatiquement les réservations manquantes"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRecovering ? 'animate-spin text-blue-300' : 'text-blue-400'}`} />
+            <span>{isRecovering ? 'Synchronisation...' : 'Synchroniser Traçabilité'}</span>
+          </button>
+
+          {/* Bouton de suppression totale : STRICTEMENT réservé aux Administrateurs et Super-Administrateurs */}
+          {isAdminOrSuperAdmin && onDeleteAllReservations && reservations.length > 0 && (
             <button
               onClick={() => {
                 if (window.confirm('⚠️ Êtes-vous sûr de vouloir supprimer TOUTES les réservations de la base de données ? Cette action effacera définitivement l\'historique des réservations de test.')) {
@@ -344,10 +461,10 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                 }
               }}
               className="px-3 py-2.5 bg-red-950/80 hover:bg-red-700 text-red-300 hover:text-white font-bold text-xs rounded-xl shadow border border-red-800/80 hover:border-red-500 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              title="Supprimer toutes les réservations de la base de données"
+              title="Supprimer toutes les réservations du réseau (Admin uniquement)"
             >
               <Trash2 className="w-4 h-4 text-red-400" />
-              <span>Supprimer toutes les réservations</span>
+              <span>Supprimer tout</span>
             </button>
           )}
 
@@ -355,13 +472,26 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           <button
             onClick={exportToExcel}
             className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-emerald-900/40 border border-emerald-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
-            title="Exporter toutes les données filtrées dans un fichier Excel (.CSV)"
+            title={isAdminOrSuperAdmin ? "Exporter toutes les données affichées dans un fichier Excel (.CSV)" : "Exporter mes réservations dans un fichier Excel (.CSV)"}
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Exporter en Excel (.CSV)</span>
           </button>
         </div>
       </div>
+
+      {/* Recovery notification message */}
+      {recoveryMessage && (
+        <div className="p-3.5 bg-blue-950 border border-blue-700 rounded-xl text-xs text-blue-200 flex items-center justify-between shadow-lg">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+            {recoveryMessage}
+          </span>
+          <button onClick={() => setRecoveryMessage(null)} className="text-blue-400 hover:text-white ml-3 font-bold">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* AUTOMATED LEASING RULES SUMMARY BANNER */}
       <div className="bg-slate-900 border border-indigo-900/50 p-4 rounded-2xl shadow-lg space-y-3">
@@ -423,19 +553,66 @@ export const ReservationList: React.FC<ReservationListProps> = ({
       {/* Search & Filter Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-4">
         {/* Row 1: Search + Main Status Tabs */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="relative w-full md:w-96">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search bar */}
+          <div className="relative w-full lg:w-96">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Rechercher par N° Bon, Client, CIN / M.F, Commercial..."
+              placeholder="Rechercher par N° Bon, Client, Téléphone, CIN / M.F, Commercial..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto justify-between md:justify-end">
+          {/* Scope and Status Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Scope Selector: Administrateurs et Super-Administrateurs uniquement */}
+            {isAdminOrSuperAdmin ? (
+              <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
+                <button
+                  onClick={() => setScopeFilter('all')}
+                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Afficher toutes les réservations nationales (Vue Administrateur)"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Toutes ({reservations.length})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('agency')}
+                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Afficher uniquement mon agence"
+                >
+                  <Building className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Mon agence ({reservations.filter((r) => r.agency === currentCommercial.agency).length})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('mine')}
+                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Afficher uniquement mes réservations personnelles"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Mes réservations ({reservations.filter((r) => r.commercialId === currentCommercial.id || (r.commercialName && currentCommercial.name && r.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase())).length})</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 border border-emerald-800/40 rounded-xl text-xs font-semibold text-emerald-300 shrink-0">
+                <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Mes réservations ({accessibleReservations.length})</span>
+                <span className="text-[10px] text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded font-normal hidden sm:inline">
+                  {currentCommercial.name}
+                </span>
+              </div>
+            )}
+
+            {/* Status Filter */}
             <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
               <button
                 onClick={() => setStatusFilter('all')}
@@ -443,7 +620,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   statusFilter === 'all' ? 'bg-red-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Tous ({reservations.length})
+                Tous ({accessibleReservations.length})
               </button>
               <button
                 onClick={() => setStatusFilter('En attente')}
@@ -451,7 +628,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   statusFilter === 'En attente' ? 'bg-amber-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                En attente ({reservations.filter((r) => r.status === 'En attente').length})
+                En attente ({accessibleReservations.filter((r) => r.status === 'En attente').length})
               </button>
               <button
                 onClick={() => setStatusFilter('Confirmée')}
@@ -459,7 +636,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   statusFilter === 'Confirmée' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Confirmées ({reservations.filter((r) => r.status === 'Confirmée').length})
+                Confirmées ({accessibleReservations.filter((r) => r.status === 'Confirmée').length})
               </button>
               <button
                 onClick={() => setStatusFilter('Livrée')}
@@ -467,7 +644,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   statusFilter === 'Livrée' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Livrées ({reservations.filter((r) => r.status === 'Livrée').length})
+                Livrées ({accessibleReservations.filter((r) => r.status === 'Livrée').length})
               </button>
               <button
                 onClick={() => setStatusFilter('Annulée')}
@@ -475,7 +652,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   statusFilter === 'Annulée' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Annulées ({reservations.filter((r) => r.status === 'Annulée').length})
+                Annulées ({accessibleReservations.filter((r) => r.status === 'Annulée').length})
               </button>
             </div>
 
@@ -530,22 +707,24 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               </select>
             </div>
 
-            {/* Filter Agence */}
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Agence / Showroom :</label>
-              <select
-                value={agencyFilter}
-                onChange={(e) => setAgencyFilter(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
-              >
-                <option value="all">Toutes les agences</option>
-                {uniqueAgencies.map((ag) => (
-                  <option key={ag} value={ag}>
-                    {ag}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Filter Agence (uniquement pour les administrateurs) */}
+            {isAdminOrSuperAdmin && (
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">Agence / Showroom :</label>
+                <select
+                  value={agencyFilter}
+                  onChange={(e) => setAgencyFilter(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                >
+                  <option value="all">Toutes les agences</option>
+                  {uniqueAgencies.map((ag) => (
+                    <option key={ag} value={ag}>
+                      {ag}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Date Range */}
             <div>
@@ -568,21 +747,28 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           </div>
         )}
 
-        {/* Active Filters Bar & Reset */}
-        {hasActiveFilters && (
-          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/60">
-            <span className="text-slate-400 italic">
-              Filtres actifs ({filteredReservations.length} résultat(s) correspondant(s))
-            </span>
-            <button
-              onClick={handleResetFilters}
-              className="text-red-400 hover:text-red-300 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Réinitialiser les filtres</span>
-            </button>
+        {/* Active Filters Bar & Sorting Indicator */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs pt-2 border-t border-slate-800/60">
+          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Tri automatique : <strong className="text-slate-200 font-semibold">Dernières réservations modifiées en premier</strong></span>
           </div>
-        )}
+
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between sm:justify-end gap-3 text-xs">
+              <span className="text-slate-400 italic text-[11px]">
+                {filteredReservations.length} résultat(s) correspondant(s)
+              </span>
+              <button
+                onClick={handleResetFilters}
+                className="text-red-400 hover:text-red-300 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Réinitialiser les filtres</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Reservation Cards List */}
@@ -591,14 +777,20 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 space-y-3">
             <AlertCircle className="w-10 h-10 text-slate-600 mx-auto" />
             <h3 className="text-base font-bold text-white">
-              {reservations.length === 0 ? 'Aucune réservation enregistrée' : 'Aucune réservation trouvée'}
+              {accessibleReservations.length === 0
+                ? isAdminOrSuperAdmin
+                  ? 'Aucune réservation enregistrée dans le réseau'
+                  : 'Aucun bon de réservation à votre nom'
+                : 'Aucune réservation trouvée'}
             </h3>
             <p className="text-xs max-w-md mx-auto text-slate-400">
-              {reservations.length === 0
-                ? 'Toutes les réservations ont été supprimées de la base de données. Vous pouvez effectuer une nouvelle réservation de véhicule Chery à tout moment depuis le Catalogue.'
+              {accessibleReservations.length === 0
+                ? isAdminOrSuperAdmin
+                  ? 'Toutes les réservations ont été supprimées ou aucune réservation n\'a encore été créée sur le réseau.'
+                  : `Vous n'avez pas encore créé de bon de réservation pour votre agence (${currentCommercial.agency}). Vos réservations apparaîtront ici dès leur enregistrement.`
                 : 'Ajustez vos filtres de recherche ou réinitialisez les paramètres.'}
             </p>
-            {hasActiveFilters && reservations.length > 0 && (
+            {hasActiveFilters && accessibleReservations.length > 0 && (
               <button
                 onClick={handleResetFilters}
                 className="mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
@@ -624,7 +816,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               >
                 {/* Top Row: Res ID, Date, Status, Commercial */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <span className="px-3 py-1 bg-slate-950 border border-slate-800 text-red-400 font-mono text-xs font-extrabold rounded-lg">
                       {res.id}
                     </span>
@@ -636,40 +828,46 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                         year: 'numeric',
                       })}
                     </span>
+                    {res.updatedAt && res.updatedAt !== res.createdAt && (
+                      <span
+                        className="text-[11px] text-amber-300 bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium shadow-sm"
+                        title={`Dernière modification : ${new Date(res.updatedAt).toLocaleString('fr-FR')}`}
+                      >
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        Modifiée le {new Date(res.updatedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à {new Date(res.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
                     {getStatusBadge(res.status)}
 
-                    {/* Status Changer */}
-                    <div className="relative">
-                      <select
-                        value={res.status}
-                        disabled={isEditRestricted}
-                        onChange={(e) => onUpdateStatus(res.id, e.target.value as any)}
-                        title={
-                          isEditRestricted
-                            ? 'Statut verrouillé : Droit "Modifier la réservation après validation" requis pour ce profil'
-                            : 'Modifier le statut de la réservation'
-                        }
-                        className={`bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-red-500 ${
-                          isEditRestricted ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                        }`}
+                    {/* Si la réservation est en attente : Bouton de Confirmation à la place de la liste déroulante */}
+                    {res.status === 'En attente' ? (
+                      <button
+                        type="button"
+                        onClick={() => setReservationToConfirm(res)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-emerald-900/40 border border-emerald-500/40 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                        title="Confirmer cette réservation"
                       >
-                        <option value="En attente">En attente</option>
-                        <option value="Confirmée">Confirmée</option>
-                        <option value="Livrée">Livrée</option>
-                        <option value="Annulée">Annulée</option>
-                      </select>
-                      {isEditRestricted && (
-                        <span
-                          className="absolute -top-1.5 -right-1.5 p-0.5 bg-amber-900/90 text-amber-300 rounded-full border border-amber-500/40"
-                          title="Modification statut verrouillée après validation"
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Confirmer</span>
+                      </button>
+                    ) : isAdminOrSuperAdmin ? (
+                      /* Administrateurs uniquement : possibilité de marquer comme Livrée ou Annulée une fois confirmée */
+                      <div className="relative">
+                        <select
+                          value={res.status}
+                          onChange={(e) => onUpdateStatus(res.id, e.target.value as any)}
+                          title="Gestion statut (Administration STA)"
+                          className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-red-500 cursor-pointer"
                         >
-                          <Lock className="w-2.5 h-2.5" />
-                        </span>
-                      )}
-                    </div>
+                          <option value="Confirmée">Confirmée</option>
+                          <option value="Livrée">Livrée</option>
+                          <option value="Annulée">Annulée</option>
+                        </select>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -738,9 +936,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                         <p>
                           M.F. : <strong className="font-mono text-amber-300">{societe.matriculeFiscale}</strong>
                         </p>
-                        <p className="text-slate-400">
-                          Gérant : {societe.gerantNomPrenom} (CIN: {societe.gerantCin})
-                        </p>
+                        {societe.gerantNomPrenom && (
+                          <p className="text-slate-400">
+                            Gérant : {societe.gerantNomPrenom} {societe.gerantCin ? `(CIN: ${societe.gerantCin})` : ''}
+                          </p>
+                        )}
                         <p className="flex items-center gap-1 text-slate-400">
                           <Phone className="w-3 h-3" /> {societe.telephone}
                         </p>
@@ -911,13 +1111,38 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                       </button>
                     )}
 
-                    <button
-                      onClick={() => onViewVoucher(res)}
-                      className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Imprimer Bon de Réservation</span>
-                    </button>
+                    {res.status === 'Confirmée' || res.status === 'Livrée' ? (
+                      <button
+                        onClick={() => onViewVoucher(res)}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow"
+                        title="Imprimer le bon officiel de réservation"
+                      >
+                        <Printer className="w-4 h-4" />
+                        <span>Imprimer Bon de Réservation</span>
+                      </button>
+                    ) : (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert("Impression impossible : Le bon de réservation officiel ne peut être imprimé que lorsque la réservation est confirmée.");
+                          }}
+                          className="px-3.5 py-2 bg-slate-950/70 text-slate-500 hover:text-amber-300 hover:border-amber-500/40 border border-slate-800 rounded-xl text-xs font-medium flex items-center gap-2 transition-all cursor-pointer"
+                          title="Impression bloquée : la réservation doit être confirmée au préalable"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-amber-500/80" />
+                          <Printer className="w-4 h-4 text-slate-500" />
+                          <span>Impression bloquée ({res.status})</span>
+                        </button>
+                        <div className="hidden group-hover:block absolute bottom-full right-0 mb-2 w-72 p-2.5 bg-slate-950/95 border border-amber-500/50 text-amber-200 text-[11px] rounded-xl shadow-2xl z-30 pointer-events-none backdrop-blur-sm">
+                          <div className="flex items-center gap-1.5 font-bold text-amber-300 mb-1">
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Règle d'impression :</span>
+                          </div>
+                          L'impression du bon de réservation est <strong>strictement réservée aux réservations confirmées</strong>. Passez le statut à « Confirmée » pour débloquer l'impression.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -940,7 +1165,64 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             setEditingReservation(null);
           }}
           canEditValidated={canEditValidated}
+          currentCommercial={currentCommercial}
         />
+      )}
+      {/* Modal de Confirmation de Réservation */}
+      {reservationToConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white">
+                Confirmation de la réservation
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
+                Bon N° <span className="text-red-400 font-bold">{reservationToConfirm.id}</span>
+                {' • '}
+                <span className="text-slate-200 font-medium">{reservationToConfirm.carName}</span>
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl text-center space-y-2">
+              <p className="text-slate-200 text-sm leading-relaxed font-medium">
+                Êtes-vous sûr de vouloir confirmer cette réservation ? Si vous confirmez, vous ne pourrez plus modifier ce bon de réservation.
+              </p>
+              <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Client :</span>
+                <strong className="text-slate-200">
+                  {reservationToConfirm.client.type === 'societe'
+                    ? reservationToConfirm.client.societe?.raisonSociale
+                    : `${reservationToConfirm.client.personnePhysique?.nom || ''} ${reservationToConfirm.client.personnePhysique?.prenom || ''}`}
+                </strong>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setReservationToConfirm(null)}
+                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer"
+              >
+                Non
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateStatus(reservationToConfirm.id, 'Confirmée');
+                  setReservationToConfirm(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-emerald-900/40 border border-emerald-500/40 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Oui</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
