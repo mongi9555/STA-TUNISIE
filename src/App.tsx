@@ -872,18 +872,20 @@ export default function App() {
   };
 
   // Helper: Extract all vehicle items (with carId, colorId, quantity) from a reservation
-  const getReservationVehicleItems = (res: Reservation): { carId: string; colorId: string; quantity: number }[] => {
+  const getReservationVehicleItems = (res: Reservation): { carId: string; colorId: string; colorName?: string; quantity: number }[] => {
     if (res.vehicles && res.vehicles.length > 0) {
       return res.vehicles.map((v) => ({
         carId: v.carId,
-        colorId: v.colorChosen.id,
-        quantity: v.quantity,
+        colorId: v.colorChosen?.id,
+        colorName: v.colorChosen?.name,
+        quantity: v.quantity || 1,
       }));
     }
     return [
       {
         carId: res.carId,
-        colorId: res.colorChosen.id,
+        colorId: res.colorChosen?.id,
+        colorName: res.colorChosen?.name,
         quantity: 1,
       },
     ];
@@ -898,7 +900,7 @@ export default function App() {
   // Helper: Adjust car stock (deduct or restore) and persist updated models to Firestore
   const applyStockChanges = (
     baseCars: CarModel[],
-    items: { carId: string; colorId: string; quantity: number }[],
+    items: { carId: string; colorId: string; colorName?: string; quantity: number }[],
     action: 'deduct' | 'restore'
   ): CarModel[] => {
     const multiplier = action === 'deduct' ? -1 : 1;
@@ -908,7 +910,10 @@ export default function App() {
         let updatedColors = [...car.colors];
         matchItems.forEach((item) => {
           updatedColors = updatedColors.map((col) => {
-            if (col.id === item.colorId) {
+            const isMatch =
+              col.id === item.colorId ||
+              (item.colorName && col.name.toLowerCase() === item.colorName.toLowerCase());
+            if (isMatch) {
               return {
                 ...col,
                 stock: Math.max(0, col.stock + multiplier * item.quantity),

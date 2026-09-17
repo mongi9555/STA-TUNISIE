@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-09-17T08:41:03.295Z",
+  "savedAt": "2026-09-17T08:59:37.737Z",
   "cars": [
     {
       "engine": "1.5 T DHT",
@@ -32,7 +32,7 @@
       "colors": [
         {
           "id": "col-1-1785512735025",
-          "reserved": 0,
+          "reserved": 1,
           "interiorColor": "Cuir Gris Clair",
           "stock": 5,
           "name": "White BW",
@@ -95,81 +95,114 @@
     },
     {
       "bootCapacity": "717 Litres (jusqu'à 2065 L)",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077",
-      "energy": "Hybride",
-      "consumption": "5.2 L/100km (Autonomie +1200km)",
-      "colors": [
-        {
-          "reserved": 1,
-          "name": "White BX",
-          "id": "col-1-1785513071800",
-          "interiorColor": "Cuir Beige & Bleu",
-          "hexCode": "#FCFCFC",
-          "stock": 4
-        },
-        {
-          "hexCode": "#087252",
-          "interiorColor": "Cuir Beige & Bleu",
-          "reserved": 0,
-          "id": "col-2-1785513071800",
-          "stock": 0,
-          "name": "Green SJ"
-        },
-        {
-          "stock": 13,
-          "hexCode": "#727783",
-          "name": "Tech Gray GX",
-          "reserved": 0,
-          "interiorColor": "Cuir Beige & Bleu",
-          "id": "col-3-1785513071800"
-        },
-        {
-          "interiorColor": "Cuir Beige & Bleu",
-          "reserved": 3,
-          "hexCode": "#030303",
-          "stock": 14,
-          "id": "col-1786981421374",
-          "name": "Black CM"
-        },
-        {
-          "stock": 7,
-          "interiorColor": "Cuir Beige & Bleu",
-          "name": "Huanyu Gray",
-          "hexCode": "#A1A1A1",
-          "reserved": 2,
-          "id": "col-1786981512703"
-        }
-      ],
       "transmission": "Boîte Automatique 3-DHT",
-      "priceTND": 129900,
-      "maxSpeed": "210 km/h",
-      "name": "Chery Tiggo 9 PHEV",
-      "safetyFeatures": [
-        "10 Airbags",
-        "Assistance à la conduite intelligente L2.9",
-        "Vision nocturne & Caméra 540°",
-        "Freinage d'urgence autonome multi-zones"
-      ],
       "ficheTechniqueUrl": "",
-      "id": "car-1785513071800",
-      "torque": "545 Nm combiné",
-      "acceleration": "0-100 km/h en 5.7s",
-      "dimensions": "4820 x 1930 x 1699 mm",
-      "category": "SUV",
-      "guarantee": "7 ans ou 200 000 km",
       "features": [
         "Écran géant 2.5K Ultra HD 15.6\"",
         "Affichage tête haute HUD Réalité Augmentée",
         "Suspension pilotée CDC adaptative",
         "Sièges massants avec repose-mollets zéro gravité"
       ],
-      "engine": "1.5 T DHT AWD Super Hybrid",
+      "guarantee": "7 ans ou 200 000 km",
+      "category": "SUV",
+      "id": "car-1785513071800",
       "description": "Le fleuron SUV 7 places technologique de Chery avec transmission intégrale AWD intelligente.",
-      "powerHP": "326 ch (16 CV Fiscaux)"
+      "dimensions": "4820 x 1930 x 1699 mm",
+      "engine": "1.5 T DHT AWD Super Hybrid",
+      "consumption": "5.2 L/100km (Autonomie +1200km)",
+      "energy": "Hybride",
+      "acceleration": "0-100 km/h en 5.7s",
+      "name": "Chery Tiggo 9 PHEV",
+      "maxSpeed": "210 km/h",
+      "colors": [
+        {
+          "name": "White BX",
+          "interiorColor": "Cuir Beige & Bleu",
+          "hexCode": "#FCFCFC",
+          "id": "col-1-1785513071800",
+          "stock": 5,
+          "reserved": 1
+        },
+        {
+          "interiorColor": "Cuir Beige & Bleu",
+          "hexCode": "#087252",
+          "name": "Green SJ",
+          "reserved": 0,
+          "id": "col-2-1785513071800",
+          "stock": 0
+        },
+        {
+          "name": "Tech Gray GX",
+          "interiorColor": "Cuir Beige & Bleu",
+          "hexCode": "#727783",
+          "id": "col-3-1785513071800",
+          "reserved": 2,
+          "stock": 13
+        },
+        {
+          "id": "col-1786981421374",
+          "name": "Black CM",
+          "stock": 14,
+          "reserved": 8,
+          "hexCode": "#030303",
+          "interiorColor": "Cuir Beige & Bleu"
+        },
+        {
+          "name": "Huanyu Gray",
+          "interiorColor": "Cuir Beige & Bleu",
+          "id": "col-1786981512703",
+          "reserved": 4,
+          "hexCode": "#A1A1A1",
+          "stock": 7
+        }
+      ],
+      "priceTND": 129900,
+      "powerHP": "326 ch (16 CV Fiscaux)",
+      "safetyFeatures": [
+        "10 Airbags",
+        "Assistance à la conduite intelligente L2.9",
+        "Vision nocturne & Caméra 540°",
+        "Freinage d'urgence autonome multi-zones"
+      ],
+      "torque": "545 Nm combiné",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077"
     },
     {
-      "consumption": "8.4 L/100km",
-      "name": "Chery Himla 4X4 BVM",
+      "category": "Pick-up",
+      "torque": "420 Nm @ 1800-2400 tr/min",
+      "description": "Pick-up tout-terrain 4x4 avec transmission intégrale.",
+      "payload": "1100 Kg",
+      "ficheTechniqueUrl": "",
+      "bootCapacity": "1100 Kg (Charge Utile)",
+      "colors": [
+        {
+          "reserved": 4,
+          "hexCode": "#BFBFBF",
+          "interiorColor": "Cuir Noir",
+          "id": "col-1-1785514106502",
+          "stock": 17,
+          "name": "Silver Gray GR"
+        },
+        {
+          "hexCode": "#0A0A0A",
+          "interiorColor": "Cuir Noir",
+          "stock": 16,
+          "reserved": 7,
+          "name": "Black CH",
+          "id": "col-1786981947069"
+        }
+      ],
+      "id": "car-1785514106502",
+      "features": [
+        "Transmission 4x4 électronique (2H / 4H / 4L) avec blocage de différentiel",
+        "Écran tactile 10.25\" & Système de navigation",
+        "Sièges cuir avec réglages électriques",
+        "Protection de benne renforcée & Marchepieds aluminium"
+      ],
+      "transmission": "Boîte Manuelle BVM 6 rapports",
+      "energy": "Diesel",
+      "guarantee": "5 ans ou 200 000 km",
+      "powerHP": "161 ch (8 CV Fiscaux)",
       "safetyFeatures": [
         "6 Airbags",
         "Contrôle de stabilité de remorque (TSC)",
@@ -177,47 +210,14 @@
         "Freinage d'urgence autonome"
       ],
       "engine": "2.3 L Turbo Diesel 4x4 BVM",
-      "id": "car-1785514106502",
-      "ficheTechniqueUrl": "",
-      "requiredDepositTND": 0,
-      "priceTND": 102900,
-      "maxSpeed": "170 km/h",
-      "payload": "1100 Kg",
-      "bootCapacity": "1100 Kg (Charge Utile)",
-      "transmission": "Boîte Manuelle BVM 6 rapports",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
       "dimensions": "5330 x 1920 x 1825 mm",
-      "torque": "420 Nm @ 1800-2400 tr/min",
-      "powerHP": "161 ch (8 CV Fiscaux)",
-      "guarantee": "5 ans ou 200 000 km",
-      "features": [
-        "Transmission 4x4 électronique (2H / 4H / 4L) avec blocage de différentiel",
-        "Écran tactile 10.25\" & Système de navigation",
-        "Sièges cuir avec réglages électriques",
-        "Protection de benne renforcée & Marchepieds aluminium"
-      ],
-      "colors": [
-        {
-          "hexCode": "#BFBFBF",
-          "reserved": 2,
-          "interiorColor": "Cuir Noir",
-          "stock": 16,
-          "id": "col-1-1785514106502",
-          "name": "Silver Gray GR"
-        },
-        {
-          "reserved": 2,
-          "hexCode": "#0A0A0A",
-          "stock": 16,
-          "id": "col-1786981947069",
-          "name": "Black CH",
-          "interiorColor": "Cuir Noir"
-        }
-      ],
+      "requiredDepositTND": 0,
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+      "consumption": "8.4 L/100km",
       "acceleration": "0-100 km/h en 8.5s",
-      "category": "Pick-up",
-      "description": "Pick-up tout-terrain 4x4 avec transmission intégrale.",
-      "energy": "Diesel"
+      "priceTND": 102900,
+      "name": "Chery Himla 4X4 BVM",
+      "maxSpeed": "170 km/h"
     },
     {
       "consumption": "5.8 L/100km",
@@ -253,60 +253,50 @@
       "bootCapacity": "420 Litres"
     },
     {
-      "engine": "1.5 L DHT Hybrid",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731",
-      "guarantee": "5 ans ou 150 000 km",
-      "dimensions": "4358 x 1830 x 1670 mm",
-      "ficheTechniqueUrl": "",
-      "description": "SUV compact Hybride moderne et sobre, idéal pour la ville et les longs trajets.",
       "id": "car-1785753066750",
-      "acceleration": "0-100 km/h en 8.8s",
       "maxSpeed": "185 km/h",
       "priceTND": 79900,
-      "powerHP": "147 ch (6 CV Fiscaux)",
       "torque": "210 Nm @ 1750-4000 tr/min",
-      "category": "SUV",
       "consumption": "4.9 L/100km",
-      "safetyFeatures": [
-        "6 Airbags",
-        "Frein de stationnement électrique avec Auto-Hold",
-        "Radar de recul & Caméra HD",
-        "Système de contrôle de la pression des pneus (TPMS)"
-      ],
+      "bootCapacity": "430 Litres",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731",
+      "ficheTechniqueUrl": "",
+      "energy": "Hybride",
       "colors": [
         {
-          "hexCode": "#D1CCCC",
           "id": "col-1-1785753066750",
-          "reserved": 0,
-          "name": "Silver KU",
+          "hexCode": "#D1CCCC",
           "stock": 0,
+          "reserved": 0,
+          "interiorColor": "Cuir Noir",
+          "name": "Silver KU"
+        },
+        {
+          "hexCode": "#FFFFFF",
+          "reserved": 0,
+          "name": "White BW",
+          "stock": 0,
+          "id": "col-2-1785753066750",
           "interiorColor": "Cuir Noir"
         },
         {
-          "reserved": 0,
+          "stock": 4,
+          "id": "col-3-1785753066750",
+          "reserved": 4,
           "interiorColor": "Cuir Noir",
-          "id": "col-2-1785753066750",
-          "name": "White BW",
-          "stock": 0,
-          "hexCode": "#FFFFFF"
-        },
-        {
           "hexCode": "#6E6F72",
-          "reserved": 5,
-          "stock": 3,
-          "interiorColor": "Cuir Noir",
-          "name": "Gray GV",
-          "id": "col-3-1785753066750"
+          "name": "Gray GV"
         },
         {
           "stock": 5,
-          "hexCode": "#050505",
           "interiorColor": "Cuir Noir",
+          "hexCode": "#050505",
           "name": "Black CL",
-          "id": "col-1786982272954",
-          "reserved": 0
+          "reserved": 0,
+          "id": "col-1786982272954"
         }
       ],
+      "guarantee": "5 ans ou 150 000 km",
       "transmission": "Boîte Automatique Hybride DHT",
       "name": "Chery Tiggo 4 HEV",
       "features": [
@@ -315,300 +305,310 @@
         "Chargeur à induction pour smartphone",
         "Toit ouvrant électrique"
       ],
-      "bootCapacity": "430 Litres",
-      "energy": "Hybride"
+      "dimensions": "4358 x 1830 x 1670 mm",
+      "engine": "1.5 L DHT Hybrid",
+      "acceleration": "0-100 km/h en 8.8s",
+      "powerHP": "147 ch (6 CV Fiscaux)",
+      "safetyFeatures": [
+        "6 Airbags",
+        "Frein de stationnement électrique avec Auto-Hold",
+        "Radar de recul & Caméra HD",
+        "Système de contrôle de la pression des pneus (TPMS)"
+      ],
+      "description": "SUV compact Hybride moderne et sobre, idéal pour la ville et les longs trajets.",
+      "category": "SUV"
     },
     {
-      "ficheTechniqueUrl": "/uploads/1788537834851_fiche_car-1785753150277.jpg",
-      "description": "",
-      "category": "SUV",
-      "id": "car-1785753150277",
       "engine": "Électrique 65.7 kWh 4X2",
-      "acceleration": "",
-      "features": [
-        ""
-      ],
-      "safetyFeatures": [
-        ""
-      ],
-      "name": "Chery I03 4X2",
-      "dimensions": "",
-      "colors": [
-        {
-          "hexCode": "#171717",
-          "id": "col-1-1785753150277",
-          "reserved": 6,
-          "interiorColor": "Cuir Marron",
-          "stock": 14,
-          "name": "Black BL"
-        },
-        {
-          "interiorColor": "Cuir Marron",
-          "reserved": 1,
-          "name": "Silver SL",
-          "stock": 12,
-          "hexCode": "#cfd3d8",
-          "id": "col-2-1785753150277"
-        }
-      ],
       "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
-      "energy": "Électrique",
-      "bootCapacity": "",
-      "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
+      "id": "car-1785753150277",
+      "dimensions": "",
+      "acceleration": "",
+      "ficheTechniqueUrl": "/uploads/1788537834851_fiche_car-1785753150277.jpg",
       "consumption": "",
       "maxSpeed": "",
       "priceTND": 76900,
+      "transmission": "Réducteur Automatique 1 rapport",
+      "safetyFeatures": [
+        ""
+      ],
+      "description": "",
       "torque": "",
+      "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
+      "category": "SUV",
+      "bootCapacity": "",
       "powerHP": "",
-      "transmission": "Réducteur Automatique 1 rapport"
+      "features": [
+        ""
+      ],
+      "colors": [
+        {
+          "stock": 16,
+          "id": "col-1-1785753150277",
+          "reserved": 7,
+          "hexCode": "#171717",
+          "interiorColor": "Cuir Marron",
+          "name": "Black BL"
+        },
+        {
+          "hexCode": "#cfd3d8",
+          "id": "col-2-1785753150277",
+          "reserved": 1,
+          "name": "Silver SL",
+          "interiorColor": "Cuir Marron",
+          "stock": 12
+        }
+      ],
+      "name": "Chery I03 4X2",
+      "energy": "Électrique"
     },
     {
       "features": [
         ""
       ],
-      "description": "",
-      "acceleration": "",
-      "engine": "2 Moteurs Électriques 69.8 kWh 4X4",
-      "dimensions": "",
-      "powerHP": "",
+      "bootCapacity": "",
       "category": "SUV",
-      "name": "Chery I03 4X4",
-      "maxSpeed": "",
-      "priceTND": 84900,
+      "engine": "2 Moteurs Électriques 69.8 kWh 4X4",
+      "consumption": "",
+      "id": "car-1785753208837",
       "transmission": "Transmission Intégrale e-AWD",
+      "dimensions": "",
       "colors": [
         {
-          "interiorColor": "Cuir Marron",
-          "stock": 27,
-          "hexCode": "#171717",
           "id": "col-1-1785753208837",
-          "name": "Black BL",
-          "reserved": 8
+          "hexCode": "#171717",
+          "stock": 28,
+          "interiorColor": "Cuir Marron",
+          "reserved": 9,
+          "name": "Black BL"
         },
         {
           "id": "col-2-1785753208837",
+          "hexCode": "#cfd3d8",
+          "interiorColor": "Cuir Marron",
           "reserved": 1,
           "stock": 23,
-          "interiorColor": "Cuir Marron",
-          "name": "Silver SL",
-          "hexCode": "#cfd3d8"
+          "name": "Silver SL"
         },
         {
-          "reserved": 0,
+          "reserved": 6,
+          "interiorColor": "Cuir Marron",
           "id": "col-1786454499484",
           "hexCode": "#626a68",
           "name": "Gray GY",
-          "interiorColor": "Cuir Marron",
           "stock": 30
         },
         {
-          "id": "col-1786454514433",
-          "reserved": 0,
-          "hexCode": "#255645",
-          "name": "Green GN",
           "stock": 10,
-          "interiorColor": "Cuir Marron"
+          "hexCode": "#255645",
+          "reserved": 4,
+          "interiorColor": "Cuir Marron",
+          "id": "col-1786454514433",
+          "name": "Green GN"
         }
       ],
-      "bootCapacity": "",
+      "name": "Chery I03 4X4",
+      "powerHP": "",
       "energy": "Électrique",
-      "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
-      "ficheTechniqueUrl": "/uploads/1788537835098_fiche_car-1785753208837.jpg",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
-      "id": "car-1785753208837",
+      "priceTND": 84900,
+      "maxSpeed": "",
+      "description": "",
       "torque": "",
+      "acceleration": "",
+      "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
       "safetyFeatures": [
         ""
       ],
-      "consumption": ""
+      "ficheTechniqueUrl": "/uploads/1788537835098_fiche_car-1785753208837.jpg",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1"
     },
     {
-      "engine": "1.5 T DHT Hybrid",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835",
-      "consumption": "",
-      "guarantee": "7 ans ou 200 000 km",
-      "bootCapacity": "",
-      "maxSpeed": "",
-      "priceTND": 88900,
       "transmission": "Boîte Automatique Hybride DHT",
-      "id": "car-1785753278797",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835",
       "safetyFeatures": [
         ""
       ],
-      "torque": "",
-      "ficheTechniqueUrl": "/uploads/1788766147529_fiche_car-1785753278797.jpg",
-      "category": "SUV",
+      "engine": "1.5 T DHT Hybrid",
+      "bootCapacity": "",
+      "id": "car-1785753278797",
+      "priceTND": 88900,
+      "maxSpeed": "",
       "powerHP": "",
+      "description": "",
+      "torque": "",
       "acceleration": "",
+      "consumption": "",
+      "name": "Chery Tiggo 7 PHEV",
+      "category": "SUV",
+      "energy": "Hybride",
       "features": [
         ""
       ],
-      "description": "",
+      "guarantee": "7 ans ou 200 000 km",
+      "ficheTechniqueUrl": "/uploads/1788766147529_fiche_car-1785753278797.jpg",
       "dimensions": "",
       "colors": [
         {
-          "interiorColor": "Cuir Noir",
-          "reserved": 4,
           "id": "col-1-1785753278797",
-          "stock": 21,
           "name": "White BW",
-          "hexCode": "#FFFFFF"
+          "hexCode": "#FFFFFF",
+          "stock": 21,
+          "interiorColor": "Cuir Noir",
+          "reserved": 11
         },
         {
-          "id": "col-2-1785753278797",
-          "reserved": 5,
           "interiorColor": "Cuir Noir",
-          "hexCode": "#939AA5",
           "name": "Phantom Gray GV",
-          "stock": 30
-        },
-        {
-          "name": "Tech Gray GX",
-          "hexCode": "#727783",
-          "interiorColor": "Cuir Noir",
-          "stock": 15,
-          "reserved": 10,
-          "id": "col-3-1785753278797"
-        },
-        {
-          "stock": 26,
+          "hexCode": "#939AA5",
+          "id": "col-2-1785753278797",
           "reserved": 4,
-          "id": "col-1786454139529",
-          "name": "Black CL",
+          "stock": 34
+        },
+        {
+          "hexCode": "#727783",
+          "reserved": 20,
+          "stock": 15,
           "interiorColor": "Cuir Noir",
+          "id": "col-3-1785753278797",
+          "name": "Tech Gray GX"
+        },
+        {
+          "name": "Black CL",
+          "stock": 28,
+          "interiorColor": "Cuir Noir",
+          "id": "col-1786454139529",
+          "reserved": 20,
           "hexCode": "#050505"
         },
         {
+          "stock": 19,
           "hexCode": "#217CB5",
           "id": "col-1786454192522",
-          "stock": 17,
+          "reserved": 5,
           "name": "Exclusive Blue WE",
-          "reserved": 3,
           "interiorColor": "Cuir Noir"
         }
-      ],
-      "energy": "Hybride",
-      "name": "Chery Tiggo 7 PHEV"
+      ]
     },
     {
-      "torque": "545 Nm combiné",
+      "colors": [
+        {
+          "name": "White BW",
+          "hexCode": "#FFFFFF",
+          "stock": 1,
+          "interiorColor": "Cuir Noir",
+          "id": "col-1-1785753367152",
+          "reserved": 6
+        },
+        {
+          "name": "Gray UM",
+          "stock": 0,
+          "interiorColor": "Cuir Noir",
+          "reserved": 0,
+          "hexCode": "#668F88",
+          "id": "col-2-1785753367152"
+        },
+        {
+          "id": "col-3-1785753367152",
+          "interiorColor": "Cuir Noir",
+          "hexCode": "#050505",
+          "stock": 26,
+          "name": "Black CL",
+          "reserved": 2
+        },
+        {
+          "reserved": 2,
+          "name": "Green SJ",
+          "interiorColor": "Cuir Noir",
+          "id": "col-1786454375127",
+          "hexCode": "#087252",
+          "stock": 17
+        }
+      ],
       "features": [
         "Configuration 7 places avec sièges rabattables à plat",
         "Double combiné numérique 24.6\" Ultra HD",
         "Système de son Sony Premium 8 haut-parleurs",
         "Sièges cuir chauffants et ventilés avec réglages électriques"
       ],
+      "bootCapacity": "7 places modulables / 890 Litres",
+      "consumption": "5.4 L/100km (Autonomie +1100km)",
+      "transmission": "Boîte Automatique 3-DHT",
+      "energy": "Hybride",
+      "id": "car-1785753367152",
+      "name": "Chery Tiggo 8 PHEV",
+      "torque": "545 Nm combiné",
+      "powerHP": "326 ch (10 CV Fiscaux)",
+      "category": "SUV",
       "safetyFeatures": [
         "10 Airbags",
         "Freinage d'urgence autonome multi-cibles",
         "Caméra 540° avec châssis transparent",
         "Avertisseur de trafic transversal arrière"
       ],
-      "colors": [
-        {
-          "name": "White BW",
-          "stock": 1,
-          "hexCode": "#FFFFFF",
-          "id": "col-1-1785753367152",
-          "reserved": 1,
-          "interiorColor": "Cuir Noir"
-        },
-        {
-          "name": "Gray UM",
-          "reserved": 0,
-          "hexCode": "#668F88",
-          "id": "col-2-1785753367152",
-          "interiorColor": "Cuir Noir",
-          "stock": 0
-        },
-        {
-          "hexCode": "#050505",
-          "id": "col-3-1785753367152",
-          "stock": 25,
-          "interiorColor": "Cuir Noir",
-          "name": "Black CL",
-          "reserved": 1
-        },
-        {
-          "hexCode": "#087252",
-          "reserved": 2,
-          "interiorColor": "Cuir Noir",
-          "stock": 16,
-          "id": "col-1786454375127",
-          "name": "Green SJ"
-        }
-      ],
-      "bootCapacity": "7 places modulables / 890 Litres",
-      "energy": "Hybride",
-      "description": "Le grand SUV 7 places Hybride Premium, spacieux, puissant et ultra économique pour toute la famille.",
-      "transmission": "Boîte Automatique 3-DHT",
-      "category": "SUV",
-      "ficheTechniqueUrl": "",
-      "engine": "1.5 T DHT Super Hybrid 7 Places",
-      "name": "Chery Tiggo 8 PHEV",
-      "priceTND": 102990,
-      "maxSpeed": "200 km/h",
       "dimensions": "4722 x 1860 x 1745 mm",
-      "consumption": "5.4 L/100km (Autonomie +1100km)",
-      "powerHP": "326 ch (10 CV Fiscaux)",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403",
-      "guarantee": "7 ans ou 200 000 km",
+      "maxSpeed": "200 km/h",
       "acceleration": "0-100 km/h en 7.0s",
-      "id": "car-1785753367152"
+      "priceTND": 102990,
+      "engine": "1.5 T DHT Super Hybrid 7 Places",
+      "guarantee": "7 ans ou 200 000 km",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403",
+      "ficheTechniqueUrl": "",
+      "description": "Le grand SUV 7 places Hybride Premium, spacieux, puissant et ultra économique pour toute la famille."
     },
     {
-      "description": "",
       "torque": "210 Nm @ 1750-4000 tr/min",
+      "description": "",
+      "id": "car-1787908920743",
       "category": "Pick-up",
-      "dimensions": "4400 x 1830 x 1670 mm",
-      "payload": "",
       "colors": [
         {
-          "id": "col-1-1787908920743",
-          "stock": 6,
-          "reserved": 2,
+          "stock": 2,
+          "reserved": 1,
+          "interiorColor": "Cuir Marron",
           "name": "Green SC",
-          "hexCode": "#529d48",
-          "interiorColor": "Cuir Marron"
+          "id": "col-1-1787908920743",
+          "hexCode": "#529d48"
         },
         {
-          "stock": 15,
-          "name": "Silver Gray GR",
-          "hexCode": "#475569",
+          "reserved": 3,
           "interiorColor": "Cuir Marron",
+          "hexCode": "#475569",
+          "stock": 5,
           "id": "col-2-1787908920743",
-          "reserved": 2
+          "name": "Silver Gray GR"
         },
         {
           "name": "Black CH",
-          "reserved": 4,
           "interiorColor": "Cuir Marron",
           "hexCode": "#0A0A0A",
-          "stock": 13,
+          "reserved": 6,
+          "stock": 5,
           "id": "col-3-1787908920743"
         }
       ],
-      "acceleration": "0-100 km/h en 8.9s",
-      "ficheTechniqueUrl": "https://galerie.automobile.tn/max/2026/07/chery-himla-2.3-l-turbo-4x4-bva-109795.webp",
       "features": [
         ""
       ],
-      "energy": "Diesel",
-      "requiredDepositTND": 0,
       "powerHP": "147 ch (8 CV Fiscaux)",
-      "engine": "2.3 L Turbo 4X4 BVA",
-      "id": "car-1787908920743",
-      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
       "safetyFeatures": [
         ""
       ],
+      "energy": "Diesel",
+      "acceleration": "0-100 km/h en 8.9s",
+      "requiredDepositTND": 0,
+      "name": "Chery Himla 4X4 BVA",
+      "imageUrl": "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
+      "engine": "2.3 L Turbo 4X4 BVA",
+      "dimensions": "4400 x 1830 x 1670 mm",
       "transmission": "Boîte Automatique",
       "consumption": "6.8 L/100km",
-      "name": "Chery Himla 4X4 BVA",
       "priceTND": 119900,
+      "ficheTechniqueUrl": "https://galerie.automobile.tn/max/2026/07/chery-himla-2.3-l-turbo-4x4-bva-109795.webp",
       "maxSpeed": "",
       "guarantee": "5 ans ou 200 000 km",
-      "bootCapacity": ""
+      "bootCapacity": "",
+      "payload": ""
     }
   ],
   "reservations": [
@@ -693,7 +693,7 @@
         "type": "societe"
       },
       "depositPaidTND": 20000,
-      "carName": "Chery Tiggo 4 HEV (Gray GV)"
+      "carName": "Chery Tiggo 4 HEV"
     },
     {
       "carId": "car-1787908920743",
@@ -719,7 +719,7 @@
         "interiorColor": "Cuir Marron",
         "reserved": 4
       },
-      "carName": "Chery Himla 4X4 BVA (Black CH)",
+      "carName": "Chery Himla 4X4 BVA",
       "updatedAt": "2026-09-16T15:29:05.710Z",
       "paymentMethod": "Chèque Certifié",
       "documents": [],
@@ -732,7 +732,7 @@
           "id": "veh-RES-2026-1092-0",
           "quantity": 1,
           "totalPriceTND": 119900,
-          "carName": "Chery Himla 4X4 BVA (Black CH)",
+          "carName": "Chery Himla 4X4 BVA",
           "unitPriceTND": 119900,
           "carId": "car-1787908920743",
           "colorChosen": {
@@ -765,11 +765,11 @@
       "commercialId": "user-1787557241636",
       "registrationFeeTND": 0,
       "commercialName": "DISTRICARS Sfax",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "vehicles": [
         {
           "carId": "car-1785753278797",
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "quantity": 1,
           "totalPriceTND": 88900,
           "unitPriceTND": 88900,
@@ -852,7 +852,7 @@
           "uploadedAt": "2026-09-16 13:53"
         }
       ],
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "carId": "car-1785753278797",
       "depositPaidTND": 30000,
       "id": "RES-2026-1076",
@@ -952,7 +952,7 @@
       "status": "En attente",
       "commercialName": "Moez Ben Naser",
       "carId": "car-1785753208837",
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "vehicles": [
         {
           "colorChosen": {
@@ -979,7 +979,7 @@
       "depositPaidTND": 0,
       "id": "RES-2026-1077",
       "agency": "Chery Agence Sfax",
-      "carName": "Chery Tiggo 8 PHEV (Green SJ)",
+      "carName": "Chery Tiggo 8 PHEV",
       "notes": "⏳ Dossier Leasing avec Accord joint -> Réservation provisoire 5 jours ouvrés.",
       "colorChosen": {
         "name": "Green SJ",
@@ -1057,7 +1057,7 @@
       "vehicles": [
         {
           "id": "veh-RES-2026-1090-0",
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "totalPriceTND": 88900,
           "colorChosen": {
             "reserved": 10,
@@ -1073,7 +1073,7 @@
         }
       ],
       "documents": [],
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "agency": "Chery Agence Sousse",
       "priceTND": 88900,
       "colorChosen": {
@@ -1111,7 +1111,7 @@
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1076)",
       "documents": [],
       "updatedAt": "2026-09-16T11:13:55.067Z",
-      "carName": "Chery I03 4X2 (Silver SL)",
+      "carName": "Chery I03 4X2",
       "paymentMethod": "Chèque Certifié",
       "client": {
         "type": "personne_physique",
@@ -1130,7 +1130,7 @@
           "unitPriceTND": 76900,
           "totalPriceTND": 76900,
           "id": "veh-RES-2026-1089-0",
-          "carName": "Chery I03 4X2 (Silver SL)",
+          "carName": "Chery I03 4X2",
           "carId": "car-1785753150277",
           "colorChosen": {
             "name": "Silver SL",
@@ -1160,7 +1160,7 @@
         {
           "unitPriceTND": 88900,
           "quantity": 1,
-          "carName": "Chery Tiggo 7 PHEV (Black CL)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "colorChosen": {
             "interiorColor": "Cuir Noir",
@@ -1196,7 +1196,7 @@
         },
         "type": "societe"
       },
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "priceTND": 88900
     },
     {
@@ -1244,7 +1244,7 @@
         "name": "Green GN"
       },
       "id": "RES-2026-1062",
-      "carName": "Chery I03 4X4 (Green GN)",
+      "carName": "Chery I03 4X4",
       "vehicles": [
         {
           "unitPriceTND": 84900,
@@ -1283,7 +1283,7 @@
       "commercialId": "user-1787557241636",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1076)",
       "id": "RES-2026-1087",
-      "carName": "Chery Himla 4X4 BVA (Black CH)",
+      "carName": "Chery Himla 4X4 BVA",
       "client": {
         "type": "societe",
         "societe": {
@@ -1316,7 +1316,7 @@
           },
           "quantity": 1,
           "carId": "car-1787908920743",
-          "carName": "Chery Himla 4X4 BVA (Black CH)"
+          "carName": "Chery Himla 4X4 BVA"
         }
       ],
       "updatedAt": "2026-09-16T10:41:58.624Z",
@@ -1351,7 +1351,7 @@
           "id": "veh-RES-2026-1086-0",
           "totalPriceTND": 88900,
           "carId": "car-1785753278797",
-          "carName": "Chery Tiggo 7 PHEV (Black CL)",
+          "carName": "Chery Tiggo 7 PHEV",
           "unitPriceTND": 88900,
           "quantity": 1
         }
@@ -1365,7 +1365,7 @@
         "id": "col-1786454139529"
       },
       "carId": "car-1785753278797",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "agency": "Siege STA",
       "id": "RES-2026-1086",
       "commercialId": "comm-moez",
@@ -1464,7 +1464,7 @@
         },
         "type": "personne_physique"
       },
-      "carName": "Chery Tiggo 7 PHEV (White BW)",
+      "carName": "Chery Tiggo 7 PHEV",
       "commercialName": "Moez Ben Naser",
       "notes": ""
     },
@@ -1494,7 +1494,7 @@
       },
       "agency": "Chery Agence Sfax",
       "paymentMethod": "Leasing",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "depositPaidTND": 0,
       "status": "Confirmée",
       "commercialId": "user-1787557241636",
@@ -1533,7 +1533,7 @@
     },
     {
       "expectedDeliveryDate": "2026-10-16",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "client": {
         "societe": {
           "matriculeFiscale": "496311PAM000",
@@ -1654,7 +1654,7 @@
           "cin": "06545868"
         }
       },
-      "carName": "Chery Himla 4X4 BVM (Silver Gray GR)",
+      "carName": "Chery Himla 4X4 BVM",
       "registrationFeeTND": 0,
       "createdAt": "2026-09-16T07:41:58.324Z",
       "notes": "⚡ Dossier Leasing avec Bon de Commande joint -> Réservation validée sans acompte requis.",
@@ -1686,7 +1686,7 @@
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1016)",
       "vehicles": [
         {
-          "carName": "Chery Tiggo 9 PHEV (Black CM)",
+          "carName": "Chery Tiggo 9 PHEV",
           "carId": "car-1785513071800",
           "quantity": 1,
           "unitPriceTND": 129900,
@@ -1705,7 +1705,7 @@
       "agency": "Siege STA",
       "id": "RES-2026-1085",
       "registrationFeeTND": 0,
-      "carName": "Chery Tiggo 9 PHEV (Black CM)",
+      "carName": "Chery Tiggo 9 PHEV",
       "status": "Confirmée",
       "commercialName": "Marwa Frikha",
       "documents": [],
@@ -1739,12 +1739,12 @@
     },
     {
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1016)",
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "id": "RES-2026-1071",
       "agency": "Siege STA",
       "vehicles": [
         {
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "carName": "Chery Tiggo 7 PHEV",
           "colorChosen": {
             "stock": 18,
             "reserved": 2,
@@ -1842,7 +1842,7 @@
         },
         "type": "personne_physique"
       },
-      "carName": "Chery Tiggo 9 PHEV (Black CM)",
+      "carName": "Chery Tiggo 9 PHEV",
       "createdAt": "2026-09-15T15:27:58.476Z",
       "expectedDeliveryDate": "2026-10-15",
       "id": "RES-2026-1064",
@@ -1913,7 +1913,7 @@
       "commercialName": "Moez Ben Naser",
       "id": "RES-2026-1063",
       "expectedDeliveryDate": "2026-10-15",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "notes": "",
       "priceTND": 88900,
       "paymentMethod": "Chèque Certifié",
@@ -1975,14 +1975,14 @@
           },
           "unitPriceTND": 88900,
           "carId": "car-1785753278797",
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "id": "veh-RES-2026-1070-0"
         }
       ],
       "status": "Confirmée",
       "priceTND": 88900,
       "documents": [],
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "carId": "car-1785753278797",
       "updatedAt": "2026-09-15T13:24:18.909Z",
       "agency": "Siege STA",
@@ -2023,7 +2023,7 @@
             "reserved": 0,
             "hexCode": "#626a68"
           },
-          "carName": "Chery I03 4X4 (Gray GY)",
+          "carName": "Chery I03 4X4",
           "carId": "car-1785753208837",
           "unitPriceTND": 84900
         }
@@ -2042,7 +2042,7 @@
         "type": "personne_physique"
       },
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1062)",
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "depositPaidTND": 0
     },
     {
@@ -2061,7 +2061,7 @@
           "unitPriceTND": 88900,
           "quantity": 1,
           "totalPriceTND": 88900,
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "colorChosen": {
             "interiorColor": "Cuir Noir",
@@ -2090,7 +2090,7 @@
       "registrationFeeTND": 0,
       "id": "RES-2026-1069",
       "createdAt": "2026-09-15T11:51:28.964Z",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1016)",
       "agency": "Chery siege",
       "documents": [],
@@ -2116,7 +2116,7 @@
         "type": "personne_physique"
       },
       "priceTND": 84900,
-      "carName": "Chery I03 4X4 (Green GN)",
+      "carName": "Chery I03 4X4",
       "paymentMethod": "Virement Bancaire",
       "updatedAt": "2026-09-15T10:56:10.972Z",
       "colorChosen": {
@@ -2202,7 +2202,7 @@
       "vehicles": [
         {
           "quantity": 1,
-          "carName": "Chery Tiggo 7 PHEV (Phantom Gray GV)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "colorChosen": {
             "stock": 31,
@@ -2247,7 +2247,7 @@
       "agency": "Siege STA",
       "updatedAt": "2026-09-15T10:39:48.982Z",
       "carId": "car-1785753278797",
-      "carName": "Chery Tiggo 7 PHEV (Phantom Gray GV)",
+      "carName": "Chery Tiggo 7 PHEV",
       "documents": [],
       "commercialName": "Marwa Frikha",
       "status": "Confirmée",
@@ -2290,14 +2290,14 @@
             "hexCode": "#FFFFFF"
           },
           "unitPriceTND": 88900,
-          "carName": "Chery Tiggo 7 PHEV (White BW)",
+          "carName": "Chery Tiggo 7 PHEV",
           "id": "veh-RES-2026-1067-0"
         }
       ],
       "carId": "car-1785753278797",
       "paymentMethod": "Chèque Certifié",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1016)",
-      "carName": "Chery Tiggo 7 PHEV (White BW)",
+      "carName": "Chery Tiggo 7 PHEV",
       "priceTND": 88900,
       "createdAt": "2026-09-15T10:30:42.258Z",
       "agency": "Siege STA",
@@ -2311,7 +2311,7 @@
     {
       "createdAt": "2026-09-15T09:09:26.330Z",
       "notes": "",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "client": {
         "personnePhysique": {
           "prenom": "Nizar",
@@ -2399,7 +2399,7 @@
       "status": "Confirmée",
       "commercialId": "user-1787557384756",
       "depositPaidTND": 0,
-      "carName": "Chery Tiggo 8 PHEV (Black CL)",
+      "carName": "Chery Tiggo 8 PHEV",
       "agency": "Chery Agence Nabeul",
       "updatedAt": "2026-09-15T08:55:40.681Z",
       "etaDate": "2026-09-15",
@@ -2512,7 +2512,7 @@
       "carId": "car-1785753278797",
       "agency": "Siege STA",
       "registrationFeeTND": 0,
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "createdAt": "2026-09-15T08:47:33.849Z",
       "colorChosen": {
         "hexCode": "#050505",
@@ -2545,9 +2545,9 @@
       "commercialName": "S2A CHERY Gabes",
       "agency": "Chery Agence Nabeul",
       "carId": "car-1785753278797",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "colorChosen": {
-        "id": "col-RES-2026-1035",
+        "id": "col-3-1785753278797",
         "name": "Tech Gray GX",
         "hexCode": "#727783"
       },
@@ -2555,9 +2555,9 @@
         {
           "id": "veh-RES-2026-1035-0",
           "carId": "car-1785753278797",
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "colorChosen": {
-            "id": "col-RES-2026-1035",
+            "id": "col-3-1785753278797",
             "name": "Tech Gray GX",
             "hexCode": "#727783"
           },
@@ -2616,7 +2616,7 @@
       "carId": "car-1785753208837",
       "paymentMethod": "Chèque Certifié",
       "commercialName": "Marwa Frikha",
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "client": {
         "societe": {
           "telephone": "98529065",
@@ -2663,7 +2663,7 @@
       "registrationFeeTND": 0,
       "commercialName": "Marwa Frikha",
       "carId": "car-1785753150277",
-      "carName": "Chery I03 4X2 (Black BL)",
+      "carName": "Chery I03 4X2",
       "createdAt": "2026-09-15T06:01:26.386Z",
       "commercialId": "comm-marwa",
       "client": {
@@ -2692,7 +2692,7 @@
             "interiorColor": "Cuir Marron"
           },
           "unitPriceTND": 76900,
-          "carName": "Chery I03 4X2 (Black BL)",
+          "carName": "Chery I03 4X2",
           "quantity": 1,
           "totalPriceTND": 76900
         }
@@ -2761,7 +2761,7 @@
       },
       "createdAt": "2026-09-15T06:01:26.331Z",
       "priceTND": 76900,
-      "carName": "Chery I03 4X2 (Black BL)",
+      "carName": "Chery I03 4X2",
       "updatedAt": "2026-09-15T06:02:00.026Z",
       "carId": "car-1785753150277",
       "documents": [
@@ -2797,7 +2797,7 @@
     {
       "commercialName": "Marwa Frikha",
       "status": "Confirmée",
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "agency": "Siege STA",
       "commercialId": "comm-marwa",
       "priceTND": 84900,
@@ -2810,7 +2810,7 @@
         {
           "unitPriceTND": 84900,
           "id": "veh-RES-2026-1073-0",
-          "carName": "Chery I03 4X4 (Gray GY)",
+          "carName": "Chery I03 4X4",
           "carId": "car-1785753208837",
           "colorChosen": {
             "hexCode": "#626a68",
@@ -2909,7 +2909,7 @@
       "commercialName": "Marwa Frikha",
       "commercialId": "comm-marwa",
       "createdAt": "2026-09-15T05:55:06.224Z",
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "paymentMethod": "Chèque Certifié",
       "id": "RES-2026-1016",
       "colorChosen": {
@@ -2976,7 +2976,7 @@
       "status": "Confirmée",
       "agency": "Chery Agence Sfax",
       "depositPaidTND": 50000,
-      "carName": "Chery Tiggo 9 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 9 PHEV",
       "registrationFeeTND": 0,
       "priceTND": 129900,
       "notes": ""
@@ -3045,7 +3045,7 @@
       "commercialName": "GODDI CHERY Nabeul",
       "agency": "Chery Agence Nabeul",
       "notes": "⏳ Dossier Leasing avec Accord joint -> Réservation provisoire 5 jours ouvrés.",
-      "carName": "Chery Tiggo 9 PHEV (Black CM)",
+      "carName": "Chery Tiggo 9 PHEV",
       "registrationFeeTND": 0,
       "commercialId": "user-1787557344213",
       "expectedDeliveryDate": "2026-10-14",
@@ -3121,14 +3121,14 @@
       "priceTND": 84900,
       "id": "RES-2026-1050",
       "registrationFeeTND": 0,
-      "carName": "Chery I03 4X4 (Black BL)"
+      "carName": "Chery I03 4X4"
     },
     {
       "priceTND": 84900,
       "carId": "car-1785753208837",
       "createdAt": "2026-09-14T14:45:29.260Z",
       "status": "Confirmée",
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "colorChosen": {
         "hexCode": "#171717",
         "id": "col-1-1785753208837",
@@ -3234,7 +3234,7 @@
     {
       "id": "RES-2026-1057",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1016)",
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "agency": "Chery Agence Charguia 1",
       "createdAt": "2026-09-14T13:28:58.569Z",
       "vehicles": [
@@ -3243,7 +3243,7 @@
           "id": "veh-RES-2026-1057-0",
           "quantity": 1,
           "totalPriceTND": 84900,
-          "carName": "Chery I03 4X4 (Black BL)",
+          "carName": "Chery I03 4X4",
           "carId": "car-1785753208837",
           "colorChosen": {
             "hexCode": "#171717",
@@ -3309,7 +3309,7 @@
       "commercialName": "Marwa Frikha",
       "notes": "⚡ Dossier Leasing avec Bon de Commande joint -> Réservation validée sans acompte requis.",
       "priceTND": 88900,
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "registrationFeeTND": 0,
       "documents": [
         {
@@ -3349,7 +3349,7 @@
       "id": "RES-2026-1047"
     },
     {
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "createdAt": "2026-09-14T11:33:14.203Z",
       "priceTND": 84900,
       "carId": "car-1785753208837",
@@ -3432,7 +3432,7 @@
       },
       "vehicles": [
         {
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "carName": "Chery Tiggo 7 PHEV",
           "unitPriceTND": 88900,
           "colorChosen": {
             "stock": 17,
@@ -3464,7 +3464,7 @@
       "priceTND": 88900,
       "status": "Confirmée",
       "createdAt": "2026-09-14T11:32:12.607Z",
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "id": "RES-2026-1056",
       "paymentMethod": "Chèque Certifié",
       "depositPaidTND": 0,
@@ -3479,7 +3479,7 @@
       "paymentMethod": "Leasing",
       "createdAt": "2026-09-14T11:26:45.135Z",
       "commercialId": "comm-ines",
-      "carName": "Chery Tiggo 7 PHEV (White BW)",
+      "carName": "Chery Tiggo 7 PHEV",
       "updatedAt": "2026-09-14T11:26:45.135Z",
       "id": "RES-2026-1044",
       "priceTND": 88900,
@@ -3546,7 +3546,7 @@
       "carId": "car-1785753278797"
     },
     {
-      "carName": "Chery Tiggo 9 PHEV (Black CM)",
+      "carName": "Chery Tiggo 9 PHEV",
       "client": {
         "societe": {
           "registreCommerce": "B1515652021",
@@ -3641,7 +3641,7 @@
       "updatedAt": "2026-09-14T11:10:08.728Z",
       "documents": [],
       "commercialName": "GODDI CHERY Nabeul",
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "status": "Confirmée",
       "createdAt": "2026-09-14T11:10:08.728Z",
       "priceTND": 84900,
@@ -3659,7 +3659,7 @@
           "quantity": 1,
           "unitPriceTND": 84900,
           "carId": "car-1785753208837",
-          "carName": "Chery I03 4X4 (Gray GY)",
+          "carName": "Chery I03 4X4",
           "totalPriceTND": 84900
         }
       ],
@@ -3708,7 +3708,7 @@
             "hexCode": "#217CB5"
           },
           "quantity": 1,
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797"
         }
       ],
@@ -3716,7 +3716,7 @@
       "commercialId": "comm-hanen",
       "createdAt": "2026-09-14T10:08:29.126Z",
       "commercialName": "Hanen Gharbi",
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "agency": "Chery Agence Ain Zaghouen",
       "registrationFeeTND": 0,
       "depositPaidTND": 0,
@@ -3780,7 +3780,7 @@
       ],
       "agency": "Chery Agence Ain Zaghouen",
       "expectedDeliveryDate": "2026-10-14",
-      "carName": "Chery Tiggo 7 PHEV (Phantom Gray GV)",
+      "carName": "Chery Tiggo 7 PHEV",
       "status": "Confirmée",
       "notes": "",
       "vehicles": [
@@ -3862,7 +3862,7 @@
         "name": "Silver SL",
         "hexCode": "#cfd3d8"
       },
-      "carName": "Chery I03 4X4 (Silver SL)",
+      "carName": "Chery I03 4X4",
       "expectedDeliveryDate": "2026-10-14",
       "client": {
         "personnePhysique": {
@@ -3922,7 +3922,7 @@
       "depositPaidTND": 0,
       "status": "Confirmée",
       "commercialName": "Ines Chaari",
-      "carName": "Chery Tiggo 7 PHEV (Phantom Gray GV)",
+      "carName": "Chery Tiggo 7 PHEV",
       "carId": "car-1785753278797",
       "registrationFeeTND": 0,
       "agency": "Chery Agence Ain Zaghouen",
@@ -3978,7 +3978,7 @@
       "carId": "car-1785513071800",
       "createdAt": "2026-09-14T07:45:03.624Z",
       "commercialId": "comm-ines",
-      "carName": "Chery Tiggo 9 PHEV (Huanyu Gray)",
+      "carName": "Chery Tiggo 9 PHEV",
       "status": "Confirmée",
       "vehicles": [
         {
@@ -4025,9 +4025,9 @@
       "commercialName": "Racha Jebeniani",
       "agency": "Chery siege",
       "carId": "car-1785753367152",
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "colorChosen": {
-        "id": "col-RES-2026-1025",
+        "id": "col-1-1785753367152",
         "name": "White BW",
         "hexCode": "#FFFFFF"
       },
@@ -4035,9 +4035,9 @@
         {
           "id": "veh-RES-2026-1025-0",
           "carId": "car-1785753367152",
-          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "carName": "Chery Tiggo 8 PHEV",
           "colorChosen": {
-            "id": "col-RES-2026-1025",
+            "id": "col-1-1785753367152",
             "name": "White BW",
             "hexCode": "#FFFFFF"
           },
@@ -4074,9 +4074,9 @@
       "commercialName": "Racha Jebeniani",
       "agency": "Chery siege",
       "carId": "car-1785753367152",
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "colorChosen": {
-        "id": "col-RES-2026-1026",
+        "id": "col-1-1785753367152",
         "name": "White BW",
         "hexCode": "#FFFFFF"
       },
@@ -4084,9 +4084,9 @@
         {
           "id": "veh-RES-2026-1026-0",
           "carId": "car-1785753367152",
-          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "carName": "Chery Tiggo 8 PHEV",
           "colorChosen": {
-            "id": "col-RES-2026-1026",
+            "id": "col-1-1785753367152",
             "name": "White BW",
             "hexCode": "#FFFFFF"
           },
@@ -4123,21 +4123,21 @@
       "commercialName": "Racha Jebeniani",
       "agency": "Chery siege",
       "carId": "car-1785514106502",
-      "carName": "Chery Himla 4X4 BVM (Black CH)",
+      "carName": "Chery Himla 4X4 BVM",
       "colorChosen": {
-        "id": "col-RES-2026-1032",
+        "id": "col-1786981947069",
         "name": "Black CH",
-        "hexCode": "#727783"
+        "hexCode": "#0A0A0A"
       },
       "vehicles": [
         {
           "id": "veh-RES-2026-1032-0",
           "carId": "car-1785514106502",
-          "carName": "Chery Himla 4X4 BVM (Black CH)",
+          "carName": "Chery Himla 4X4 BVM",
           "colorChosen": {
-            "id": "col-RES-2026-1032",
+            "id": "col-1786981947069",
             "name": "Black CH",
-            "hexCode": "#727783"
+            "hexCode": "#0A0A0A"
           },
           "quantity": 1,
           "unitPriceTND": 88900,
@@ -4233,7 +4233,7 @@
         }
       ],
       "registrationFeeTND": 0,
-      "carName": "Chery I03 4X4 (Green GN)",
+      "carName": "Chery I03 4X4",
       "createdAt": "2026-09-14T07:27:15.350Z",
       "priceTND": 84900
     },
@@ -4248,7 +4248,7 @@
       "agency": "Siege STA",
       "commercialId": "comm-marwa",
       "paymentMethod": "Chèque Certifié",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "colorChosen": {
         "interiorColor": "Cuir Noir",
         "id": "col-3-1785753278797",
@@ -4272,7 +4272,7 @@
           "unitPriceTND": 88900,
           "totalPriceTND": 88900,
           "carId": "car-1785753278797",
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)"
+          "carName": "Chery Tiggo 7 PHEV"
         }
       ],
       "carId": "car-1785753278797",
@@ -4343,7 +4343,7 @@
         "type": "societe"
       },
       "expectedDeliveryDate": "2026-10-11",
-      "carName": "Chery Arrizo 8 PHEV (Black CL)",
+      "carName": "Chery Arrizo 8 PHEV",
       "colorChosen": {
         "name": "Black CL",
         "hexCode": "#050505",
@@ -4365,7 +4365,7 @@
           "carId": "car-1785753278797",
           "id": "veh-RES-2026-1034-0",
           "totalPriceTND": 88900,
-          "carName": "Chery Tiggo 7 PHEV (Black CL)",
+          "carName": "Chery Tiggo 7 PHEV",
           "colorChosen": {
             "interiorColor": "Cuir Noir",
             "id": "col-1786454139529",
@@ -4390,7 +4390,7 @@
         "reserved": 3
       },
       "updatedAt": "2026-09-11T15:37:30.093Z",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "commercialId": "user-1787557241636",
       "paymentMethod": "Chèque Certifié",
       "priceTND": 88900,
@@ -4441,7 +4441,7 @@
       "createdAt": "2026-09-11T15:33:01.965Z",
       "commercialId": "user-1787557462429",
       "commercialName": "TAGOURTI CHERY Sousse",
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "carId": "car-1785753208837",
       "updatedAt": "2026-09-14T11:26:12.772Z",
       "paymentMethod": "Virement Bancaire",
@@ -4554,7 +4554,7 @@
           "telephone": "99643020"
         }
       },
-      "carName": "Chery I03 4X2 (Black BL)",
+      "carName": "Chery I03 4X2",
       "etaDate": "2026-09-11",
       "commercialName": "TAGOURTI CHERY Sousse",
       "status": "Confirmée",
@@ -4598,7 +4598,7 @@
         }
       ],
       "paymentMethod": "Virement Bancaire",
-      "carName": "Chery Tiggo 8 PHEV (Black CL)",
+      "carName": "Chery Tiggo 8 PHEV",
       "vehicles": [
         {
           "requiredDepositTND": 40000,
@@ -4684,7 +4684,7 @@
         "name": "Tech Gray GX",
         "id": "col-3-1785753278797"
       },
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "commercialId": "user-1787557241636",
       "client": {
         "societe": {
@@ -4706,7 +4706,7 @@
     {
       "createdAt": "2026-09-11T14:46:35.559Z",
       "depositPaidTND": 20000,
-      "carName": "Chery I03 4X4 (Silver SL)",
+      "carName": "Chery I03 4X4",
       "notes": "",
       "agency": "Chery siege",
       "expectedDeliveryDate": "2026-10-11",
@@ -4798,7 +4798,7 @@
       "commercialName": "K2EM CHERY Charguia 1",
       "agency": "Chery Agence Charguia 1",
       "priceTND": 76900,
-      "carName": "Chery I03 4X2 (Black BL)",
+      "carName": "Chery I03 4X2",
       "updatedAt": "2026-09-11T14:12:15.859Z",
       "status": "Confirmée",
       "documents": [],
@@ -4841,7 +4841,7 @@
           "quantity": 1,
           "id": "veh-RES-2026-1052-0",
           "unitPriceTND": 76900,
-          "carName": "Chery I03 4X2 (Black BL)"
+          "carName": "Chery I03 4X2"
         }
       ],
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1018)",
@@ -4869,7 +4869,7 @@
         {
           "totalPriceTND": 84900,
           "quantity": 1,
-          "carName": "Chery I03 4X4 (Black BL)",
+          "carName": "Chery I03 4X4",
           "colorChosen": {
             "reserved": 8,
             "name": "Black BL",
@@ -4898,7 +4898,7 @@
         "name": "Black BL",
         "hexCode": "#171717"
       },
-      "carName": "Chery I03 4X4 (Black BL)",
+      "carName": "Chery I03 4X4",
       "registrationFeeTND": 0,
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-1000)"
     },
@@ -4908,7 +4908,7 @@
       "vehicles": [
         {
           "carId": "car-1785514106502",
-          "carName": "Chery Himla 4X4 BVM (Silver Gray GR)",
+          "carName": "Chery Himla 4X4 BVM",
           "totalPriceTND": 102900,
           "unitPriceTND": 102900,
           "colorChosen": {
@@ -4955,7 +4955,7 @@
         "hexCode": "#BFBFBF",
         "interiorColor": "Cuir Noir"
       },
-      "carName": "Chery Himla 4X4 BVM (Silver Gray GR)"
+      "carName": "Chery Himla 4X4 BVM"
     },
     {
       "carId": "car-1785753278797",
@@ -4974,7 +4974,7 @@
       },
       "priceTND": 88900,
       "createdAt": "2026-09-11T10:21:54.587Z",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "updatedAt": "2026-09-11T10:21:54.587Z",
       "documents": [],
       "commercialName": "Ines Chaari",
@@ -4993,7 +4993,7 @@
       "status": "Confirmée",
       "vehicles": [
         {
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "id": "veh-RES-2026-1033-0",
           "unitPriceTND": 88900,
           "totalPriceTND": 88900,
@@ -5055,13 +5055,13 @@
           "quantity": 1,
           "unitPriceTND": 102900,
           "totalPriceTND": 102900,
-          "carName": "Chery Himla 4X4 BVM (Black CH)"
+          "carName": "Chery Himla 4X4 BVM"
         }
       ],
       "registrationFeeTND": 0,
       "priceTND": 102900,
       "status": "Confirmée",
-      "carName": "Chery Himla 4X4 BVM (Black CH)",
+      "carName": "Chery Himla 4X4 BVM",
       "commercialName": "Racha Jebeniani",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-998)",
       "agency": "Chery siege",
@@ -5083,7 +5083,7 @@
       ],
       "status": "Confirmée",
       "updatedAt": "2026-09-11T09:02:31.317Z",
-      "carName": "Chery Tiggo 8 PHEV (Green SJ)",
+      "carName": "Chery Tiggo 8 PHEV",
       "priceTND": 102990,
       "agency": "Chery Agence Sfax",
       "depositPaidTND": 40000,
@@ -5168,7 +5168,7 @@
         }
       ],
       "registrationFeeTND": 0,
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "notes": "LIVRAISON DE STA BEN AROUS",
       "id": "RES-2026-1014",
       "vehicles": [
@@ -5196,7 +5196,7 @@
         {
           "totalPriceTND": 88900,
           "quantity": 1,
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "id": "veh-RES-2026-1031-0",
           "colorChosen": {
@@ -5242,12 +5242,12 @@
       "id": "RES-2026-1031",
       "priceTND": 88900,
       "paymentMethod": "Chèque Certifié",
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "agency": "Chery Agence Ain Zaghouen"
     },
     {
       "createdAt": "2026-09-11T08:28:21.202Z",
-      "carName": "Chery I03 4X4 (Green GN)",
+      "carName": "Chery I03 4X4",
       "paymentMethod": "Chèque Certifié",
       "documents": [],
       "id": "RES-2026-1030",
@@ -5274,7 +5274,7 @@
             "stock": 9,
             "id": "col-1786454514433"
           },
-          "carName": "Chery I03 4X4 (Green GN)",
+          "carName": "Chery I03 4X4",
           "quantity": 1,
           "totalPriceTND": 84900,
           "id": "veh-RES-2026-1030-0",
@@ -5315,7 +5315,7 @@
           },
           "totalPriceTND": 88900,
           "unitPriceTND": 88900,
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797"
         }
       ],
@@ -5334,7 +5334,7 @@
         "name": "Tech Gray GX",
         "hexCode": "#727783"
       },
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "commercialId": "user-1787557384756",
       "createdAt": "2026-09-11T08:15:26.781Z",
       "depositPaidTND": 0,
@@ -5359,7 +5359,7 @@
       "carId": "car-1785753278797",
       "vehicles": [
         {
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "carName": "Chery Tiggo 7 PHEV",
           "id": "veh-RES-2026-1001-0",
           "totalPriceTND": 88900,
           "unitPriceTND": 88900,
@@ -5407,7 +5407,7 @@
       },
       "createdAt": "2026-09-11T08:03:19.838Z",
       "priceTND": 88900,
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-1001)"
     },
     {
@@ -5486,7 +5486,7 @@
         "id": "col-1786454499484"
       },
       "depositPaidTND": 20000,
-      "carName": "Chery I03 4X4 (Gray GY)",
+      "carName": "Chery I03 4X4",
       "carId": "car-1785753208837",
       "status": "En attente"
     },
@@ -5523,14 +5523,14 @@
       "createdAt": "2026-09-10T16:02:42.866Z",
       "depositPaidTND": 0,
       "carId": "car-1785753278797",
-      "carName": "Chery Tiggo 7 PHEV (White BW)",
+      "carName": "Chery Tiggo 7 PHEV",
       "updatedAt": "2026-09-10T16:02:42.866Z",
       "vehicles": [
         {
           "carId": "car-1785753278797",
           "quantity": 1,
           "id": "veh-RES-2026-1028-0",
-          "carName": "Chery Tiggo 7 PHEV (White BW)",
+          "carName": "Chery Tiggo 7 PHEV",
           "unitPriceTND": 88900,
           "colorChosen": {
             "id": "col-1-1785753278797",
@@ -5569,7 +5569,7 @@
           "requiredDepositTND": 30000
         }
       ],
-      "carName": "Chery Tiggo 7 PHEV (White BW)",
+      "carName": "Chery Tiggo 7 PHEV",
       "notes": "",
       "priceTND": 88900,
       "client": {
@@ -5660,7 +5660,7 @@
             "stock": 10
           },
           "unitPriceTND": 84900,
-          "carName": "Chery I03 4X4 (Green GN)"
+          "carName": "Chery I03 4X4"
         }
       ],
       "commercialId": "user-1785739349068",
@@ -5677,7 +5677,7 @@
         "type": "societe"
       },
       "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-998)",
-      "carName": "Chery I03 4X4 (Green GN)"
+      "carName": "Chery I03 4X4"
     },
     {
       "createdAt": "2026-09-10T14:18:19.924Z",
@@ -5694,7 +5694,7 @@
             "id": "col-3-1785753066750"
           },
           "id": "veh-RES-2026-1005-0",
-          "carName": "Chery Tiggo 4 HEV (Gray GV)",
+          "carName": "Chery Tiggo 4 HEV",
           "quantity": 1,
           "totalPriceTND": 79900,
           "unitPriceTND": 79900
@@ -5703,7 +5703,7 @@
       "paymentMethod": "Chèque Certifié",
       "status": "En attente",
       "commercialId": "comm-marwa",
-      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "carName": "Chery Tiggo 4 HEV",
       "depositPaidTND": 7990,
       "documents": [],
       "updatedAt": "2026-09-10T14:18:19.924Z",
@@ -5737,7 +5737,7 @@
     {
       "agency": "Chery siege",
       "registrationFeeTND": 0,
-      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "carName": "Chery Tiggo 4 HEV",
       "depositPaidTND": 7990,
       "carId": "car-1785753066750",
       "colorChosen": {
@@ -5762,7 +5762,7 @@
             "id": "col-3-1785753066750"
           },
           "totalPriceTND": 79900,
-          "carName": "Chery Tiggo 4 HEV (Gray GV)",
+          "carName": "Chery Tiggo 4 HEV",
           "carId": "car-1785753066750"
         }
       ],
@@ -5794,7 +5794,7 @@
         {
           "carId": "car-1785753066750",
           "unitPriceTND": 79900,
-          "carName": "Chery Tiggo 4 HEV (Gray GV)",
+          "carName": "Chery Tiggo 4 HEV",
           "colorChosen": {
             "id": "col-3-1785753066750",
             "interiorColor": "Cuir Noir",
@@ -5842,7 +5842,7 @@
       "priceTND": 79900,
       "agency": "Siege STA",
       "depositPaidTND": 0,
-      "carName": "Chery Tiggo 4 HEV (Gray GV)"
+      "carName": "Chery Tiggo 4 HEV"
     },
     {
       "commercialName": "Moez Ben Naser",
@@ -5850,7 +5850,7 @@
       "agency": "Siege STA",
       "priceTND": 79900,
       "carId": "car-1785753066750",
-      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "carName": "Chery Tiggo 4 HEV",
       "id": "RES-2026-1000",
       "colorChosen": {
         "id": "col-3-1785753066750",
@@ -5944,7 +5944,7 @@
             "reserved": 1,
             "interiorColor": "Cuir Noir"
           },
-          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)"
+          "carName": "Chery Tiggo 7 PHEV"
         }
       ],
       "client": {
@@ -5963,7 +5963,7 @@
       "createdAt": "2026-09-10T13:14:38.728Z",
       "status": "Confirmée",
       "registrationFeeTND": 0,
-      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "carName": "Chery Tiggo 7 PHEV",
       "documents": [],
       "depositPaidTND": 8890,
       "colorChosen": {
@@ -6004,7 +6004,7 @@
       },
       "vehicles": [
         {
-          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "colorChosen": {
             "name": "Tech Gray GX",
@@ -6022,7 +6022,7 @@
       ],
       "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-998)",
       "commercialId": "user-1787557525876",
-      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "carName": "Chery Tiggo 7 PHEV",
       "id": "RES-2026-1007",
       "agency": "Chery Agence Charguia 1",
       "carId": "car-1785753278797",
@@ -6051,7 +6051,7 @@
       "status": "Confirmée",
       "vehicles": [
         {
-          "carName": "Chery Himla 4X4 BVA (Black CH)",
+          "carName": "Chery Himla 4X4 BVA",
           "id": "veh-RES-2026-1008-0",
           "quantity": 1,
           "unitPriceTND": 119900,
@@ -6071,7 +6071,7 @@
       "commercialName": "K2EM CHERY Charguia 1",
       "depositPaidTND": 11990,
       "priceTND": 119900,
-      "carName": "Chery Himla 4X4 BVA (Black CH)",
+      "carName": "Chery Himla 4X4 BVA",
       "client": {
         "type": "societe",
         "societe": {
@@ -6089,7 +6089,7 @@
       "registrationFeeTND": 0
     },
     {
-      "carName": "Chery Tiggo 7 PHEV (Phantom Gray GV)",
+      "carName": "Chery Tiggo 7 PHEV",
       "registrationFeeTND": 0,
       "priceTND": 88900,
       "agency": "Chery Agence Djerba",
@@ -6171,7 +6171,7 @@
       "id": "RES-2026-996",
       "createdAt": "2026-09-10T10:40:12.404Z",
       "notes": "⏳ Dossier Leasing avec Accord joint -> Réservation provisoire 5 jours ouvrés.",
-      "carName": "Chery Himla 4X4 BVA (Black CH)",
+      "carName": "Chery Himla 4X4 BVA",
       "agency": "Chery Agence Charguia 1",
       "commercialId": "user-1787557525876",
       "vehicles": [
@@ -6240,13 +6240,13 @@
     },
     {
       "agency": "Chery siege",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "paymentMethod": "Chèque Certifié",
       "registrationFeeTND": 0,
       "vehicles": [
         {
           "totalPriceTND": 88900,
-          "carName": "Chery Tiggo 7 PHEV (Black CL)",
+          "carName": "Chery Tiggo 7 PHEV",
           "carId": "car-1785753278797",
           "unitPriceTND": 88900,
           "id": "veh-RES-2026-1009-0",
@@ -6310,7 +6310,7 @@
             "interiorColor": "Cuir Noir",
             "stock": 26
           },
-          "carName": "Chery Tiggo 7 PHEV (Black CL)"
+          "carName": "Chery Tiggo 7 PHEV"
         }
       ],
       "id": "RES-2026-1081",
@@ -6329,7 +6329,7 @@
       "createdAt": "2026-09-10T10:15:06.715Z",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-995)",
       "commercialId": "user-1787821380306",
-      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "carName": "Chery Tiggo 7 PHEV",
       "documents": [],
       "paymentMethod": "Chèque Certifié",
       "priceTND": 88900,
@@ -6361,7 +6361,7 @@
       "status": "Confirmée",
       "carId": "car-1785514106502",
       "commercialName": "K2EM CHERY Charguia 1",
-      "carName": "Chery Himla 4X4 BVM (Black CH)",
+      "carName": "Chery Himla 4X4 BVM",
       "agency": "Chery Agence Charguia 1",
       "registrationFeeTND": 0,
       "depositPaidTND": 0,
@@ -6577,7 +6577,7 @@
       "agency": "Chery Agence Sfax",
       "notes": "LIVRAISON DE STA ",
       "createdAt": "2026-09-10T09:50:35.312Z",
-      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "carName": "Chery Tiggo 4 HEV",
       "priceTND": 79900,
       "commercialName": "DISTRICARS Sfax",
       "registrationFeeTND": 0,
@@ -6609,7 +6609,7 @@
     },
     {
       "agency": "Chery siege",
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "commercialName": "Racha Jebeniani",
       "carId": "car-1785753367152",
       "status": "Confirmée",
@@ -6644,7 +6644,7 @@
           "id": "veh-RES-2026-1010-0",
           "unitPriceTND": 102990,
           "carId": "car-1785753367152",
-          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "carName": "Chery Tiggo 8 PHEV",
           "colorChosen": {
             "interiorColor": "Cuir Noir",
             "reserved": 1,
@@ -6669,7 +6669,7 @@
         {
           "carId": "car-1785753367152",
           "id": "veh-RES-2026-1041-0",
-          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "carName": "Chery Tiggo 8 PHEV",
           "colorChosen": {
             "interiorColor": "Cuir Noir",
             "stock": 5,
@@ -6688,7 +6688,7 @@
       "documents": [],
       "status": "Confirmée",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-993)",
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "commercialName": "Racha Jebeniani",
       "createdAt": "2026-09-10T09:08:25.790Z",
       "client": {
@@ -6791,7 +6791,7 @@
       "expectedDeliveryDate": "2026-10-10",
       "depositPaidTND": 20000,
       "priceTND": 76900,
-      "carName": "Chery I03 4X2 (Black BL)",
+      "carName": "Chery I03 4X2",
       "client": {
         "type": "personne_physique",
         "personnePhysique": {
@@ -6838,7 +6838,7 @@
           "carId": "car-1785753367152",
           "totalPriceTND": 102990,
           "id": "veh-RES-2026-1011-0",
-          "carName": "Chery Tiggo 8 PHEV (White BW)"
+          "carName": "Chery Tiggo 8 PHEV"
         }
       ],
       "colorChosen": {
@@ -6851,7 +6851,7 @@
       },
       "createdAt": "2026-09-10T08:59:53.837Z",
       "paymentMethod": "Chèque Certifié",
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "agency": "Chery siege",
       "registrationFeeTND": 0,
       "id": "RES-2026-1011",
@@ -6870,7 +6870,7 @@
         "hexCode": "#FFFFFF"
       },
       "priceTND": 102990,
-      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "carName": "Chery Tiggo 8 PHEV",
       "id": "RES-2026-1040",
       "client": {
         "personnePhysique": {
@@ -6910,7 +6910,7 @@
           "unitPriceTND": 102990,
           "id": "veh-RES-2026-1040-0",
           "carId": "car-1785753367152",
-          "carName": "Chery Tiggo 8 PHEV (White BW)"
+          "carName": "Chery Tiggo 8 PHEV"
         }
       ],
       "updatedAt": "2026-09-10T08:59:53.837Z"
@@ -7483,8 +7483,8 @@
         {
           "carName": "Chery Arrizo 8 PHEV",
           "colorChosen": {
-            "hexCode": "#FFFFFF",
-            "id": "col-RES-2026-932",
+            "hexCode": "#ffffff",
+            "id": "col-1-1785512735025",
             "name": "White BW"
           },
           "unitPriceTND": 89900,
@@ -7500,8 +7500,8 @@
       "paymentMethod": "Chèque Certifié",
       "colorChosen": {
         "name": "White BW",
-        "id": "col-RES-2026-932",
-        "hexCode": "#FFFFFF"
+        "id": "col-1-1785512735025",
+        "hexCode": "#ffffff"
       },
       "carName": "Chery Arrizo 8 PHEV",
       "documents": [],
@@ -7623,7 +7623,7 @@
           "totalPriceTND": 79900,
           "carName": "Chery Tiggo 4 HEV",
           "colorChosen": {
-            "id": "col-RES-2026-242",
+            "id": "col-3-1785753066750",
             "hexCode": "#6E6F72",
             "name": "Gray GV"
           },
@@ -7637,7 +7637,7 @@
       "status": "Confirmée",
       "notes": "Bon de réservation reconstruit avec précision depuis la traçabilité STA (Audit #RES-2026-242)",
       "colorChosen": {
-        "id": "col-RES-2026-242",
+        "id": "col-3-1785753066750",
         "name": "Gray GV",
         "hexCode": "#6E6F72"
       },
@@ -8207,7 +8207,7 @@
       "depositPaidTND": 8890,
       "status": "Confirmée",
       "colorChosen": {
-        "id": "col-RES-2026-365",
+        "id": "col-1-1785753278797",
         "name": "White BW",
         "hexCode": "#FFFFFF"
       },
@@ -8223,7 +8223,7 @@
           "unitPriceTND": 88900,
           "colorChosen": {
             "name": "White BW",
-            "id": "col-RES-2026-365",
+            "id": "col-1-1785753278797",
             "hexCode": "#FFFFFF"
           }
         }
@@ -8993,14 +8993,14 @@
       "colorChosen": {
         "name": "Black CL",
         "hexCode": "#050505",
-        "id": "col-RES-2026-103"
+        "id": "col-1786454139529"
       },
       "vehicles": [
         {
           "colorChosen": {
             "name": "Black CL",
             "hexCode": "#050505",
-            "id": "col-RES-2026-103"
+            "id": "col-1786454139529"
           },
           "id": "veh-RES-2026-103-0",
           "carId": "car-1785753278797",
@@ -10059,8 +10059,8 @@
           "quantity": 1,
           "colorChosen": {
             "name": "Green SC",
-            "hexCode": "#2E4B3D",
-            "id": "col-RES-2026-106"
+            "hexCode": "#529d48",
+            "id": "col-1-1787908920743"
           },
           "unitPriceTND": 119900,
           "id": "veh-RES-2026-106-0",
@@ -10070,8 +10070,8 @@
       ],
       "createdAt": "2026-09-08T13:01:58.040Z",
       "colorChosen": {
-        "hexCode": "#2E4B3D",
-        "id": "col-RES-2026-106",
+        "hexCode": "#529d48",
+        "id": "col-1-1787908920743",
         "name": "Green SC"
       },
       "notes": "Bon de réservation reconstruit avec précision depuis la traçabilité STA (Audit #RES-2026-106)",
@@ -10107,7 +10107,7 @@
           "carName": "Chery Tiggo 7 PHEV",
           "id": "veh-RES-2026-167-0",
           "colorChosen": {
-            "id": "col-RES-2026-167",
+            "id": "col-1-1785753278797",
             "name": "White BW",
             "hexCode": "#FFFFFF"
           }
@@ -10138,7 +10138,7 @@
       "priceTND": 88900,
       "colorChosen": {
         "name": "White BW",
-        "id": "col-RES-2026-167",
+        "id": "col-1-1785753278797",
         "hexCode": "#FFFFFF"
       }
     },
@@ -10728,17 +10728,17 @@
           "id": "veh-RES-2026-495-0",
           "unitPriceTND": 129900,
           "colorChosen": {
-            "hexCode": "#F8FAFC",
+            "hexCode": "#FCFCFC",
             "name": "White BX",
-            "id": "col-RES-2026-495"
+            "id": "col-1-1785513071800"
           }
         }
       ],
       "status": "Confirmée",
       "priceTND": 129900,
       "colorChosen": {
-        "id": "col-RES-2026-495",
-        "hexCode": "#F8FAFC",
+        "id": "col-1-1785513071800",
+        "hexCode": "#FCFCFC",
         "name": "White BX"
       },
       "registrationFeeTND": 0,
@@ -12300,7 +12300,7 @@
           "totalPriceTND": 88900,
           "colorChosen": {
             "name": "Tech Gray GX",
-            "id": "col-RES-2026-714",
+            "id": "col-3-1785753278797",
             "hexCode": "#727783"
           },
           "carName": "Chery Tiggo 7 PHEV",
@@ -12312,7 +12312,7 @@
       "id": "RES-2026-714",
       "colorChosen": {
         "name": "Tech Gray GX",
-        "id": "col-RES-2026-714",
+        "id": "col-3-1785753278797",
         "hexCode": "#727783"
       }
     },
@@ -12345,7 +12345,7 @@
           "colorChosen": {
             "name": "Black CL",
             "hexCode": "#050505",
-            "id": "col-RES-2026-345"
+            "id": "col-1786454139529"
           },
           "quantity": 1,
           "carId": "car-1785753278797",
@@ -12357,7 +12357,7 @@
       ],
       "status": "Confirmée",
       "colorChosen": {
-        "id": "col-RES-2026-345",
+        "id": "col-1786454139529",
         "hexCode": "#050505",
         "name": "Black CL"
       },
@@ -12433,7 +12433,7 @@
       "id": "RES-2026-757",
       "priceTND": 88900,
       "colorChosen": {
-        "id": "col-RES-2026-757",
+        "id": "col-1786454139529",
         "name": "Black CL",
         "hexCode": "#050505"
       },
@@ -12455,7 +12455,7 @@
           "colorChosen": {
             "hexCode": "#050505",
             "name": "Black CL",
-            "id": "col-RES-2026-757"
+            "id": "col-1786454139529"
           }
         }
       ],
@@ -12478,8 +12478,8 @@
       "registrationFeeTND": 0,
       "colorChosen": {
         "name": "Silver Gray GR",
-        "hexCode": "#BFBFBF",
-        "id": "col-RES-2026-577"
+        "hexCode": "#475569",
+        "id": "col-2-1787908920743"
       },
       "notes": "Bon de réservation reconstruit avec précision depuis la traçabilité STA (Audit #RES-2026-577)",
       "priceTND": 119900,
@@ -12507,9 +12507,9 @@
         {
           "carName": "Chery Himla 4X4 BVA",
           "colorChosen": {
-            "id": "col-RES-2026-577",
+            "id": "col-2-1787908920743",
             "name": "Silver Gray GR",
-            "hexCode": "#BFBFBF"
+            "hexCode": "#475569"
           },
           "unitPriceTND": 119900,
           "totalPriceTND": 119900,
@@ -12713,7 +12713,7 @@
           "colorChosen": {
             "name": "Tech Gray GX",
             "hexCode": "#727783",
-            "id": "col-RES-2026-567"
+            "id": "col-3-1785753278797"
           },
           "quantity": 1,
           "carId": "car-1785753278797",
@@ -12726,7 +12726,7 @@
       "colorChosen": {
         "hexCode": "#727783",
         "name": "Tech Gray GX",
-        "id": "col-RES-2026-567"
+        "id": "col-3-1785753278797"
       },
       "carName": "Chery Tiggo 7 PHEV",
       "client": {
@@ -12867,7 +12867,7 @@
       "vehicles": [
         {
           "colorChosen": {
-            "id": "col-RES-2026-269",
+            "id": "col-3-1785753278797",
             "hexCode": "#727783",
             "name": "Tech Gray GX"
           },
@@ -12889,7 +12889,7 @@
       "documents": [],
       "colorChosen": {
         "hexCode": "#727783",
-        "id": "col-RES-2026-269",
+        "id": "col-3-1785753278797",
         "name": "Tech Gray GX"
       },
       "commercialId": "user-1787557241636",
@@ -12905,7 +12905,7 @@
       "paymentMethod": "Chèque Certifié",
       "colorChosen": {
         "name": "Tech Gray GX",
-        "id": "col-RES-2026-748",
+        "id": "col-3-1785753278797",
         "hexCode": "#727783"
       },
       "client": {
@@ -12929,7 +12929,7 @@
           "colorChosen": {
             "hexCode": "#727783",
             "name": "Tech Gray GX",
-            "id": "col-RES-2026-748"
+            "id": "col-3-1785753278797"
           },
           "id": "veh-RES-2026-748-0",
           "carId": "car-1785753278797",
@@ -12959,7 +12959,7 @@
       "colorChosen": {
         "name": "Black BL",
         "hexCode": "#171717",
-        "id": "col-RES-2026-178"
+        "id": "col-1-1785753150277"
       },
       "status": "Confirmée",
       "registrationFeeTND": 0,
@@ -12985,7 +12985,7 @@
           "colorChosen": {
             "hexCode": "#171717",
             "name": "Black BL",
-            "id": "col-RES-2026-178"
+            "id": "col-1-1785753150277"
           },
           "unitPriceTND": 76900,
           "id": "veh-RES-2026-178-0",
@@ -13052,21 +13052,21 @@
       "commercialId": "user-1787557241636",
       "commercialName": "DISTRICARS Sfax",
       "agency": "Chery Agence Sfax",
-      "carId": "car-1787824742701",
-      "carName": "Chery Himla 4X4",
+      "carId": "car-1785514106502",
+      "carName": "Chery Himla 4X4 BVM",
       "colorChosen": {
-        "id": "col-RES-2026-132",
-        "name": "Noir Ébène",
+        "id": "col-1786981947069",
+        "name": "Black CH",
         "hexCode": "#0A0A0A"
       },
       "vehicles": [
         {
           "id": "veh-RES-2026-132-0",
-          "carId": "car-1787824742701",
-          "carName": "Chery Himla 4X4",
+          "carId": "car-1785514106502",
+          "carName": "Chery Himla 4X4 BVM",
           "colorChosen": {
-            "id": "col-RES-2026-132",
-            "name": "Noir Ébène",
+            "id": "col-1786981947069",
+            "name": "Black CH",
             "hexCode": "#0A0A0A"
           },
           "quantity": 1,
@@ -13100,21 +13100,21 @@
       "commercialId": "comm-bassem",
       "commercialName": "Bassem Jerbi",
       "agency": "siege STA",
-      "carId": "car-1787824742701",
-      "carName": "Chery Himla 4X4",
+      "carId": "car-1785514106502",
+      "carName": "Chery Himla 4X4 BVM",
       "colorChosen": {
-        "id": "col-RES-2026-143",
-        "name": "Noir Ébène",
+        "id": "col-1786981947069",
+        "name": "Black CH",
         "hexCode": "#0A0A0A"
       },
       "vehicles": [
         {
           "id": "veh-RES-2026-143-0",
-          "carId": "car-1787824742701",
-          "carName": "Chery Himla 4X4",
+          "carId": "car-1785514106502",
+          "carName": "Chery Himla 4X4 BVM",
           "colorChosen": {
-            "id": "col-RES-2026-143",
-            "name": "Noir Ébène",
+            "id": "col-1786981947069",
+            "name": "Black CH",
             "hexCode": "#0A0A0A"
           },
           "quantity": 1,
@@ -13202,7 +13202,7 @@
       "carId": "car-1785753278797",
       "carName": "Chery Tiggo 7 PHEV",
       "colorChosen": {
-        "id": "col-RES-2026-583",
+        "id": "col-3-1785753278797",
         "name": "Tech Gray GX",
         "hexCode": "#727783"
       },
@@ -13212,7 +13212,7 @@
           "carId": "car-1785753278797",
           "carName": "Chery Tiggo 7 PHEV",
           "colorChosen": {
-            "id": "col-RES-2026-583",
+            "id": "col-3-1785753278797",
             "name": "Tech Gray GX",
             "hexCode": "#727783"
           },
@@ -13393,7 +13393,7 @@
       "registrationFeeTND": 0,
       "notes": "MERCI D'ACCELERER LA CARTE GRISE | ⚡ Cas n°1 : Bon de commande leasing joint -> Réservation immédiatement validée.",
       "depositPaidTND": 20000,
-      "carName": "Chery Himla 4X4",
+      "carName": "Chery Himla 4X4 BVM",
       "client": {
         "personnePhysique": {
           "email": "jarrayamdomar@gmail.com",
@@ -13457,7 +13457,7 @@
       ],
       "commercialId": "comm-bassem",
       "colorChosen": {
-        "hexCode": "#fcfcfc",
+        "hexCode": "#FCFCFC",
         "id": "col-1-1785513071800",
         "name": "White BX"
       },
@@ -13508,7 +13508,7 @@
       "colorChosen": {
         "id": "col-1-1785753278797",
         "name": "White BW",
-        "hexCode": "#ffffff"
+        "hexCode": "#FFFFFF"
       },
       "expectedDeliveryDate": "2026-09-20",
       "id": "RES-2026-654",
@@ -13613,7 +13613,7 @@
       "depositPaidTND": 50000,
       "colorChosen": {
         "name": "White BX",
-        "hexCode": "#fcfcfc",
+        "hexCode": "#FCFCFC",
         "id": "col-1-1785513071800"
       },
       "agency": "Chery Agence Ain Zaghouen",
@@ -14010,42 +14010,42 @@
     }
   ],
   "siteSettings": {
-    "homeBackgroundType": "image",
-    "footerLogoUrl": "data:image/png;base64,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",
-    "footerCopyright": "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.",
-    "accentColor": "#DC2626",
-    "siteBackgroundImageUrl": "https://galerie.automobile.tn/max/2026/04/chery-i03-69.77-kwh-4x4-106815.webp",
-    "siteBackgroundVideoUrl": "",
-    "siteName": "STA Tunisie",
-    "announcementBanner": {
-      "enabled": true,
-      "text": "⚡ [Super Admin DSI] Système de réservation opérationnel. Mises à jour automatiques des arrivages et personnalisations.",
-      "type": "alert"
-    },
-    "voucherCompanyName": "CHERY TUNISIE",
-    "homeBackgroundBlur": false,
-    "faviconUrl": "/sta_logo.svg",
-    "headerBadgeText": "Espace Commercial & Direction",
-    "voucherCompanySubtitle": "Société Tunisienne d'Automobiles (STA)",
     "defaultThemeMode": "light",
+    "footerCopyright": "© 2026 STA — Société Tunisienne d'Automobiles. Conçu & Développé par Jamai Mongi. Tous droits réservés.",
+    "homeBackgroundOverlayOpacity": 0.1,
     "homeBackgroundVideoUrl": "",
-    "homeBackgroundImageUrl": "https://puromotor.com/wp-content/uploads/2025/11/HIMLA-PORTILLO_9.jpg",
-    "siteSubtitle": "Système de Réservation, Stocks & Gestion des Accès — Siège STA",
-    "siteBackgroundBlur": false,
-    "siteBackgroundOverlayOpacity": 0.1,
+    "logoUrl": "data:image/png;base64,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",
     "dsiContact": {
       "address": "Direction Informatique (DSI) - Siège STA, Zone Industrielle Ben Arous, Tunis",
-      "email": "dsi.support@chery.tn",
+      "supportHours": "Lun - Ven: 08:00 - 17:30",
       "phone": "+216 71 800 990",
-      "supportHours": "Lun - Ven: 08:00 - 17:30"
+      "email": "dsi.support@chery.tn"
     },
-    "siteBackgroundType": "image",
-    "logoUrl": "data:image/png;base64,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",
-    "voucherLogoUrl": "https://1000logos.net/wp-content/uploads/2020/04/Chery-Logo.png",
+    "voucherCompanyName": "CHERY TUNISIE",
     "footerSubtitle": "Distributeur Officiel & Réseau Agréé",
-    "homeBackgroundOverlayOpacity": 0.1,
+    "voucherLogoUrl": "https://1000logos.net/wp-content/uploads/2020/04/Chery-Logo.png",
+    "siteBackgroundVideoUrl": "",
+    "faviconUrl": "/sta_logo.svg",
+    "siteBackgroundBlur": false,
+    "voucherCompanySubtitle": "Société Tunisienne d'Automobiles (STA)",
+    "announcementBanner": {
+      "enabled": true,
+      "type": "alert",
+      "text": "⚡ [Super Admin DSI] Système de réservation opérationnel. Mises à jour automatiques des arrivages et personnalisations."
+    },
+    "siteBackgroundOverlayOpacity": 0.1,
+    "homeBackgroundImageUrl": "https://puromotor.com/wp-content/uploads/2025/11/HIMLA-PORTILLO_9.jpg",
+    "headerBadgeText": "Espace Commercial & Direction",
+    "accentColor": "#DC2626",
+    "homeBackgroundBlur": false,
+    "siteSubtitle": "Système de Réservation, Stocks & Gestion des Accès — Siège STA",
+    "footerLogoUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAApgAAADYCAYAAABP9pOMAAAACXBIWXMAACxKAAAsSgF3enRNAAAgAElEQVR4nO3dX4glV37Y8d+YWYIWk74igUgQ6KtIsBgMfUXyYtBmejDkD4mZ1pNkCHTL0UMIhrljG9ZKCHPnaWUSPD1v+6D13IFgIvIw3eQlLAh1O4LVg0HdYWHZsGt1g2G1D2b7guPxsnJuqPGvtKU7de6tqnvq1u936vuBQbv6U/dU1TlVvzp/fufafD4XdOoNEXmRW4AKDo1dpJGIDAyUA6jqhCv11Kq2e6F/gMYIMOPYFpHX9Uh7+td/KCJ/r3B0XsRYx5WIPG/oCh6IyEMD5QCqOhWR3R5erZG+l0b6Z7vGf3suImf650T/ClRCgFnPG9pAf01EviYiWyLynKcTgEufi8grInJppPAjfdlsGSgLUMVMRIb6odYHWRsda2AZs51mz6AjHU2hhxNLEWCGvSYi/0pE/oU+mOiBRFfeFJH3jVz9gfZi1OkFAbr2ak963w40sNzZwG9lPcITph0ghADzy76pAeXX6JmEEUeF6RcWZOW5ReWAI2+JyDTxG7ar59jFhx+BJkr1PcDMGuN/0p7KFwyUByj6zNgCsOwlctdAOYCqHmmvXqoGGlha+Oh7oM+IvkxDwAp9DTCzIYTfFpF/lF0DA+UBFj0RkV8xNO8y6yH50EA5gKrOtd6mGvDsaXBpaS70pQb09GZCfqlHlyDrrXxPRH4uIvdF5GWCSxg112E9K8HlUIfGAS9mGoClGlxmi2weG1xot60fomMDZUHH+tCDua3DJP+UgBJOfFtE3jZS1IH2Rmxi0QAQy+uJfhRZGhJfJfXpCVgh9QDzsTZEAkt48SNNSWRF9jLbp/bAkXs6FzA1Hj/2jjXIZF5mD6UaYGbd8/9ZRK4bKAtQVTbv8quGrhbJ1OHNcWGzi5R4HklIfS4sAlILMLPh8I9ZEQ6H5jqN4yMjRc8SNX9ioBxAVZdab1MLZFKYppJq4I8lUlrkk/Va/pDgEk79gaHgcsCiHjiT8qKeFOZA3+pBLlIsSCXAfKwrwxkSh0fZDiPvGCr3ETv1wJlxojv1TBNaYLfP6vJ+SWGI/IeacgjwKOtxed5QuUmmDm9SXa081o6T1NwkT2Y/eA4wsx6W77OlIxzLGt9LhvJd7uloAODFuc67TE3KGxvM9J5dGCgLWuR1iJzgEin4HUPB5Yg5UnBmlvCK8ZTnQG/xrOkHjwEmwSVScKq7cVgwMLjlHLDKXqK9YEc9aIs3mI+ZPo8B5gcEl3DuMx0Cs+KQnXrgzJ1E5/GNNfjqg/uJTm+A8jYH86RHjQ9p+lx36rEyNJ7qQgKkK9Wcin3MPZvqHNreE2c9mH36skO6/o2xeZcEl/DkPNEV44OezkvcSXRbz94TRz2Y2bzLT9lTHM5lc6teN3IKA52/xrxLeDHTqSUp5rvMpqncNlCOrpC6KEFeAkxyXcK7H+nQuBVnzLuEM28l2stHerB0t/nsNQ9D5GOCSzj3RER+3dApsKgH3jxINLjs69D4om2GytPjoQfzp9oIAY+yBvabIvK+kbJn89ceGigHUFXKC0GOdJ9u/K3XE88B2ivWezDfI7iEc39kKLgcGcq9CVQxM5bSK6YxweUzprzz02G9B/PnInLdQDmAJizNuxzoJHqGxuHJq4ku6hlpe2SR3bNSTUPVO5Z7MMcEl3DsibFFPVOCSzhzJ9HgUtg5a6lbiaai6h3LAeY3DJQBaCIbFvhnhq4cQ3Hw5lHC0zlYZLdado2G1guJ5awOkW8nuscs+uFdEXnHyJlm89c+NFAOoKpzrbcppqyhPVZ3mvD8216wGmA+Zg4GnDrTeWMWDLU8DMXBi5STqbO5QX13WJjol9UAk9RE8CjrcXneULlJpg5vUk5TQ0qiZlJd6JU8i3Mwtwku4dDcWK4+FvXAm3sJB5cHBJeNkYjeKYsB5r8zUAagrt/R7c4syKaX7HMH4chpwju5DBnmXcsOu/z4ZHGI/JPEdm240nk3s8LX+Z+KyEcdlwvAL2Q5CW8Yvx43tZzwhakqcVD/nbGYZ9JS7sCmsgTb/11EvmWoVwsAsFkTgstoptr5lGJ2gSRZHCL/ZQNlaGKuwzxDDZLfIbgEgN7KVsPf5fZHs81QuS/WAsw3DJShic9E5CV9oBBUAkC/DVic0orbpDD0w1qA6XHu5bdF5EUCSwCAOtQeN8Q3JdOMD9YCzF8zUIY6suDybT/FBQC0jCwO7dqid9gHawGmpx0OjgguAQAFQ4KfjbiluUVhmLUA08vm9le64wQAALkpW0FuzKGjmKGXLK4i9+A3+n4BAABfMnGQSzUlDJUbR4BZ32ckSQcAFIxISdSJLKAf9/C8XbAWYP5dA2VYhS8mAEBukPAe6h7cT2z3v2RYCzA99Ki+Y6AMAAAbJs5TEr0lIucGyrEOOn4MYoi8HraoAgDk9jT5t1fHGpxl5zFzfB477PJjDwFmPX/hqbAAgNZ4363nspDq5yKBAO2u7qYHIwgw6/lzT4UFALTmyHlKooOFUbks7c9ph+WJgV1+DLEWYM4NlAEAgGXGzlMSPRCRk5K/732ofJuhcjusBZieKzYAIH0jXbns1fmS1D5XCeyQc1sDZXSMIXIAAKrzPO9yViGAPNLFP54xVG4AAWY9O54KCwCI6tD5eyAbPj6r8O8d6CIgr9jlxwBrAab1XFy/bKAMAIDN200gJdFhxX83haHyWwmcg2v0YNZzXURe81RgAMDavO/WU2VofNGJLgbyLAuoh87PwS1rAaaHBvy7BsoAANicaWIpiaqaON/lh6HyDlkLMP/UQBlW+de2iwcAiGisw61ePVij8yaFofIbpC7qhrUA8yMHuTCzYfJvGigHAKBdI+fByXmE8meLgu5FKk9X7uq9xAZZnIP5EwNlWOX3NKErACBdfR0aX+R9qFwYKt88iwHmxwbKsErWi/mB7SICANYwcZ6S6E7FlERVed/lZ6fGKnpEYDHA/G8GylDFyyLyQ/vFBADUtKvDql6dthBMXSQwl/G23ltsgMUA830R+dxAOarIgswfM1wOAMkYJLBbT1tbJR5q8OoZu/xsiNU8mN8zUIaqXtCeTBb+AIB/U+edBrHmXYZ4HyrfZqh8M6wGmO8aKEMd2ZzM3xeRn4rIe36KDQAoOHCekujRBvJJp5C6aL/FXl6oa/O52axAfyUizxkoRxPZRf0z3QlhqumXANh1ovnyLLup5UQ7hrooxuuq8UtNxdNm72XRkfNgfKb3fFPXq3euGz7hPxaRf2ugHE1c0/mZL+s5zLUy/4WI/Lm/00nK/9bgv8xjfUgD6B/vKYn2NhwsHWhA7nU6Qb7LDz2ZLbHcg5n5G/ZLR0eyhWZ/qT+d53870kVd73NTkkMPZr9NnK8av9fRCu9sRfaHHfxuTHeYk9kO6wGmh4c++umJ9kr/QANPej99I8Dsr2xY+RPHZ3/aceqdQ03/49VM68CF43MwyXqAmfm58aF8IPdEA87/KSLfIuB0hQCznwbOh3ktBEcDrZeek9J3HaQnycPw838xUAagiuf0Yf/7+sD/sWYVIE8qYNOh8/Y5NtDzlsKq8hsJJJE3x0OA+Q6rvODUC7rIqxhsArBhT9PVeHVsKCH8mc4D9eyudhAgEi8LaH5DV2IDXuXB5v/T4aTXuJNAZ4bOd+u5NNhrOCksiPTKc50wx0uAmeWR/CMD5QDWdU2HY/6X7gBFoAlsnveURG3v1tOU911+dlhRHo+nFEBvi8iPDJQDiOVlDTQ/YZ4msDFj59lJ7hle7HWRwFzG2yz4icNbjslXdKUukJJs3s+nmuoIQHuytnbf8fU9dxDAHeqqbM+mujoea/CYxPxXCDKRoGs6vPRThs2BVgycz7GbOdp1xvtQ+TZD5evzGGBeEmQiYdlL8E9E5JvcZCCqifNcjRNHycBTSF20zzaS6/G6DSNBJlJ2TXNpet5dBLBkz/luM8cOe9SOtNyeMVS+Bs/7fBNkInUjXWnOAiCguRSGxr32Bh4439Fsi9RFzXkOMKUQZLK6HKnKVpp/nyATaMx7SqI9x5uNpDBUfkszD6Am7wGmaJD5inbHAyl6jiATaGSsAYJXDxLYf/5Ez8OziSbnRw0pBJi510XkTRH53EZxgKiyIPMDLilQ2ch5TsbzhHrOvO/yw1B5AykFmJn3tTfTew4uoMzLLPwBKvM8NO553mWZFIbKbySQRH6jUgswRYfMd7U30+u8FSBkRAojYKXDBFISnRkoR0xnuguRZ3f1GYwKUgwwc1lv5vMicodhcyTmGyRjB4J2nackOk04ybf3oXJhqLy6lAPMXNZQvyIi79KjiURkeTL/BzcTeMbA+YJPT7v1NOV9l58ddvmppg8BZu6dQo8maY3g3YChcuAZ3lMSHfSgI+QigbmMt7WnHEv0KcDMHepCoKF+6ZKoHV79HncO+MJBAimJ+pJu7zCBxbjs8rNCHwPM3KWmNvqqiHxdGzZD6PDkuoi8xx0DnnYYeB62PO/hCmXvQ+XbDJUv1+cAs+gjDTaf1wfVu7rijd5NWLfPHQKedhAwNO5LCqmL9nswZ7YxAsxnXep8zVe1d/Oazts80rmb9HLCEnox0XcT5ymJ7iWYkqiq7L167KOoQQyVB1ybz+cmC+bAtvZ6/qrO6ZSFhxwVDptypb3vaO5EEylbdjOBbQNjyxZafOi4/KcsFnn6rjxzvhXuMT2ZzyLAROreEJEXC+d4Q4Oxr4nI39cewBR8Xad6oBkCTH+8ByYzTdp9YaAsXfP+oSA60smczIJUXq5AyPsLf3/xAZAlLP/3IvIvnfc6/y4BJnrm0Hmv14GB4NLSwqJL5/dzokP+fDAoAkz03UeFwOw1nU/zssNr8s8NlAHYlD3nC9weGUhJdOh8xyNrtvT90fcpD19gkQ/wCx/pfNo3HWYQeI7tI9ETQ+fb9WU9deOOy+B9O02rbvQw3VQQASbwrPc1g4C3HZ+8p/wAqvC+W89ex9lIvG+nad1dnVvbewSYQNgrzoLMf2ygDECbJg4WYy1jISWR9wDdA8897NEQYALLeQoyhwbKALRlpL1DXlnYrWfsfDtNL7KUhb1fUU6ACaz26yLyuYPrRO5VpGrgvFdoZiBP4oj5gRt1u+8LfggwgdUuddWnB29wP5Eg77v1jA2kr2FofPN6vcsPASZQzdtOejFfrPDvAJ7sOV/xfGyg9/XQeYDu1Xafh8oJMIHqvufgWnleAAEs8j40fmkguwMpibq139dtJAkwgeo8DJOzJzlScuR8WPeAlETo61A5ASZQXe9XBQIbNHbeI//AwN7xzLu0YauPqYsIMIF6rO/wwzwrpCBb8Xzf8XmcG9ith5REttwyUCc2igATqOdnXC+gdd5TEnU975KURDZN+pSvmAATAGCJ9xXPE3brQUCvhsoJMAEAVnhf8XxsYK42KYlsu9GX3mUCTACABd5XPFsYGiclkQ93dRpD0ggwgXr+DtcLaIX3Yd09UhKhhuSHygkwgXqe43oB0Xlf8UxKItS1k3rqOwJMoLpepZgANmTofE7auYHyH5CSyKXbOq0hSQSYQHX7Dq7VhYEyAHWwW896hmwC4Vqyu/wQYALV/aqDazUzUAagqonzFc93DKQk8h6g9912qh8IBJhANe+JyHWuFRDNrq6m9erUQGDgPUDH39rXRWJJIcAEVtt2Mjye+aGBMgCrDBLYrafrgMB7gI4vS26onAATWO0DR72X3zNQBmCVqX64edX1vEvvATqeldwuPwSYwHJZj+DLjq7Rjw2UAVjG+4rnRwbyTXoP0FHuVkrZSggwgTBvwWXmfQNlAEK8r3i+NBAAkJIobRNtJ+4RYALPyl4gf+UwuPzcQBmAZditZz2kJEpfMkPlBJjAL4y11/K+0x17/tJAGYCQrGfmhuOrc4+URNiQG843H3iKABN9N9Yt3n6mgaW3XsuicztFAb5klEBKoq5f+KQk6pe72m7c6ltev9dE5J8YKAc2L0uS/or+6te0FyC1fcW/a6AMwKKBgUUx65jpvMcukZKon6aeg8w+BZhZcPknInLNQFmANnyLqwqDDhNISdTlFqykJOqvHW0/LleW9yXAzB5u3yG4RMKe6ApXwJI9R5sUlDkmJdFGnUdeRDVKYM7qba2DJwbKUktfAswPEhwOBYp+wNWAMd573i4NDI0Ptff0XsRjxgxULjru3V1lksjUgnyovMsMBrX1IcB8z/nCDaCKR1wlGON9xXPXu/WIBm/JJN7uwER70b0vjtrWofKuP3hqSX0V+Rsi8lsGygG0aU5uPBgzTiAlkbshSZRyFZQtsW9g//taUg4ws4j/IfMu0QN/xk2GISNN+eXVeQo5CPGFs8hTDLo01aknLqQcYDLvEn3xH7nTMML7vMuZt14iVDJJZBGkq11+Ug0wHzPvEj3xhP3HYYj3ZOBj44tW0FwqQ+W3vMzLTTHAfIMvUPTIH3OzYcSeplTx6ph8k0nL5tQ+SOQEJ5phwLRr8/ncehnr2Na9pPu2QxH66XMR+Qr3PooTB4tSbhpeeDLQnj+vq8Zn+sJ2lQYGtQ10TmYKeUVPdYcns1LrwfyY4BI9QmoiWDF1npJoj+CyF64SGiq/YX0xWkoBZvZl/4KBcgCbkM29fJsrDQPGOi/MqwekJOqVE50OkYK7lvcqTyXA9J5zDajrP3DFYMDIeUqfcxKZ99KBTotIgdl5wykEmNlcij80UA5gU85IrA4jPA+NzxIaLkU9KQ2V71h9H6QQYJ6RTB098oQsCTDi0HlKoom+P9BPRwkNld+2uODHe4D5iaes9sCaspQPbyWSMBi+7TpPSXTKKAB0ekRKQ+Wm4iHPAeY3LU9uBVrwByRVhwHs1oNUXCS0Lei2tY8mrwHmayLyDQPlADbl2yLyDlcbBkyd5xE8ICURCg61RzsF+5Y+nrwGmN9h3iV65NukJIIRBwmkJDoyUA7YktJiLzND5R4DzGynnucMlAPYBIJLWDF0Pm/xPKHhUMSVDZXfS+SablmZwuItwHxPRF42UA6gbXOCSxhz5Hy3HobGscxEP0JScMtCfldPAeYbIvJbBsoBtC3bY/w3CS5hyMR5SqI7pCRCBSkNlU901KEzXgLMbEL5Q+Zdogc+E5FXWC0OQ3Z1SzqvSEmEqs4YKo/HS4D5AfMukbhsSPxdEXmRPJcwJIWUROzWgzoOE3oG3+hy3rGHAPMx8y6RuOyr+SXSEMGgwwRSEl0YKAf8SGkbSdHRh05yhlsPMN8gIS4S9iMR+bqIvEqvJQza07x6Xj0iJREaOtGUVqnoZBTCcoCZfTX/VwPlAGKaFwLLbK7lR1xdGDR0PjR+aWEVLVybJPThv9PFPGTLAebHInLdQDmAGJ5ob8pLBJZwYOo8JdEeKYmwpqvEPlJu64K9jbEaYGbd0y8YKAewjs91fuWbIvJVEXmdoXA4MNHFAV7dIyURIsk6BY4Tupgb3eXHYoA5dv5wQ3/NNc3QkQ6Bf0XnV5JyCF6MnKckYrcexHag2QhSsL3JoXJrAWZ28n9ooBxAFZ8XAso3tT29qD2VDIHDmxRSErEoFLGltqp8f1PtxNocxzOSqcOgfC7Xue6F/z0SNyNB3nfrGZOSCC050oT9qYyuTnUhX6vzlC0FmJ9scm4AeidbZPOzkpP+axH5QeH/f1dEfqL/myASfbGniwC8Onbe+wr7DrQTzPPit1y+y0+rPZnX5vN5m8cHANg20J4/ry/OS507yqpxtC3rJb+f0FW+02ZHCgEmAPTbifOhv5t6DsAmeG8vRTP9OGtlagkBJgD019D5AoYzduvBhnlvM4tO2vpAI8AEAABAVNb3IgcAAIAzBJgAAACIigATAAAAURFgAgAAICoCTAAAAERFgAkAAICoCDABAAAQFQEmAAAAoiLABAAAQFQEmAAAAIiKABMAAABREWACAAAgKgJMAAAAREWACQAAgKgIMAEAABDV9YgHG4jImYhsc4sAAACS80BExlVOKmYP5pTgEgAAIFm3RWSvysldm8/nMS5CFs3epz4BAAAkbSYiQxG5WnaSMQLMkYh8Ql0CAADoheNVPZnrDpFn8y6P1jwGAAAA/LjVdoDJvEsAAID+mepQeal1AsyJRrAAAADoly0NMkutMwdzpEPkAAAA6KeT2AEmAAAA8Ax28gEAAEBUBJgAAACIigATAAAAURFgAgAAICoCTAAAAERFgAkAAICoCDABAAAQFQGmLdmWSweOyrurfwAAAL5AovVu5QHaSP+6paW5ZrCsw4Wy7ujfv6fbhgIAADx1ncvQibNCgGZd1qN6WAh+AQAAlmKIvBvLgsuZsbIOCS4BAEAd9GB241RELvTPlfZo5n+15kLLm29mf7ZQZgAAgC8JzcEc6Fy7deVB1Cq7FX7zpMbxVhnqnyZOlpS1WL51fiNk2W83lZc59mKdpvcqZjnyQHik163sn1UVup+LgXY+rzY796MaQXjZ8RfLWHZtVl3nsnNvIv/A6KLuF6/DQKdtDPT61rmHZddv8f7lC+2u9PhV63DoupwU/reVNiY179Gqj8nsvD4M/LObC9egDZts39LSMypUnmXtN7//Ta/vQeGcpw3qUrEtXukx6nY65O1m2Xnm16hpp0aT+7Wq/lSpLzHq5aLYz5B2O4qyAFP/DObz+WQ+n1/M47jSY0rgz8F8Pj9q8EvZcafz+Xx3ybHL/uzp712tcXZTPe5u4J9PCr87iXQdF499FvGY2bUY6nFjKh63zp/Y1+xAf/uk5J+dRCpbsR4eLPyzq0IZmhx/sYxlJiXH2m3YtkIOF469qhyx7+O4cOzF+n9So66VKd6/Ycnz4XDFc2zVdVn1+001bWOh81zlQq9F6DdDqly7gV6/us/0/M+m2rfoNYhpb+G+HDZ8B59pO6lyvcvaUVYfRjWu1yBwjCp1cqjXu8m77Ez/26p1f7rmvToK1Msq9SVGvazazpo4C9yXk0hxxm4+B3OkXy93RWQ7Uuy6G4iM896dhyJyq8Fxs/mA+/rFfFLhK3ykUfpj/b2m8wnPRWTc8L9d16mu1D6MvDjoIFKP8KK9Bsfd1foXyyP9ot6kxdX0W1rPN1mOA20bTdpWmS7rfeZY673ouS3W/xuFXup1TUqeD7cLIweWNGljuaMGz8FtvRaf6v1YvB7fL/lv/k+F3pHsnv5U6+yHek4xR2hi2tNrEMsDvRcDvaaf6vGbvIOzdnFfr9+qVHdl7WhLy1JV2btoq0JGkYm217sN32U7+t9+WuG3DjRWWMctrZee0gdWMdP6nMvr3119pq4bZ2TZZU7yADP2KuE7gW7g/OUXK4hd9XLJfu+TCBdrVhg227S8IhxEfrjdq/lAqXPcukM2w8hlOe/ogRCq1/sbCjJ3NaCNZfEhtGmXC/cx9DG5pXVu3cAkdPwdY0FmkzaWi/GRWhZ0f6fk3/vuiuMclNTX7YodB5s2ityGT/XDbaDnG+vZXuWjNtSmtys+N4dLArdlz4upBjCxYo27S85zFPlZ+NBgnVxHsXPpMHJskXeIPV1FPtJALZZij0NR7Bue2yp8BRbFfNmOO1yAs6sVu+yaNnXaUu7KJscdNOxRCek6KArZD9TTmGKf9zq9ZOvK72PVj7o8yGzr3u9E7CldxzptN+ZH6mLQXfZ8XBYEL3umbXUw+rDMQMsT6xl1Wain05ZS1u0vaQvLRjeq1K1l76KtwDzBSYTexDL7JeUZtDTvN5VezGLn0iBycFms209XkYdeeOcNe5VClW9ZxT3WB1SoUuQTgfcCjXG7kK8xt+wBda6/VeXldRX5Yfeoxks7n9i8VyHALBtePg1c06rB6mXNc28SBOe9l8vq2kFJ72CobHUWZmzaLb0foekj6woFP3XqXG5Ze2zqXs3fr/tRt6VTYd5qKUDZLty/WB+cm2hjuUHNeyAlm0AU7ejH9yRQV5Zdo1UflTf0uBY2cRi18Iy60usaCvYuC4vYQm13VHgvll3Lacn7fdUH2PaK676szMXfKNaHwZLpT7PCeYbqy6rzvK3t4qLw76/TTsbOUvOF3vNlrhauzbIP5ssG741x8d12fckPjCO+YAaBSjmr8bA+0kpfNqwiCwFmWWOXQq9I26sal5k2+P1VDzcJNOCTNR/QFxt4wFcJJHZL7ucmytaGnZaDzEWnhr68N3W/8udDG0Fmsac0xnNkk/W46Us3nyNY1gOVB5jZefxERP6B/v3/u6RdTyr22t1tkCmgDScV7nWTZ1Qo2HtUsc0WMzucBOZE7i28O6r08I/1fpc9n6rU1cUezNC5nFd8DhbPcxqIJYqdMFXu16rfC2VFsGid93wo/ns9xrS160sa77TBA/os0DMYOonDBg+PqVbYxWH9YuMKLeXvOrgULXvdVAOLXx2bMmxYcS28FCzbKaSGinmdyh7UNxqkILlqqQezSV26aBgoPtTr20ZwvaUvoBg9pZtsY6FexlWLuK4KKW0Wn7v5kGh27I8LL/9Q2UKL+WZLeuGsLvpZV9l5zRosqrvSOvS45J+NFgKFKu+ercKHQ9Fuxel0O1pXij2KZepMgRH9d8cVAszdNdP5hK6/1XfabsNnyLL4a1Tj3gRTL13XB0NZ495eY1Xvo4Wu0lAFa/oCOwlU9PxBVzYZ99JAcCkN56HcbKEcVTSpA+fsTf4l54Hemq0WhluPAg/fpnOfZoXsBTE0eZ68WrGcZcFJft7rBJmhY0ukntJNtrF159ofBo4x0rpcfGGVPWsHS65V/pJcrL87etwuMxm0pexaNs1LGOptGi3879DI3mIdL+vFLLt3ofaxW/j3Q+/jJlOZLpY8U4u/HTMjiehIUBuLYmO40aBtP9J7G7oHdxtcw1nhOfC0/eeryGN/5e8vTAC3sPrS6ry8Ve4YCYyrmK355Ziisd7DMsUgM4apPghj2dLUJ119MLxVMfge6UunzLqLq840yA1t4fpww6MLXbaxUOCTX9uTwvy9smfWNBDg3NPrfKCBx6LbPFcaK9b70PB42d/fWtSKuGEAAAbGSURBVKjXoWlnodhh1VD8Ou/jLrK5WFp0tq5ilpULTZcVw1YhrdPT65UHmEfaS1bWuJvaKZyEhS0FPQ6zPOpoaLyJ2QbnFXpzqMFSmXy4Ndbq5119Ycfc0/5uByk66uQxzacbhILMW2t+pJ3p8UPX9PaG2mnXbWzZjjKr7AV61/Pe2PGKbB1lC1awWrGulD1j8pG9RyX/bL/Q7ss+Mh9p7FDW7lZ9EKzzPOmiHjxMZKpG2QfqOHD/15HVnd3iXuQnha2pdmvexFBerL0V4/y7DR/8ocpb3C+7bK7QgYEvkTorersOLuuscG2y6rdLdR9w67xcpXAdQzlnY6YqyYe1dxs8FEM9FbsR2k6dFcx1e03zVblHgeGida/vWeEalB2r6fE9tbGmc9OGS4ZX8xy/91ccY1vrdNXRtk237yZOS+pq0yAm9IFa3GK1rI7mw77jwCrtfAFX2TMhb6NHgQVGu4E1GaLHGza4vsM12lrV508onpkYTYFXZxV5aPvig8L6lrK51k2Mr5f8R00fYssKFTreuMFk9bIFPrLwFXUUyO2Uzynpci5Fk1XkXfG6UruK7RofHKMlL7Y6D8hpYfFM22kwripmH1g01R0dFsXowWy7Ll0VgsA2cu6dFV6asT4IvLSxaeC5e1nh+R3KIZkHrFU/pPdr1Oku2nddF4GOkGnNaWuDJXUovzehwCh/F+ULSRfn3e0Heu6LHSUngfl6+aLak0Dvdf7BULVHfrCkrlSpE3XaWVk8Y3WaxrrZYorHaRKbDLSeLX6EDBYDzL2GX1CDFf/dlea6XKxkW7rTzrGe2LIH1e6SPJiyUMFOAl+HeZ68pjk+JcKNbLKKPNZv19V0hatESBURU6hX66Hej9BHzkDrXCj/WmhIdplikNJWkDlYY1FEqB3HGJZtWpfqZlHIX85tBJlXkYPMrtvYqt8fBlLw5KpsDVjW9o4LH1x12sFUy1Ssj22175jzmcuEPoT2C73xy/I1DwvvxbLyzwrvuVUBphQWUy0ea/H/zxbue2ih8F6hE6msh/pWIUvEsnyfw0IezFA9jBlgDgL1Kcbzuml7X5YJpOkq8lXHrSo82l3Y6Hw38kbqc90oPj/+qIXj5y5KNvkf6ub7MR2uuFaTCpvhNzVusAn+pKNN9Mvuxzp/Tkp+46TG8dqoC5mDCtdwN1CmrD2crTj+4jmWKbvHR3FP80vn0UXdP1hx3NB9H1c4dvH+1KlnWf2eVji+pTYW29GK3ws98/Oyh+7nmV73i8A/X/zdTbXvZX+aPqPaaKu54juj7PqUla9K263zzBm29EwoOmxwDk2cVfiNVc+TdX83puL9Hyxpb019sRf5oKVh4+Ixz5YsdFhHaEu5ixUT8+s67TBVRmj7Tavq5jdr20UL9+50zTmJZysWpjQVyhO3ji5TfNVZ7LNo2eKqdeW5IWNPjq+q6za2KoH/sndKPiya9bpcK/kzKswfLnt+31pozxbbd1UHLTwDZGGBaKiHs+z+HK54Z84C76LQvc57TicttZXzDb6Xu5ha19bWx4vHPVrSO9zUUR5gtjFcV/ZimEZerX6qD6HQ0Hq+d/C6Qx1d7m996WwP1DtGF/tMNdiI8cHxKFJ9uFoRZNYNIEYVFks00VX9i/HyWHXf1w3SDpak+Yi5kr+o6zZ2r8Jq9sMlKYnqbGsXqnuThXnBFtt3FfkzIFbwNdP6UbxuqxbFFl2tGG4N7fATuqfF3z5osFXpMg82uLL7vKNOnr2W5gEXP1BD01jW8XTx4i/pRYu5gvVSG3rowZCvVn+rYeA30x69m1p5V138vCfzpjbiJg+grnoLQr2zVlnvac13BXnQ8CMnr3d1JqavclUo06I617KNUYhjzQHZRe/lLOJ1nuozYPGen0YK1MaB4KaNttBVG7vU4OClCvO99gJzC5skiD8KvCe2Ah0Y1tp3FXkg/eoa76hzDSyHJfUjlJ4oVPcPAx+9y+7fReCaL46mTLQONb1Hl/rfvrShnsvLih9UbajzMVZH8bhtJaV/Grdcy+YMRDxw010I8uGQZamRLiKm6Vj1W0Vl2yCFFjVdFALeYYSVt8EtmEqU3ceLGl8/MepB0/u/Stn9qnNtQkaFCeQh+TWs0tDLrmGda5JPAL8qTHxfdfy8fDHqW1HofDdV98vqbui4dR7C+SK7M73GxXuzbj0b6PHznW0WA6Cu21jT32+rXbetSvuOtS1q7GdUnbKvuj9l931V2fK6PCj8+4vtpazMZe/VZeUbFhYrLXNS430W61m47PdCv1E81zpxRpmyOhnjGVI87jqbUBTl1+oXC+pE5P8D48cKWbCvpSgAAAAASUVORK5CYII=",
+    "footerDescription": "Plateforme réservée aux commerciaux & réseau d'agences agréées.",
+    "siteBackgroundType": "image",
     "footerTitle": "STA — Société Tunisienne d'Automobiles",
-    "footerDescription": "Plateforme réservée aux commerciaux & réseau d'agences agréées."
+    "siteName": "STA Tunisie",
+    "homeBackgroundType": "image",
+    "siteBackgroundImageUrl": "https://galerie.automobile.tn/max/2026/04/chery-i03-69.77-kwh-4x4-106815.webp"
   },
   "accessories": [
     {
@@ -14139,7 +14139,6 @@
   "knowledgeBase": [
     {
       "isPublicForAI": true,
-      "category": "financement",
       "tags": [
         "particulier",
         "documents",
@@ -14147,60 +14146,61 @@
         "cin"
       ],
       "id": "kb-1",
-      "content": "Pour être éligible à la voiture populaire, les plafonds de revenus fixés par la réglementation en vigueur sont les suivants :\n\nCélibataire : salaire mensuel net maximum de 4 592,640 DT (10 fois le SMIG).\nCouple : salaire mensuel net cumulé maximum de 6 888,960 DT (15 fois le SMIG).\n\nSi vous remplissez ces conditions, vous pouvez vous inscrire sur la liste d'attente auprès de nos agents au showroom de Ben Arous. Il vous suffit de vous présenter avec une copie de votre CIN et 5 DT pour l'inscription.\n\nLorsque votre dossier arrivera à son tour, vous recevrez automatiquement un SMS vous informant de la suite de la procédure.",
-      "title": "RESENGNEMENT VOITURE POPULAIRE",
-      "updatedAt": "2026-08-28",
-      "updatedBy": "Mongi Jamaï"
-    },
-    {
-      "category": "promotions",
-      "content": "Pour réserver un test drive, nous vous invitons à contacter notre équipe au 31 390 290. Nos conseillers vérifieront la disponibilité du modèle souhaité et fixeront avec vous un rendez-vous selon vos disponibilités. À très bientôt dans l'un de nos showrooms ! 🚗",
-      "tags": [
-        "Chery",
-        "STA",
-        "Tunisie"
-      ],
-      "id": "kb-1787916660323",
-      "title": "RENSEIGNEMENT TEST DRIVE",
-      "updatedAt": "2026-08-28",
-      "updatedBy": "Mongi Jamaï",
-      "isPublicForAI": true
-    },
-    {
-      "tags": [
-        "Chery",
-        "STA",
-        "Tunisie"
-      ],
-      "id": "kb-1787916700204",
-      "updatedAt": "2026-08-28",
-      "updatedBy": "Mongi Jamaï",
-      "content": "Il est possible d'acquérir votre véhicule Chery via un crédit bancaire. Pour les véhicules de plus de 4 chevaux fiscaux, l'apport minimum requis est de 40 % du prix du véhicule. Pour plus d'informations sur les solutions de financement et les démarches à suivre, nous vous invitons à contacter notre équipe au 31 390 290.",
       "category": "financement",
+      "title": "RESENGNEMENT VOITURE POPULAIRE",
+      "content": "Pour être éligible à la voiture populaire, les plafonds de revenus fixés par la réglementation en vigueur sont les suivants :\n\nCélibataire : salaire mensuel net maximum de 4 592,640 DT (10 fois le SMIG).\nCouple : salaire mensuel net cumulé maximum de 6 888,960 DT (15 fois le SMIG).\n\nSi vous remplissez ces conditions, vous pouvez vous inscrire sur la liste d'attente auprès de nos agents au showroom de Ben Arous. Il vous suffit de vous présenter avec une copie de votre CIN et 5 DT pour l'inscription.\n\nLorsque votre dossier arrivera à son tour, vous recevrez automatiquement un SMS vous informant de la suite de la procédure.",
+      "updatedBy": "Mongi Jamaï",
+      "updatedAt": "2026-08-28"
+    },
+    {
+      "tags": [
+        "Chery",
+        "STA",
+        "Tunisie"
+      ],
+      "title": "RENSEIGNEMENT TEST DRIVE",
+      "id": "kb-1787916660323",
+      "updatedBy": "Mongi Jamaï",
+      "content": "Pour réserver un test drive, nous vous invitons à contacter notre équipe au 31 390 290. Nos conseillers vérifieront la disponibilité du modèle souhaité et fixeront avec vous un rendez-vous selon vos disponibilités. À très bientôt dans l'un de nos showrooms ! 🚗",
+      "updatedAt": "2026-08-28",
+      "isPublicForAI": true,
+      "category": "promotions"
+    },
+    {
+      "updatedAt": "2026-08-28",
+      "updatedBy": "Mongi Jamaï",
+      "isPublicForAI": true,
       "title": "FINANCEMENT AVEC CREDIT BANCAIRE",
-      "isPublicForAI": true
+      "content": "Il est possible d'acquérir votre véhicule Chery via un crédit bancaire. Pour les véhicules de plus de 4 chevaux fiscaux, l'apport minimum requis est de 40 % du prix du véhicule. Pour plus d'informations sur les solutions de financement et les démarches à suivre, nous vous invitons à contacter notre équipe au 31 390 290.",
+      "id": "kb-1787916700204",
+      "tags": [
+        "Chery",
+        "STA",
+        "Tunisie"
+      ],
+      "category": "financement"
     },
     {
       "title": "HORAIRES SHOWROOMS",
-      "id": "kb-1787916798971",
       "content": "Nous serons ravis de vous accueillir dans l'un de nos showrooms Chery Tunisie situés à Ben Arous, La Charguia, Aïn Zaghouan, Nabeul, Sousse, Sfax, Djerba et Gabès.\n\n🕘 Horaires d'ouverture :\n\nDu lundi au vendredi : de 8h00 à 17h00\nLe samedi : de 8h00 à 12h00\n\n☀️ Pendant les horaires d'été, nos showrooms sont ouverts du lundi au vendredi de 8h00 à 15h00 et le samedi de 8h00 à 12h00.\n\nPour plus d'informations, rendez-vous sur www.chery-tunisie.tn. Au plaisir de vous accueillir dans l'un de nos showrooms ! 🚗",
+      "tags": [
+        "Chery",
+        "STA",
+        "Tunisie"
+      ],
+      "updatedAt": "2026-08-28",
       "category": "agences",
       "updatedBy": "Mongi Jamaï",
-      "updatedAt": "2026-08-28",
-      "isPublicForAI": true,
-      "tags": [
-        "Chery",
-        "STA",
-        "Tunisie"
-      ]
+      "id": "kb-1787916798971",
+      "isPublicForAI": true
     },
     {
+      "content": "Nos Services Après-Vente agréés Chery sont disponibles dans nos showrooms de STA Ben Arous, La Charguia, Nabeul, Sousse, Sfax (Districars), Djerba et Gabès.\n\nToutes les interventions réalisées dans notre réseau officiel préservent votre garantie constructeur,  puisque ces ateliers font partie du réseau agréé Chery Tunisie.\n\nPour plus d'informations, rendez-vous sur www.chery-tunisie.tn ou venez nous rendre visite dans l'un de nos showrooms. 🚗",
       "updatedAt": "2026-08-28",
       "updatedBy": "Mongi Jamaï",
-      "content": "Nos Services Après-Vente agréés Chery sont disponibles dans nos showrooms de STA Ben Arous, La Charguia, Nabeul, Sousse, Sfax (Districars), Djerba et Gabès.\n\nToutes les interventions réalisées dans notre réseau officiel préservent votre garantie constructeur,  puisque ces ateliers font partie du réseau agréé Chery Tunisie.\n\nPour plus d'informations, rendez-vous sur www.chery-tunisie.tn ou venez nous rendre visite dans l'un de nos showrooms. 🚗",
+      "title": "SAV CHERY AGREES",
       "id": "kb-1787916827715",
       "category": "garantie",
-      "title": "SAV CHERY AGREES",
       "isPublicForAI": true,
       "tags": [
         "Chery",
@@ -14209,32 +14209,32 @@
       ]
     },
     {
-      "id": "kb-2",
-      "title": "Documents pour leasing / société (personne morale)",
-      "updatedAt": "2026-08-28T08:56:08.763Z",
-      "isPublicForAI": true,
-      "category": "faq",
       "content": "1. Extrait du Registre National des Entreprises (RNE / Registre de Commerce récent < 3 mois)\n2. Copie CIN du Gérant ou Mandataire\n3. Matricule Fiscal & Déclaration d'existence\n4. Accord de principe de la société de Leasing partenaire (si applicable)",
+      "isPublicForAI": true,
+      "id": "kb-2",
+      "category": "faq",
       "tags": [
         "société",
         "leasing",
         "rne",
         "matricule fiscal"
-      ]
+      ],
+      "title": "Documents pour leasing / société (personne morale)",
+      "updatedAt": "2026-08-28T08:56:08.763Z"
     },
     {
+      "title": "Modalités d'acompte et délais de livraison",
+      "id": "kb-3",
       "tags": [
         "acompte",
         "financement",
         "délai",
         "livraison"
       ],
-      "content": "L'acompte officiel de réservation est exigé pour valider et sécuriser le blocage du châssis en stock:\n- SUV Urbains / Berlines: 10 000 à 20 000 TND\n- SUV Luxe / Hybrides PHEV: 30 000 à 50 000 TND\nLe solde doit être versé avant la délivrance de la Carte Grise et de la livraison finale.",
-      "category": "financement",
+      "isPublicForAI": true,
       "updatedAt": "2026-08-28T08:56:08.763Z",
-      "title": "Modalités d'acompte et délais de livraison",
-      "id": "kb-3",
-      "isPublicForAI": true
+      "category": "financement",
+      "content": "L'acompte officiel de réservation est exigé pour valider et sécuriser le blocage du châssis en stock:\n- SUV Urbains / Berlines: 10 000 à 20 000 TND\n- SUV Luxe / Hybrides PHEV: 30 000 à 50 000 TND\nLe solde doit être versé avant la délivrance de la Carte Grise et de la livraison finale."
     },
     {
       "tags": [
@@ -14244,11 +14244,11 @@
         "batterie",
         "sta"
       ],
-      "isPublicForAI": true,
-      "id": "kb-4",
-      "content": "Tous nos véhicules bénéficient de la garantie constructeur exceptionnelle de 7 ans ou 200 000 km (premier terme échu). Pour les modèles 100% électriques et Hybrides (iCar 03, PHEV), la batterie de traction haute tension est garantie 8 ans ou 160 000 km.",
       "title": "Garantie Constructeur Chery Tunisie (STA)",
       "category": "garantie",
+      "id": "kb-4",
+      "content": "Tous nos véhicules bénéficient de la garantie constructeur exceptionnelle de 7 ans ou 200 000 km (premier terme échu). Pour les modèles 100% électriques et Hybrides (iCar 03, PHEV), la batterie de traction haute tension est garantie 8 ans ou 160 000 km.",
+      "isPublicForAI": true,
       "updatedAt": "2026-08-28T08:56:08.763Z"
     }
   ],
@@ -14271,6 +14271,27 @@
     "defaultRegistrationFeeTND": 0
   },
   "auditLogs": [
+    {
+      "id": "audit-1789637068341",
+      "timestamp": "2026-09-17T09:24:28.341Z",
+      "actionType": "stock_update",
+      "actionLabel": "Réconciliation Stock & Bons Confirmés",
+      "details": "Vérification et alignement du stock sur les 141 bons de réservation confirmée. Total stock initial contingent : 391 unités, Total réservé confirmé : 141 unités.",
+      "userEmail": "direction@chery.com.tn",
+      "userName": "Direction STA Chery",
+      "previousValue": 53,
+      "newValue": 141
+    },
+    {
+      "id": "audit_1789636648873_4q2sgr",
+      "timestamp": "2026-09-17T09:17:28.873Z",
+      "userEmail": "direction.sta@chery-tunisie.com",
+      "userRole": "Directeur Général",
+      "actionLabel": "Ajustement Stock Global",
+      "details": "Alignement du stock total à 391 unités conforme à l arrivage (Ajustement Chery Himla 4X4 BVA : 36 ➔ 12 unités)",
+      "previousValue": 415,
+      "newValue": 391
+    },
     {
       "actionLabel": "Confirmation & Déduction Stock",
       "timestamp": "2026-09-17T08:14:27.501Z",

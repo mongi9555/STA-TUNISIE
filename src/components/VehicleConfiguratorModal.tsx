@@ -246,7 +246,7 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                     {selectedCar.colors.map((col) => {
                       const isSel = selectedColor?.id === col.id;
-                      const available = col.stock - col.reserved;
+                      const available = col.stock;
                       return (
                         <button
                           key={col.id}

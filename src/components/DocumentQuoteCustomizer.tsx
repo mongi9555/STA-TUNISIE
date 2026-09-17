@@ -564,7 +564,7 @@ export const DocumentQuoteCustomizer: React.FC<DocumentQuoteCustomizerProps> = (
                   >
                     {selectedCar?.colors.map((col) => (
                       <option key={col.id} value={col.id}>
-                        {col.name} (Stock: {col.stock - col.reserved})
+                        {col.name} (Stock dispo: {col.stock})
                       </option>
                     ))}
                   </select>
