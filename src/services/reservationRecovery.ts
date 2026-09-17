@@ -79,7 +79,11 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
   }
 
   try {
-    // 2. Repli secondaire Firestore si nécessaire
+    // 2. Repli secondaire Firestore si nécessaire (ignoré si quota Firestore atteint)
+    if (isFirestoreQuotaExceeded()) {
+      return result;
+    }
+
     const resSnap = await getDocs(reservationsCollection);
     const existingReservations = resSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Reservation));
     const existingIds = new Set(existingReservations.map((r) => r.id));

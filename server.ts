@@ -453,13 +453,45 @@ function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
   };
 
   const missingLogs = new Map<string, any>();
+  let enrichedCount = 0;
+
   auditLogs.forEach((l: any) => {
-    const match = l.details?.match(/(RES-202[0-9]-[0-9]+)/);
+    const details = l.details || '';
+    const match = details.match(/(RES-202[0-9]-[0-9]+)/i) || (l.id && l.id.match(/(RES-202[0-9]-[0-9]+)/i));
     if (match) {
-      const id = match[1];
+      const id = match[1].toUpperCase();
       if (!existingIds.has(id)) {
         if (!missingLogs.has(id)) {
           missingLogs.set(id, l);
+        }
+      } else {
+        // Enrichir la réservation existante si elle manque de coordonnées
+        const existingRes = existing.find((r: any) => r.id === id);
+        if (existingRes) {
+          const clientMatch = details.match(/(?:nom de|pour)\s+([^(]+)\s*\(([^)]*)\)/i);
+          if (clientMatch) {
+            const rawName = cleanClientName(clientMatch[1]);
+            const phone = clientMatch[2]?.trim();
+            let changed = false;
+            if (phone && (!existingRes.client?.personnePhysique?.telephone && !existingRes.client?.societe?.telephone)) {
+              if (existingRes.client?.personnePhysique) existingRes.client.personnePhysique.telephone = phone;
+              if (existingRes.client?.societe) existingRes.client.societe.telephone = phone;
+              changed = true;
+            }
+            if (rawName && rawName !== "Client Chery" && (!existingRes.client?.personnePhysique?.nom || existingRes.client?.personnePhysique?.nom === "Client")) {
+              if (existingRes.client?.personnePhysique) {
+                if (rawName.includes(" ")) {
+                  const p = rawName.split(" ");
+                  existingRes.client.personnePhysique.prenom = p[0];
+                  existingRes.client.personnePhysique.nom = p.slice(1).join(" ");
+                } else {
+                  existingRes.client.personnePhysique.nom = rawName;
+                }
+                changed = true;
+              }
+            }
+            if (changed) enrichedCount++;
+          }
         }
       }
     }
@@ -548,7 +580,7 @@ function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
     existingIds.add(id);
   }
 
-  if (newlyRestored.length > 0) {
+  if (newlyRestored.length > 0 || enrichedCount > 0) {
     existing.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     currentDb.reservations = existing;
     currentDb.savedAt = new Date().toISOString();
@@ -557,11 +589,12 @@ function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
     fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
     try { fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8"); } catch (_) {}
     try { fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(existing, null, 2), "utf-8"); } catch (_) {}
-    console.log(`[Chery DB] Auto-restauration : ${newlyRestored.length} bon(s) restauré(s). Total: ${existing.length}`);
+    console.log(`[Chery DB] Auto-restauration : ${newlyRestored.length} bon(s) restauré(s), ${enrichedCount} enrichi(s). Total: ${existing.length}`);
   }
 
   return {
     recoveredCount: newlyRestored.length,
+    enrichedCount,
     totalCount: existing.length,
     reservations: existing,
     newlyRestored

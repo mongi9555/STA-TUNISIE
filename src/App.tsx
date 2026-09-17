@@ -117,7 +117,7 @@ import { AdministrativeDocuments } from './components/AdministrativeDocuments';
 import { TestDriveList } from './components/TestDriveList';
 import { TestDriveModal } from './components/TestDriveModal';
 import { StaLogo } from './components/StaLogo';
-import { CheckCircle2, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, X, AlertTriangle, Database, RefreshCw, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -1148,6 +1148,77 @@ export default function App() {
     }
   };
 
+  // Importation massive de réservations depuis un fichier CSV
+  const handleImportReservations = async (
+    importedList: Reservation[]
+  ): Promise<{ success: boolean; message: string; count: number }> => {
+    if (!importedList || importedList.length === 0) {
+      return { success: false, message: 'Aucune réservation valide à importer.', count: 0 };
+    }
+
+    try {
+      const map = new Map<string, Reservation>();
+      reservations.forEach((r) => map.set(r.id.toUpperCase(), r));
+
+      let newCount = 0;
+      let updatedCount = 0;
+
+      importedList.forEach((r) => {
+        const key = r.id.toUpperCase();
+        if (map.has(key)) {
+          const existing = map.get(key)!;
+          map.set(key, {
+            ...existing,
+            ...r,
+            documents: r.documents && r.documents.length > 0 ? r.documents : existing.documents,
+            updatedAt: new Date().toISOString(),
+          });
+          updatedCount++;
+        } else {
+          map.set(key, r);
+          newCount++;
+        }
+      });
+
+      const merged = Array.from(map.values());
+      merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+      // Mettre à jour l'état local et le cache navigateur
+      setReservations(merged);
+      saveStoredReservations(merged);
+
+      // Sauvegarder sur le serveur via /api/reservations/save
+      await fetch('/api/reservations/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservations: merged }),
+      });
+
+      // Déclencher la synchronisation globale
+      triggerInstantDbSave({ reservations: merged, cars });
+
+      // Synchroniser également dans Firestore en tâche de fond pour chaque bon
+      importedList.forEach((r) => {
+        saveReservationToFirestore(r).catch(() => {});
+      });
+
+      addAuditLog({
+        actionType: 'database_import',
+        actionLabel: 'Importation CSV',
+        details: `Importation CSV effectuée : ${newCount} nouveau(x) bon(s) ajouté(s), ${updatedCount} mis à jour. Total en base : ${merged.length}.`,
+      });
+
+      const msg = `✅ Importation réussie : ${newCount} nouveau(x) bon(s) ajouté(s) et ${updatedCount} mis à jour. (Total en base : ${merged.length})`;
+      showToast(msg);
+      return { success: true, message: msg, count: newCount + updatedCount };
+    } catch (err: any) {
+      console.error('Erreur import CSV:', err);
+      const errMsg = `Erreur lors de l'enregistrement de l'import CSV : ${err.message || 'Erreur inconnue'}`;
+      showToast(`❌ ${errMsg}`);
+      return { success: false, message: errMsg, count: 0 };
+    }
+  };
+
   // Admin Handlers with Firestore Persistence & Instant Local DB backup
   const handleUpdateCarStock = (carId: string, updatedColors: CarColor[]) => {
     const targetCar = cars.find((c) => c.id === carId);
@@ -1828,35 +1899,44 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Firestore Quota Notice Banner with upgrade link */}
-      {firestoreQuotaExceeded && !quotaBannerDismissed && (
+      {/* Base de données STA Gratuite, Sans Quota & Sans Paiement */}
+      {!quotaBannerDismissed && (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="p-3.5 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg backdrop-blur-sm">
+          <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-600/50 text-emerald-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg backdrop-blur-sm">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-500/20 text-amber-300 rounded-xl shrink-0 mt-0.5">
-                <AlertTriangle className="w-5 h-5" />
+              <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl shrink-0 mt-0.5">
+                <Database className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-amber-200">
-                  Mode serveur actif — Quota journalier Firestore (formule gratuite Spark) atteint
-                </p>
-                <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
-                  L'application continue de fonctionner : vos données sont persistées sur le serveur et votre stockage local. Le quota Firestore se réinitialise automatiquement le lendemain.
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs font-bold text-emerald-200">
+                    Base de données STA : 100% Gratuite, Illimitée, Sans Quota & Sans Paiement
+                  </p>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ● En ligne & Sécurisée
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-300/80 mt-1 leading-relaxed">
+                  Persistance serveur active ({reservations.length} bons de commande et {cars.length} modèles). Tous vos bons sont sauvegardés en toute sécurité sans aucune restriction de quota ni frais.
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-              <a
-                href="https://console.firebase.google.com/project/solid-compiler-n9v0l/firestore/databases/ai-studio-cherytunisierser-31ef1dc0-2eb3-4096-af83-1d65c3033f08/data?openUpgradeDialog=true"
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition-colors inline-flex items-center gap-1.5"
+              <button
+                onClick={async () => {
+                  showToast("⏳ Analyse des journaux d'audit et reconstruction de tous les bons en cours...");
+                  const result = await handleSyncAndRecoverReservations();
+                  showToast(result.message);
+                }}
+                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                title="Reconstruire et récupérer tous les bons manquants à partir des journaux d'audit"
               >
-                Gérer le quota Firestore
-              </a>
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reconstruire depuis les audits
+              </button>
               <button
                 onClick={() => setQuotaBannerDismissed(true)}
-                className="p-1.5 text-amber-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-emerald-400/80 hover:text-white rounded-lg transition-colors cursor-pointer"
                 title="Masquer cet avis"
               >
                 <X className="w-4 h-4" />
@@ -1908,6 +1988,7 @@ export default function App() {
                 }}
                 onViewDocument={(doc) => setActiveDocument(doc)}
                 onSyncReservations={handleSyncAndRecoverReservations}
+                onImportReservations={handleImportReservations}
               />
             )}
 

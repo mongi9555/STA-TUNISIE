@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Reservation, CommercialUser, UploadedDocument, Car as CarModel } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
 import { EditReservationModal } from './EditReservationModal';
 import { recoverMissingReservationsFromAudit } from '../services/reservationRecovery';
+import { importReservationsFromCsv, CsvImportResult } from '../services/csvReservationImporter';
 import {
   Search,
   Filter,
@@ -48,6 +49,7 @@ interface ReservationListProps {
   onViewVoucher: (reservation: Reservation) => void;
   onViewDocument: (doc: UploadedDocument) => void;
   onSyncReservations?: () => Promise<{ success: boolean; message: string; count: number }>;
+  onImportReservations?: (imported: Reservation[]) => Promise<{ success: boolean; message: string; count: number }> | void;
 }
 
 export const ReservationList: React.FC<ReservationListProps> = ({
@@ -62,6 +64,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   onViewVoucher,
   onViewDocument,
   onSyncReservations,
+  onImportReservations,
 }) => {
   // Détection du niveau de privilèges : seuls les administrateurs et super-administrateurs peuvent voir toutes les réservations
   const isAdminOrSuperAdmin =
@@ -94,6 +97,12 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [reservationToConfirm, setReservationToConfirm] = useState<Reservation | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+
+  // States pour l'importation de fichiers CSV
+  const [csvImportResult, setCsvImportResult] = useState<CsvImportResult | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string>('');
+  const [isImportingCsv, setIsImportingCsv] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sécurité renforcée : forcer le scope à "mine" pour les commerciaux non-administrateurs
   useEffect(() => {
@@ -146,6 +155,68 @@ export const ReservationList: React.FC<ReservationListProps> = ({
       setRecoveryMessage(`⚠️ Erreur de synchronisation : ${err?.message || 'Erreur inconnue'}`);
     } finally {
       setIsRecovering(false);
+    }
+  };
+
+  // Handler: Sélection d'un fichier CSV pour importation
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        if (!text || !text.trim()) {
+          alert('Le fichier sélectionné est vide.');
+          return;
+        }
+
+        const result = importReservationsFromCsv(text, cars, currentCommercial, reservations);
+        if (result.reservations.length === 0) {
+          alert(
+            `Aucune réservation valide n'a pu être extraite du fichier CSV.\n\n` +
+              (result.errors.length > 0 ? result.errors.slice(0, 3).join('\n') : 'Veuillez vérifier le contenu du fichier.')
+          );
+          return;
+        }
+
+        setCsvImportResult(result);
+      } catch (err: any) {
+        alert(`Erreur de lecture du fichier CSV : ${err.message || 'Format non reconnu'}`);
+      } finally {
+        if (e.target) e.target.value = '';
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  // Handler: Validation finale et fusion des réservations importées
+  const handleConfirmCsvImport = async () => {
+    if (!csvImportResult || csvImportResult.reservations.length === 0) return;
+    setIsImportingCsv(true);
+    try {
+      if (onImportReservations) {
+        const res = await onImportReservations(csvImportResult.reservations);
+        if (res && res.message) {
+          setRecoveryMessage(res.message);
+          setTimeout(() => setRecoveryMessage(null), 8000);
+        }
+      } else {
+        await fetch('/api/reservations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reservations: csvImportResult.reservations }),
+        });
+        setRecoveryMessage(`✅ ${csvImportResult.reservations.length} réservation(s) importée(s) avec succès.`);
+        setTimeout(() => setRecoveryMessage(null), 8000);
+      }
+      setCsvImportResult(null);
+    } catch (err: any) {
+      alert(`Erreur lors de l'enregistrement de l'import CSV : ${err.message || 'Erreur réseau'}`);
+    } finally {
+      setIsImportingCsv(false);
     }
   };
 
@@ -448,15 +519,15 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Synchroniser Traçabilité Button */}
+          {/* Reconstruire tous les bons manquants Button */}
           <button
             onClick={handleRunRecovery}
             disabled={isRecovering}
             className="flex-1 sm:flex-none px-3.5 py-2.5 bg-blue-950/80 hover:bg-blue-800 text-blue-200 hover:text-white font-bold text-xs rounded-xl shadow border border-blue-700/60 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-            title="Vérifier la traçabilité et restaurer automatiquement les réservations manquantes"
+            title="Analyser les journaux d'audit et reconstruire automatiquement tous les bons de réservation manquants"
           >
             <RefreshCw className={`w-4 h-4 ${isRecovering ? 'animate-spin text-blue-300' : 'text-blue-400'}`} />
-            <span>{isRecovering ? 'Synchronisation...' : 'Synchroniser Traçabilité'}</span>
+            <span>{isRecovering ? 'Reconstruction...' : 'Reconstruire les bons manquants'}</span>
           </button>
 
           {/* Bouton de suppression totale : STRICTEMENT réservé aux Administrateurs et Super-Administrateurs */}
@@ -485,6 +556,23 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             <Download className="w-4 h-4 text-slate-400" />
             <span>Sauvegarde Base</span>
           </a>
+
+          {/* Importer en CSV Button */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".csv,text/csv,application/vnd.ms-excel"
+            onChange={handleCsvFileChange}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-blue-900/40 border border-blue-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            title="Importer des bons de réservation depuis un fichier CSV ou Excel"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Importer en CSV</span>
+          </button>
 
           {/* Export Excel Button */}
           <button
@@ -1248,6 +1336,151 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Oui</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Prévisualisation et Confirmation d'Importation CSV */}
+      {csvImportResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-600/10 text-blue-400 rounded-xl border border-blue-500/20">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    Importation de Réservations (CSV)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Fichier : <span className="text-blue-300 font-mono font-medium">{csvFileName}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCsvImportResult(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Fermer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Summary badges */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Lignes Détectées</span>
+                <span className="text-lg font-bold text-white font-mono">{csvImportResult.totalRows}</span>
+              </div>
+              <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl">
+                <span className="text-[10px] text-emerald-400 font-bold uppercase block">Nouveaux Bons à Créer</span>
+                <span className="text-lg font-bold text-emerald-300 font-mono">+{csvImportResult.newCount}</span>
+              </div>
+              <div className="p-3 bg-blue-950/40 border border-blue-800/60 rounded-xl">
+                <span className="text-[10px] text-blue-400 font-bold uppercase block">Bons à Mettre à Jour</span>
+                <span className="text-lg font-bold text-blue-300 font-mono">{csvImportResult.updatedCount}</span>
+              </div>
+            </div>
+
+            {/* Warning if any */}
+            {csvImportResult.errors.length > 0 && (
+              <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-300">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Remarques sur le fichier :</span>
+                </div>
+                <ul className="list-disc list-inside text-[11px] text-amber-300/80 space-y-0.5">
+                  {csvImportResult.errors.slice(0, 3).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                  {csvImportResult.errors.length > 3 && (
+                    <li>...et {csvImportResult.errors.length - 3} autre(s) avertissement(s)</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview table */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>Aperçu des 5 premières réservations extraites :</span>
+                <span className="text-[11px] text-slate-400 font-normal">
+                  Total à intégrer : {csvImportResult.reservations.length} bon(s)
+                </span>
+              </span>
+              <div className="overflow-x-auto border border-slate-800 rounded-xl max-h-48 overflow-y-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-[10px] uppercase font-bold text-slate-400 sticky top-0 border-b border-slate-800">
+                    <tr>
+                      <th className="px-3 py-2">N° Bon</th>
+                      <th className="px-3 py-2">Client</th>
+                      <th className="px-3 py-2">Modèle</th>
+                      <th className="px-3 py-2">Prix TTC</th>
+                      <th className="px-3 py-2">Acompte</th>
+                      <th className="px-3 py-2">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-900/60 font-sans">
+                    {csvImportResult.reservations.slice(0, 5).map((r) => {
+                      const clientName =
+                        r.client.type === 'societe'
+                          ? r.client.societe?.raisonSociale || 'Société'
+                          : `${r.client.personnePhysique?.nom || ''} ${r.client.personnePhysique?.prenom || ''}`.trim() || 'Client';
+                      return (
+                        <tr key={r.id} className="hover:bg-slate-800/40">
+                          <td className="px-3 py-2 font-mono font-bold text-red-400 whitespace-nowrap">{r.id}</td>
+                          <td className="px-3 py-2 whitespace-nowrap font-medium text-white">{clientName}</td>
+                          <td className="px-3 py-2 whitespace-nowrap text-slate-300">{r.carName}</td>
+                          <td className="px-3 py-2 whitespace-nowrap font-mono font-bold text-emerald-400">
+                            {r.priceTND.toLocaleString('fr-FR')} DT
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap font-mono text-slate-300">
+                            {r.depositPaidTND.toLocaleString('fr-FR')} DT
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-200 border border-slate-700">
+                              {r.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setCsvImportResult(null)}
+                disabled={isImportingCsv}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCsvImport}
+                disabled={isImportingCsv}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg hover:shadow-blue-900/40 border border-blue-500/40 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isImportingCsv ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    <span>Enregistrement en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirmer l'importation ({csvImportResult.reservations.length} bons)</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
