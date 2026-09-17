@@ -95,6 +95,9 @@ import {
   saveKnowledgeBaseItemToFirestore,
   deleteKnowledgeBaseItemFromFirestore,
   saveDocTemplateToFirestore,
+  isFirestoreQuotaExceeded,
+  markFirestoreQuotaExhausted,
+  onFirestoreQuotaChange,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -364,8 +367,19 @@ export default function App() {
 
   // Success Toast Banner State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [firestoreQuotaExceeded, setFirestoreQuotaExceeded] = useState(false);
+  const [firestoreQuotaExceeded, setFirestoreQuotaExceeded] = useState(() => isFirestoreQuotaExceeded());
   const [quotaBannerDismissed, setQuotaBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onFirestoreQuotaChange((exhausted) => {
+      if (exhausted) {
+        setFirestoreQuotaExceeded(true);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -388,8 +402,9 @@ export default function App() {
         err?.message?.includes('quota') ||
         String(err).includes('Quota');
       if (isQuota) {
+        markFirestoreQuotaExhausted();
         setFirestoreQuotaExceeded(true);
-        console.warn(`[Firestore Quota] Quota de requêtes journalier Firestore atteint sur ${collectionName}. Mode local sécurisé actif.`);
+        console.warn(`[Firestore Quota] Quota de requêtes journalier Firestore atteint sur ${collectionName}. Mode serveur local actif.`);
       } else {
         console.warn(`${collectionName} snapshot listener warning:`, err);
       }
@@ -415,9 +430,20 @@ export default function App() {
 
     const unsubscribeReservations = onSnapshot(reservationsCollection, (snapshot) => {
       const fetched = snapshot.docs.map((d) => ({ ...d.data(), id: d.data().id || d.id } as Reservation));
-      setReservations(fetched);
-      saveStoredReservations(fetched);
-      triggerInstantDbSave({ reservations: fetched });
+      if (fetched.length > 0) {
+        setReservations((prev) => {
+          const map = new Map<string, Reservation>();
+          // 1. Préserver toutes les réservations existantes en mémoire locale / serveur
+          prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+          // 2. Fusionner ou mettre à jour avec les documents reçus de Firestore
+          fetched.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+          const merged = Array.from(map.values());
+          saveStoredReservations(merged);
+          // 3. Sauvegarder la liste fusionnée complète sans jamais tronquer
+          triggerInstantDbSave({ reservations: merged });
+          return merged;
+        });
+      }
     }, (err) => handleSnapshotError('reservations', err));
 
     const unsubscribeTestDrives = onSnapshot(testDrivesCollection, (snapshot) => {
@@ -628,9 +654,15 @@ export default function App() {
               saveStoredCars(cleanCars);
             }
           }
-          if (Array.isArray(data.reservations)) {
-            setReservations(data.reservations);
-            saveStoredReservations(data.reservations);
+          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
+            setReservations((prev) => {
+              const map = new Map<string, Reservation>();
+              prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+              data.reservations.forEach((r: Reservation) => { if (r && r.id) map.set(r.id, r); });
+              const merged = Array.from(map.values());
+              saveStoredReservations(merged);
+              return merged;
+            });
           }
           if (Array.isArray(data.commercials) && data.commercials.length > 0) {
             const cleanComms = data.commercials.filter((u: CommercialUser) => !isDeprecatedCommercialUser(u));
@@ -682,6 +714,44 @@ export default function App() {
       .finally(() => {
         isDbLoadedRef.current = true;
       });
+  }, []);
+
+  // Synchronisation automatique et continue avec la base de données serveur STA (100% Gratuite, Illimitée et Sans Quota)
+  useEffect(() => {
+    const syncServerDatabase = async () => {
+      try {
+        const res = await fetch('/api/db');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.exists) {
+          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
+            setReservations((prev) => {
+              const map = new Map<string, Reservation>();
+              prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
+              data.reservations.forEach((r: Reservation) => { if (r && r.id) map.set(r.id, r); });
+              const merged = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+              saveStoredReservations(merged);
+              return merged;
+            });
+          }
+          if (Array.isArray(data.cars) && data.cars.length > 0) {
+            const deletedIds = getDeletedCarIds();
+            const cleanCars = data.cars.filter((c: CarModel) => !isVirtualCar(c) && !deletedIds.has(c.id));
+            if (cleanCars.length > 0) {
+              setCars(cleanCars);
+              saveStoredCars(cleanCars);
+            }
+          }
+        }
+      } catch (_) {}
+    };
+
+    const intervalId = setInterval(syncServerDatabase, 7000);
+    window.addEventListener('focus', syncServerDatabase);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', syncServerDatabase);
+    };
   }, []);
 
   // Enregistrement manuel contrôlé de la base sans cycle de mise à jour intempestif
@@ -865,6 +935,11 @@ export default function App() {
     setReservations(updatedReservations);
     saveStoredReservations(updatedReservations);
     saveReservationToFirestore(newReservation);
+    fetch('/api/reservations/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservation: newReservation }),
+    }).catch((err) => console.warn('Erreur sauvegarde /api/reservations/save:', err));
 
     const clientDisplayName =
       newReservation.client.type === 'personne_physique'
@@ -931,6 +1006,11 @@ export default function App() {
     setReservations(updatedReservations);
     saveStoredReservations(updatedReservations);
     saveReservationToFirestore(mod);
+    fetch('/api/reservations/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservation: mod }),
+    }).catch((err) => console.warn('Erreur sauvegarde /api/reservations/save:', err));
 
     const wasHolding = isStatusHoldingStock(oldStatus);
     const willHold = isStatusHoldingStock(newStatus);
@@ -1026,6 +1106,11 @@ export default function App() {
     setReservations(updatedRes);
     saveStoredReservations(updatedRes);
     saveReservationToFirestore(reservationWithUpdatedDate);
+    fetch('/api/reservations/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservation: reservationWithUpdatedDate }),
+    }).catch((err) => console.warn('Erreur sauvegarde /api/reservations/save:', err));
 
     triggerInstantDbSave({
       reservations: updatedRes,
@@ -1033,6 +1118,34 @@ export default function App() {
     });
 
     showToast(`Réservation ${updatedReservation.id} mise à jour avec succès.`);
+  };
+
+  // Synchronisation & Restauration garantie depuis la base en ligne
+  const handleSyncAndRecoverReservations = async (): Promise<{ success: boolean; message: string; count: number }> => {
+    try {
+      const res = await fetch('/api/reservations/recover', { method: 'POST' });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.reservations)) {
+        setReservations(data.reservations);
+        saveStoredReservations(data.reservations);
+        // Synchroniser également dans Firestore en tâche de fond
+        data.reservations.forEach((r: Reservation) => {
+          saveReservationToFirestore(r).catch(() => {});
+        });
+        const msg = data.recoveredCount > 0
+          ? `✅ ${data.recoveredCount} bon(s) de réservation manquant(s) restauré(s) avec succès ! Total : ${data.totalCount} réservations sauvegardées dans la base.`
+          : `✅ Base en ligne 100% synchronisée : Les ${data.totalCount} bons de réservation sont tous enregistrés et sécurisés.`;
+        showToast(msg);
+        return {
+          success: true,
+          count: data.totalCount,
+          message: msg,
+        };
+      }
+      return { success: false, count: reservations.length, message: 'Échec de synchronisation avec le serveur.' };
+    } catch (err: any) {
+      return { success: false, count: reservations.length, message: err?.message || 'Erreur réseau.' };
+    }
   };
 
   // Admin Handlers with Firestore Persistence & Instant Local DB backup
@@ -1715,20 +1828,20 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Firestore Free Tier Quota Notice Banner */}
+      {/* Firestore Quota Notice Banner with upgrade link */}
       {firestoreQuotaExceeded && !quotaBannerDismissed && (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="p-4 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg backdrop-blur-sm">
+          <div className="p-3.5 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg backdrop-blur-sm">
             <div className="flex items-start gap-3">
               <div className="p-2 bg-amber-500/20 text-amber-300 rounded-xl shrink-0 mt-0.5">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xs font-bold text-amber-200">
-                  Mode local sécurisé actif — Quota de requêtes journalières Firestore Free Tier atteint
+                  Mode serveur actif — Quota journalier Firestore (formule gratuite Spark) atteint
                 </p>
                 <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
-                  L'application continue de fonctionner : vos réservations, véhicules et données sont enregistrés localement dans votre navigateur et le serveur. Le quota Firestore se réinitialise automatiquement le lendemain.
+                  L'application continue de fonctionner : vos données sont persistées sur le serveur et votre stockage local. Le quota Firestore se réinitialise automatiquement le lendemain.
                 </p>
               </div>
             </div>
@@ -1744,7 +1857,7 @@ export default function App() {
               <button
                 onClick={() => setQuotaBannerDismissed(true)}
                 className="p-1.5 text-amber-300 hover:text-white rounded-lg transition-colors cursor-pointer"
-                title="Masquer cet avertissement"
+                title="Masquer cet avis"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1794,6 +1907,7 @@ export default function App() {
                   }
                 }}
                 onViewDocument={(doc) => setActiveDocument(doc)}
+                onSyncReservations={handleSyncAndRecoverReservations}
               />
             )}
 

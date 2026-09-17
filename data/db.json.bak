@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-09-11T08:07:29.310Z",
+  "savedAt": "2026-09-11T08:07:32.235Z",
   "cars": [
     {
       "colors": [
@@ -744,6 +744,60 @@
       "commercialName": "Ines Chaari",
       "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-224)",
       "createdAt": "2026-09-08T07:45:36.263Z"
+    },
+    {
+      "notes": "Restauré automatiquement depuis la traçabilité (Audit #RES-2026-445)",
+      "updatedAt": "2026-09-08T11:27:27.879Z",
+      "commercialId": "comm-moez",
+      "commercialName": "Moez Ben Naser",
+      "colorChosen": {
+        "reserved": 4,
+        "id": "col-3-1785753066750",
+        "interiorColor": "Cuir Noir",
+        "stock": 4,
+        "name": "Gray GV",
+        "hexCode": "#6E6F72"
+      },
+      "paymentMethod": "Chèque Certifié",
+      "registrationFeeTND": 0,
+      "vehicles": [
+        {
+          "unitPriceTND": 79900,
+          "carName": "Chery Tiggo 4 HEV",
+          "carId": "car-1785753066750",
+          "colorChosen": {
+            "id": "col-3-1785753066750",
+            "hexCode": "#6E6F72",
+            "interiorColor": "Cuir Noir",
+            "reserved": 4,
+            "stock": 4,
+            "name": "Gray GV"
+          },
+          "quantity": 1,
+          "totalPriceTND": 79900
+        }
+      ],
+      "priceTND": 79900,
+      "createdAt": "2026-09-08T11:27:27.879Z",
+      "id": "RES-2026-1003",
+      "carId": "car-1785753066750",
+      "agency": "Siege STA",
+      "carName": "Chery Tiggo 4 HEV",
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "29955126",
+          "prenom": "",
+          "email": "",
+          "nom": "ameur ben abdallah",
+          "adresse": ""
+        }
+      },
+      "status": "Confirmée",
+      "depositPaidTND": 0,
+      "documents": []
     },
     {
       "client": {
@@ -6793,6 +6847,773 @@
       "createdAt": "2026-09-10T16:15:45.528Z",
       "commercialId": "comm-marwa",
       "etaDate": "2026-09-10"
+    },
+    {
+      "id": "RES-2026-1001",
+      "commercialId": "comm-hanen",
+      "commercialName": "Hanen Gharbi",
+      "agency": "Chery Agence Ain Zaghouen",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "colorChosen": {
+        "interiorColor": "Cuir Noir",
+        "id": "col-1786454192522",
+        "reserved": 1,
+        "name": "Exclusive Blue WE",
+        "hexCode": "#217CB5",
+        "stock": 19
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1001-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "colorChosen": {
+            "interiorColor": "Cuir Noir",
+            "id": "col-1786454192522",
+            "reserved": 1,
+            "name": "Exclusive Blue WE",
+            "hexCode": "#217CB5",
+            "stock": 19
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "BOUATOURIA MR SAID",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "92230229",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "En attente",
+      "createdAt": "2026-09-11T08:03:19.838Z",
+      "updatedAt": "2026-09-11T08:03:19.838Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-1001)"
+    },
+    {
+      "id": "RES-2026-1004",
+      "commercialId": "user-1785739349068",
+      "commercialName": "Nader Chtourou",
+      "agency": "Chery Agence Sfax",
+      "carId": "car-1785753208837",
+      "carName": "Chery I03 4X4 (Green GN)",
+      "colorChosen": {
+        "reserved": 0,
+        "name": "Green GN",
+        "stock": 10,
+        "id": "col-1786454514433",
+        "hexCode": "#255645",
+        "interiorColor": "Cuir Marron"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1004-0",
+          "carId": "car-1785753208837",
+          "carName": "Chery I03 4X4 (Green GN)",
+          "colorChosen": {
+            "reserved": 0,
+            "name": "Green GN",
+            "stock": 10,
+            "id": "col-1786454514433",
+            "hexCode": "#255645",
+            "interiorColor": "Cuir Marron"
+          },
+          "quantity": 1,
+          "unitPriceTND": 84900,
+          "totalPriceTND": 84900
+        }
+      ],
+      "client": {
+        "type": "societe",
+        "societe": {
+          "raisonSociale": "STE S N A Q M I",
+          "matriculeFiscale": "",
+          "ville": "Sfax",
+          "telephone": "98440007",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 84900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8490,
+      "paymentMethod": "Chèque Certifié",
+      "status": "En attente",
+      "createdAt": "2026-09-10T14:21:26.337Z",
+      "updatedAt": "2026-09-10T14:21:26.337Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-998)"
+    },
+    {
+      "id": "RES-2026-1005",
+      "commercialId": "comm-marwa",
+      "commercialName": "Marwa Frikha",
+      "agency": "Siege STA",
+      "carId": "car-1785753066750",
+      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "colorChosen": {
+        "hexCode": "#6E6F72",
+        "stock": 4,
+        "name": "Gray GV",
+        "interiorColor": "Cuir Noir",
+        "id": "col-3-1785753066750",
+        "reserved": 4
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1005-0",
+          "carId": "car-1785753066750",
+          "carName": "Chery Tiggo 4 HEV (Gray GV)",
+          "colorChosen": {
+            "hexCode": "#6E6F72",
+            "stock": 4,
+            "name": "Gray GV",
+            "interiorColor": "Cuir Noir",
+            "id": "col-3-1785753066750",
+            "reserved": 4
+          },
+          "quantity": 1,
+          "unitPriceTND": 79900,
+          "totalPriceTND": 79900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "Chiraz  Ouji",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "28854702",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 79900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 7990,
+      "paymentMethod": "Chèque Certifié",
+      "status": "En attente",
+      "createdAt": "2026-09-10T14:18:19.924Z",
+      "updatedAt": "2026-09-10T14:18:19.924Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-999)"
+    },
+    {
+      "id": "RES-2026-1006",
+      "commercialId": "user-1787821380306",
+      "commercialName": "Racha Jebeniani",
+      "agency": "Chery siege",
+      "carId": "car-1785753066750",
+      "carName": "Chery Tiggo 4 HEV (Gray GV)",
+      "colorChosen": {
+        "hexCode": "#6E6F72",
+        "stock": 4,
+        "name": "Gray GV",
+        "interiorColor": "Cuir Noir",
+        "id": "col-3-1785753066750",
+        "reserved": 4
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1006-0",
+          "carId": "car-1785753066750",
+          "carName": "Chery Tiggo 4 HEV (Gray GV)",
+          "colorChosen": {
+            "hexCode": "#6E6F72",
+            "stock": 4,
+            "name": "Gray GV",
+            "interiorColor": "Cuir Noir",
+            "id": "col-3-1785753066750",
+            "reserved": 4
+          },
+          "quantity": 1,
+          "unitPriceTND": 79900,
+          "totalPriceTND": 79900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "AMIR ATIG BAHAR",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "25055055",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 79900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 7990,
+      "paymentMethod": "Chèque Certifié",
+      "status": "En attente",
+      "createdAt": "2026-09-10T14:14:30.474Z",
+      "updatedAt": "2026-09-10T14:14:30.474Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-998)"
+    },
+    {
+      "id": "RES-2026-997",
+      "commercialId": "user-1787557241636",
+      "commercialName": "DISTRICARS Sfax",
+      "agency": "Chery Agence Sfax",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+      "colorChosen": {
+        "interiorColor": "Cuir Noir",
+        "id": "col-1786454192522",
+        "reserved": 1,
+        "name": "Exclusive Blue WE",
+        "hexCode": "#217CB5",
+        "stock": 19
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-997-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV (Exclusive Blue WE)",
+          "colorChosen": {
+            "interiorColor": "Cuir Noir",
+            "id": "col-1786454192522",
+            "reserved": 1,
+            "name": "Exclusive Blue WE",
+            "hexCode": "#217CB5",
+            "stock": 19
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "FATMA KAMMOUN EP SIALA",
+          "prenom": "",
+          "cin": "",
+          "ville": "Sfax",
+          "telephone": "54198000",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T13:14:38.728Z",
+      "updatedAt": "2026-09-10T13:14:38.728Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-997)"
+    },
+    {
+      "id": "RES-2026-1007",
+      "commercialId": "user-1787557525876",
+      "commercialName": "K2EM CHERY Charguia 1",
+      "agency": "Chery Agence Charguia 1",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+      "colorChosen": {
+        "stock": 15,
+        "hexCode": "#727783",
+        "interiorColor": "Cuir Noir",
+        "reserved": 10,
+        "name": "Tech Gray GX",
+        "id": "col-3-1785753278797"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1007-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV (Tech Gray GX)",
+          "colorChosen": {
+            "stock": 15,
+            "hexCode": "#727783",
+            "interiorColor": "Cuir Noir",
+            "reserved": 10,
+            "name": "Tech Gray GX",
+            "id": "col-3-1785753278797"
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "Hichem Ben Amor",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "58213333",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T11:22:01.077Z",
+      "updatedAt": "2026-09-10T11:22:01.077Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-998)"
+    },
+    {
+      "id": "RES-2026-1008",
+      "commercialId": "user-1787557525876",
+      "commercialName": "K2EM CHERY Charguia 1",
+      "agency": "Chery Agence Charguia 1",
+      "carId": "car-1787908920743",
+      "carName": "Chery Himla 4X4 BVA (Black CH)",
+      "colorChosen": {
+        "interiorColor": "Cuir Marron",
+        "name": "Black CH",
+        "reserved": 2,
+        "hexCode": "#0A0A0A",
+        "id": "col-3-1787908920743",
+        "stock": 15
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1008-0",
+          "carId": "car-1787908920743",
+          "carName": "Chery Himla 4X4 BVA (Black CH)",
+          "colorChosen": {
+            "interiorColor": "Cuir Marron",
+            "name": "Black CH",
+            "reserved": 2,
+            "hexCode": "#0A0A0A",
+            "id": "col-3-1787908920743",
+            "stock": 15
+          },
+          "quantity": 1,
+          "unitPriceTND": 119900,
+          "totalPriceTND": 119900
+        }
+      ],
+      "client": {
+        "type": "societe",
+        "societe": {
+          "raisonSociale": "Sté MBS",
+          "matriculeFiscale": "",
+          "ville": "Tunis",
+          "telephone": "20009200",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 119900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 11990,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T10:48:15.326Z",
+      "updatedAt": "2026-09-10T10:48:15.326Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-997)"
+    },
+    {
+      "id": "RES-2026-1009",
+      "commercialId": "user-1787821380306",
+      "commercialName": "Racha Jebeniani",
+      "agency": "Chery siege",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV (Black CL)",
+      "colorChosen": {
+        "id": "col-1786454139529",
+        "name": "Black CL",
+        "hexCode": "#050505",
+        "interiorColor": "Cuir Noir",
+        "reserved": 2,
+        "stock": 28
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1009-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV (Black CL)",
+          "colorChosen": {
+            "id": "col-1786454139529",
+            "name": "Black CL",
+            "hexCode": "#050505",
+            "interiorColor": "Cuir Noir",
+            "reserved": 2,
+            "stock": 28
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "OKBA BOUGHANMI",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "55818971",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T10:15:06.715Z",
+      "updatedAt": "2026-09-10T10:15:06.715Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-995)"
+    },
+    {
+      "id": "RES-2026-1010",
+      "commercialId": "user-1787821380306",
+      "commercialName": "Racha Jebeniani",
+      "agency": "Chery siege",
+      "carId": "car-1785753367152",
+      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "colorChosen": {
+        "reserved": 1,
+        "id": "col-1-1785753367152",
+        "interiorColor": "Cuir Noir",
+        "name": "White BW",
+        "stock": 1,
+        "hexCode": "#FFFFFF"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1010-0",
+          "carId": "car-1785753367152",
+          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "colorChosen": {
+            "reserved": 1,
+            "id": "col-1-1785753367152",
+            "interiorColor": "Cuir Noir",
+            "name": "White BW",
+            "stock": 1,
+            "hexCode": "#FFFFFF"
+          },
+          "quantity": 1,
+          "unitPriceTND": 102990,
+          "totalPriceTND": 102990
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "RAMI ROMDHANI",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "99353819",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 102990,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 10299,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T09:08:25.790Z",
+      "updatedAt": "2026-09-10T09:08:25.790Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-993)"
+    },
+    {
+      "id": "RES-2026-1011",
+      "commercialId": "user-1787821380306",
+      "commercialName": "Racha Jebeniani",
+      "agency": "Chery siege",
+      "carId": "car-1785753367152",
+      "carName": "Chery Tiggo 8 PHEV (White BW)",
+      "colorChosen": {
+        "reserved": 1,
+        "id": "col-1-1785753367152",
+        "interiorColor": "Cuir Noir",
+        "name": "White BW",
+        "stock": 1,
+        "hexCode": "#FFFFFF"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1011-0",
+          "carId": "car-1785753367152",
+          "carName": "Chery Tiggo 8 PHEV (White BW)",
+          "colorChosen": {
+            "reserved": 1,
+            "id": "col-1-1785753367152",
+            "interiorColor": "Cuir Noir",
+            "name": "White BW",
+            "stock": 1,
+            "hexCode": "#FFFFFF"
+          },
+          "quantity": 1,
+          "unitPriceTND": 102990,
+          "totalPriceTND": 102990
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "RAMI ROMDHANI",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "14265273",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 102990,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 10299,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-10T08:59:53.837Z",
+      "updatedAt": "2026-09-10T08:59:53.837Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-992)"
+    },
+    {
+      "id": "RES-2026-1012",
+      "commercialId": "comm-marwa",
+      "commercialName": "Marwa Frikha",
+      "agency": "Siege STA",
+      "carId": "car-1785753208837",
+      "carName": "Chery I03 4X4",
+      "colorChosen": {
+        "name": "Gray GY",
+        "interiorColor": "Cuir Marron",
+        "reserved": 0,
+        "hexCode": "#626a68",
+        "id": "col-1786454499484",
+        "stock": 30
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1012-0",
+          "carId": "car-1785753208837",
+          "carName": "Chery I03 4X4",
+          "colorChosen": {
+            "name": "Gray GY",
+            "interiorColor": "Cuir Marron",
+            "reserved": 0,
+            "hexCode": "#626a68",
+            "id": "col-1786454499484",
+            "stock": 30
+          },
+          "quantity": 1,
+          "unitPriceTND": 84900,
+          "totalPriceTND": 84900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "SOUMAYA OUHADA",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "98609663",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 84900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8490,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-09T20:52:48.537Z",
+      "updatedAt": "2026-09-09T20:52:48.537Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-378)"
+    },
+    {
+      "id": "RES-2026-1013",
+      "commercialId": "comm-marwa",
+      "commercialName": "Marwa Frikha",
+      "agency": "Siege STA",
+      "carId": "car-1785513071800",
+      "carName": "Chery Tiggo 9 PHEV",
+      "colorChosen": {
+        "id": "col-1786981421374",
+        "hexCode": "#030303",
+        "name": "Black CM",
+        "reserved": 3,
+        "stock": 14,
+        "interiorColor": "Cuir Beige & Bleu"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-1013-0",
+          "carId": "car-1785513071800",
+          "carName": "Chery Tiggo 9 PHEV",
+          "colorChosen": {
+            "id": "col-1786981421374",
+            "hexCode": "#030303",
+            "name": "Black CM",
+            "reserved": 3,
+            "stock": 14,
+            "interiorColor": "Cuir Beige & Bleu"
+          },
+          "quantity": 1,
+          "unitPriceTND": 129900,
+          "totalPriceTND": 129900
+        }
+      ],
+      "client": {
+        "type": "societe",
+        "societe": {
+          "raisonSociale": "STE MED OIL COMPANY",
+          "matriculeFiscale": "",
+          "ville": "Tunis",
+          "telephone": "97392380",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 129900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 12990,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-09T11:54:40.046Z",
+      "updatedAt": "2026-09-09T11:54:40.046Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-775)"
+    },
+    {
+      "id": "RES-2026-449",
+      "commercialId": "comm-hanen",
+      "commercialName": "Hanen Gharbi",
+      "agency": "Chery Agence Ain Zaghouen",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV",
+      "colorChosen": {
+        "id": "col-1-1785753278797",
+        "hexCode": "#FFFFFF",
+        "reserved": 4,
+        "name": "White BW",
+        "stock": 21,
+        "interiorColor": "Cuir Noir"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-449-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV",
+          "colorChosen": {
+            "id": "col-1-1785753278797",
+            "hexCode": "#FFFFFF",
+            "reserved": 4,
+            "name": "White BW",
+            "stock": 21,
+            "interiorColor": "Cuir Noir"
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "AMIRA BEN REJAB",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "98270016",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-09T07:47:35.512Z",
+      "updatedAt": "2026-09-09T07:47:35.512Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-449)"
+    },
+    {
+      "id": "RES-2026-281",
+      "commercialId": "comm-hanen",
+      "commercialName": "Hanen Gharbi",
+      "agency": "Chery Agence Ain Zaghouen",
+      "carId": "car-1785753278797",
+      "carName": "Chery Tiggo 7 PHEV",
+      "colorChosen": {
+        "name": "Phantom Gray GV",
+        "id": "col-2-1785753278797",
+        "interiorColor": "Cuir Noir",
+        "stock": 34,
+        "reserved": 1,
+        "hexCode": "#939AA5"
+      },
+      "vehicles": [
+        {
+          "id": "veh-RES-2026-281-0",
+          "carId": "car-1785753278797",
+          "carName": "Chery Tiggo 7 PHEV",
+          "colorChosen": {
+            "name": "Phantom Gray GV",
+            "id": "col-2-1785753278797",
+            "interiorColor": "Cuir Noir",
+            "stock": 34,
+            "reserved": 1,
+            "hexCode": "#939AA5"
+          },
+          "quantity": 1,
+          "unitPriceTND": 88900,
+          "totalPriceTND": 88900
+        }
+      ],
+      "client": {
+        "type": "personne_physique",
+        "personnePhysique": {
+          "nom": "ben salem  najiba",
+          "prenom": "",
+          "cin": "",
+          "ville": "Tunis",
+          "telephone": "95907783",
+          "email": "",
+          "adresse": ""
+        }
+      },
+      "documents": [],
+      "priceTND": 88900,
+      "registrationFeeTND": 0,
+      "depositPaidTND": 8890,
+      "paymentMethod": "Chèque Certifié",
+      "status": "Confirmée",
+      "createdAt": "2026-09-09T07:31:46.365Z",
+      "updatedAt": "2026-09-09T07:31:46.365Z",
+      "notes": "Bon restauré depuis la traçabilité STA (Audit initial #RES-2026-281)"
     }
   ],
   "commercials": [

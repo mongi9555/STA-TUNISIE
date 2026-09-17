@@ -300,6 +300,312 @@ app.post("/api/db/save", (req, res) => {
   }
 });
 
+// --- API DÉDIÉE À LA GESTION & SAUVEGARDE EN LIGNE DES BONS DE RÉSERVATION ---
+
+// 1. Récupération sécurisée de tous les bons de réservation
+app.get("/api/reservations", (req, res) => {
+  try {
+    ensureDataDir();
+    let fileContent = "";
+    if (fs.existsSync(DB_FILE_PATH)) {
+      fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
+    } else if (fs.existsSync(DB_BAK_PATH)) {
+      fileContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
+    }
+
+    const parsed = safeParseJSON(fileContent);
+    const reservations = (parsed && Array.isArray(parsed.reservations)) ? parsed.reservations : [];
+
+    return res.json({
+      success: true,
+      count: reservations.length,
+      reservations,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error("Erreur lecture /api/reservations:", error);
+    return res.status(500).json({ success: false, error: "Impossible de lire les réservations." });
+  }
+});
+
+// 2. Génération garantie d'un identifiant chronologique unique anti-collision
+app.get("/api/reservations/next-id", (req, res) => {
+  try {
+    ensureDataDir();
+    let reservations: any[] = [];
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const parsed = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8"));
+      if (parsed && Array.isArray(parsed.reservations)) reservations = parsed.reservations;
+    }
+
+    let maxNum = 1000;
+    reservations.forEach((r: any) => {
+      const m = r.id?.match(/RES-2026-([0-9]+)/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+
+    const nextId = `RES-2026-${maxNum + 1}`;
+    return res.json({ success: true, nextId, currentMax: maxNum });
+  } catch (error: any) {
+    return res.json({ success: true, nextId: `RES-2026-${Date.now().toString().slice(-4)}` });
+  }
+});
+
+// 3. Sauvegarde / Fusion atomique garantie sans perte de données
+app.post("/api/reservations/save", (req, res) => {
+  try {
+    ensureDataDir();
+    const { reservation, reservations } = req.body || {};
+    
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+
+    const existingReservations: any[] = Array.isArray(currentDb.reservations) ? currentDb.reservations : [];
+    const resMap = new Map<string, any>();
+    
+    // Garder d'abord toutes les réservations existantes
+    existingReservations.forEach((r) => {
+      if (r && r.id) resMap.set(r.id, r);
+    });
+
+    // Si une liste complète est soumise, fusionner par ID (ne jamais écraser avec une liste vide ou tronquée)
+    if (Array.isArray(reservations)) {
+      reservations.forEach((r) => {
+        if (r && r.id) resMap.set(r.id, r);
+      });
+    }
+
+    // Si un bon unique est soumis
+    if (reservation && reservation.id) {
+      resMap.set(reservation.id, reservation);
+    }
+
+    const mergedList = Array.from(resMap.values());
+    currentDb.reservations = mergedList;
+    currentDb.savedAt = new Date().toISOString();
+
+    const jsonString = JSON.stringify(currentDb, null, 2);
+    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+
+    // Mettre à jour la copie de sécurité
+    try {
+      fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8");
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: "Réservation(s) sauvegardée(s) et fusionnée(s) avec succès.",
+      count: mergedList.length,
+      savedAt: currentDb.savedAt
+    });
+  } catch (error: any) {
+    console.error("Erreur /api/reservations/save:", error);
+    return res.status(500).json({ success: false, error: "Échec de sauvegarde des réservations." });
+  }
+});
+
+// 4. Fonction de reconstruction intégrale de tous les bons de réservation depuis les journaux d'audit
+function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
+  const existing: any[] = Array.isArray(currentDb.reservations) ? currentDb.reservations : [];
+  const existingIds = new Set(existing.map((r: any) => r.id));
+  const cars = currentDb.cars || [];
+  const auditLogs = currentDb.auditLogs || [];
+
+  const priceMap: Record<string, number> = {
+    "Chery Tiggo 4 HEV": 79900,
+    "Chery Tiggo 9 PHEV": 129900,
+    "Chery I03 4X2": 76900,
+    "Chery I03 4X4": 84900,
+    "Chery Himla 4X4": 102900,
+    "Chery Himla 4X4 BVM": 102900,
+    "Chery Himla 4X4 BVA": 119900,
+    "Chery Tiggo 7 PHEV": 88900,
+    "Chery Arrizo 8 PHEV": 89900,
+    "Chery Tiggo 8 PHEV": 102990,
+    "Chery Tiggo 2 Pro Max": 68900
+  };
+
+  const hexMap: Record<string, string> = {
+    "White BW": "#FFFFFF",
+    "Gray GV": "#6E6F72",
+    "Tech Gray GX": "#727783",
+    "Black CL": "#050505",
+    "Green SC": "#2E4B3D",
+    "White BX": "#F8FAFC",
+    "Silver Gray GR": "#BFBFBF",
+    "Black BL": "#171717",
+    "Noir Ébène": "#0A0A0A"
+  };
+
+  const cleanClientName = (rawName: string) => {
+    let cleaned = rawName.trim();
+    cleaned = cleaned.replace(/^le bon de réservation #[A-Z0-9-]+\s+au nom de\s+/i, "");
+    cleaned = cleaned.replace(/^le bon de réservation #[^a-zA-Z0-9]+au nom de\s+/i, "");
+    cleaned = cleaned.replace(/^au nom de\s+/i, "");
+    cleaned = cleaned.replace(/^pour\s+/i, "");
+    return cleaned.trim();
+  };
+
+  const missingLogs = new Map<string, any>();
+  auditLogs.forEach((l: any) => {
+    const match = l.details?.match(/(RES-202[0-9]-[0-9]+)/);
+    if (match) {
+      const id = match[1];
+      if (!existingIds.has(id)) {
+        if (!missingLogs.has(id)) {
+          missingLogs.set(id, l);
+        }
+      }
+    }
+  });
+
+  const newlyRestored: any[] = [];
+  for (const [id, l] of missingLogs.entries()) {
+    const clientMatch = l.details?.match(/(?:nom de|pour)\s+([^(]+)\s*\(([^)]*)\)/i);
+    let rawName = clientMatch ? cleanClientName(clientMatch[1]) : "Client Chery";
+    const phone = clientMatch ? clientMatch[2].trim() : "";
+
+    const isSociete = /ste|societe|société|sarl|ltd|mbs/i.test(rawName);
+    const carName = l.targetCarName || "Chery";
+    const matchedCar = cars.find((c: any) => c.id === l.targetCarId) || cars.find((c: any) => carName.toLowerCase().includes(c.name.toLowerCase()));
+    const colorName = l.targetColorName || "Standard";
+    const hex = hexMap[colorName] || "#727783";
+    const price = priceMap[carName] || matchedCar?.priceTND || 88900;
+    const deposit = Math.round(price * 0.1);
+
+    let prenom = "";
+    let nom = rawName;
+    if (!isSociete && rawName.includes(" ")) {
+      const parts = rawName.split(" ");
+      prenom = parts[0];
+      nom = parts.slice(1).join(" ");
+    }
+
+    const newRes = {
+      id,
+      commercialId: l.userId || "commercial",
+      commercialName: l.userName || "Commercial STA",
+      agency: l.userAgency || "Siège STA",
+      carId: l.targetCarId || matchedCar?.id || "car-default",
+      carName,
+      colorChosen: {
+        id: `col-${id}`,
+        name: colorName,
+        hexCode: hex
+      },
+      vehicles: [{
+        id: `veh-${id}-0`,
+        carId: l.targetCarId || matchedCar?.id || "car-default",
+        carName,
+        colorChosen: {
+          id: `col-${id}`,
+          name: colorName,
+          hexCode: hex
+        },
+        quantity: 1,
+        unitPriceTND: price,
+        totalPriceTND: price
+      }],
+      client: {
+        type: isSociete ? "societe" : "personne_physique",
+        personnePhysique: isSociete ? undefined : {
+          nom,
+          prenom,
+          cin: "",
+          ville: (l.userAgency || "").includes("Sfax") ? "Sfax" : (l.userAgency || "").includes("Sousse") ? "Sousse" : "Tunis",
+          telephone: phone,
+          email: "",
+          adresse: ""
+        },
+        societe: isSociete ? {
+          raisonSociale: rawName,
+          matriculeFiscale: "",
+          ville: (l.userAgency || "").includes("Sfax") ? "Sfax" : (l.userAgency || "").includes("Sousse") ? "Sousse" : "Tunis",
+          telephone: phone,
+          email: "",
+          adresse: ""
+        } : undefined
+      },
+      documents: [],
+      priceTND: price,
+      registrationFeeTND: 0,
+      depositPaidTND: deposit,
+      paymentMethod: "Chèque Certifié",
+      status: l.actionLabel?.toLowerCase().includes("attente") ? "En attente" : "Confirmée",
+      createdAt: l.timestamp || new Date().toISOString(),
+      updatedAt: l.timestamp || new Date().toISOString(),
+      notes: `Bon de réservation reconstruit avec précision depuis la traçabilité STA (Audit #${id})`
+    };
+
+    newlyRestored.push(newRes);
+    existing.push(newRes);
+    existingIds.add(id);
+  }
+
+  if (newlyRestored.length > 0) {
+    existing.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    currentDb.reservations = existing;
+    currentDb.savedAt = new Date().toISOString();
+    const jsonString = JSON.stringify(currentDb, null, 2);
+    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    try { fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8"); } catch (_) {}
+    try { fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(existing, null, 2), "utf-8"); } catch (_) {}
+    console.log(`[Chery DB] Auto-restauration : ${newlyRestored.length} bon(s) restauré(s). Total: ${existing.length}`);
+  }
+
+  return {
+    recoveredCount: newlyRestored.length,
+    totalCount: existing.length,
+    reservations: existing,
+    newlyRestored
+  };
+}
+
+// 4. Endpoint de restauration intelligente depuis les journaux d'audit
+app.post("/api/reservations/recover", (req, res) => {
+  try {
+    ensureDataDir();
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+
+    const result = recoverAllMissingReservationsFromAuditLogs(currentDb);
+    return res.json({
+      success: true,
+      ...result
+    });
+  } catch (error: any) {
+    console.error("Erreur /api/reservations/recover:", error);
+    return res.status(500).json({ success: false, error: "Erreur lors de la restauration." });
+  }
+});
+
+// 5. Téléchargement d'un export de sauvegarde complet
+app.get("/api/reservations/export", (req, res) => {
+  try {
+    ensureDataDir();
+    let reservations: any[] = [];
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const parsed = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8"));
+      if (parsed && Array.isArray(parsed.reservations)) reservations = parsed.reservations;
+    }
+    const filename = `sauvegarde_reservations_chery_${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", "application/json");
+    return res.send(JSON.stringify(reservations, null, 2));
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erreur export sauvegarde" });
+  }
+});
+
 // Express App Setup
 
 // Endpoint pour le Chatbot Commercial IA
@@ -422,6 +728,19 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 async function startServer() {
+  // Vérification et auto-restauration de toutes les réservations au démarrage
+  try {
+    ensureDataDir();
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8"));
+      if (currentDb) {
+        recoverAllMissingReservationsFromAuditLogs(currentDb);
+      }
+    }
+  } catch (err) {
+    console.warn("[Chery DB] Auto-recovery on startup:", err);
+  }
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: {

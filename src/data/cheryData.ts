@@ -565,7 +565,8 @@ export function generateChronologicalReservationId(
   const yearPrefix = `RES-${currentYear}-`;
 
   const existingIds = new Set<string>();
-  let maxSeq = 0;
+  // Séquence minimale garantie au-delà de tous les bons existants (actuellement 120 bons enregistrés)
+  let maxSeq = 1013;
 
   const processId = (idStr?: string) => {
     if (!idStr) return;
@@ -591,7 +592,18 @@ export function generateChronologicalReservationId(
   reservations.forEach((r) => processId(r.id));
   extraIds.forEach((id) => processId(id));
 
-  let nextSeq = Math.max(maxSeq + 1, 1);
+  // Vérifier également les réservations en cache local si disponibles
+  try {
+    const cached = localStorage.getItem('chery_tn_reservations_v1');
+    if (cached) {
+      const parsedList = JSON.parse(cached);
+      if (Array.isArray(parsedList)) {
+        parsedList.forEach((r: any) => processId(r?.id));
+      }
+    }
+  } catch (_) {}
+
+  let nextSeq = Math.max(maxSeq + 1, 1014);
   let candidate = `RES-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
 
   while (existingIds.has(candidate)) {

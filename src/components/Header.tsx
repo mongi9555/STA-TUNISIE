@@ -198,24 +198,29 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Top Banner / Brand Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Chery Brand Identity */}
-        <div className="flex items-center gap-3.5">
+        {/* Chery Brand Identity (Cliquable pour retourner au Tableau de Bord Disponibilités) */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('dashboard')}
+          title="Retourner au Tableau de Bord Disponibilités"
+          className="flex items-center gap-3.5 text-left group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded-2xl transition-all"
+        >
           <motion.div
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="relative group cursor-pointer"
+            className="relative"
           >
             <img
               src={effectiveLogoUrl}
-              alt="Logo Chery Tunisie"
-              className="w-12 h-12 object-cover rounded-xl border-2 border-red-500/60 shadow-lg shadow-red-950/50"
+              alt="Logo Chery Tunisie - Tableau de Bord Disponibilités"
+              className="w-12 h-12 object-cover rounded-xl border-2 border-red-500/60 shadow-lg shadow-red-950/50 group-hover:border-red-400 transition-colors"
             />
             <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-red-900/30 to-transparent pointer-events-none" />
           </motion.div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-xl tracking-tight flex items-center gap-1.5">
-                <span className={isLightTheme ? 'text-slate-900' : 'text-white'}>{effectiveSiteName}</span>
+                <span className={`${isLightTheme ? 'text-slate-900 group-hover:text-red-600' : 'text-white group-hover:text-red-400'} transition-colors`}>{effectiveSiteName}</span>
               </h1>
               <span className="px-2.5 py-0.5 text-[11px] font-bold bg-red-600/20 text-red-600 dark:text-red-300 border border-red-500/40 rounded-full shadow-sm">
                 {effectiveBadgeText}
@@ -225,7 +230,7 @@ export const Header: React.FC<HeaderProps> = ({
               {effectiveSiteSubtitle}
             </p>
           </div>
-        </div>
+        </button>
 
         {/* User Session Switcher & Theme Selector */}
         <div className="flex items-center gap-3 flex-wrap justify-center">

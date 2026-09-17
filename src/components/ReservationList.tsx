@@ -47,6 +47,7 @@ interface ReservationListProps {
   onAddDocument?: (reservationId: string, doc: UploadedDocument) => void;
   onViewVoucher: (reservation: Reservation) => void;
   onViewDocument: (doc: UploadedDocument) => void;
+  onSyncReservations?: () => Promise<{ success: boolean; message: string; count: number }>;
 }
 
 export const ReservationList: React.FC<ReservationListProps> = ({
@@ -60,6 +61,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   onAddDocument,
   onViewVoucher,
   onViewDocument,
+  onSyncReservations,
 }) => {
   // Détection du niveau de privilèges : seuls les administrateurs et super-administrateurs peuvent voir toutes les réservations
   const isAdminOrSuperAdmin =
@@ -112,31 +114,36 @@ export const ReservationList: React.FC<ReservationListProps> = ({
     : [currentCommercial.agency].filter(Boolean);
   const paymentMethods = ['Espèces', 'Chèque Certifié', 'Virement Bancaire', 'Leasing'];
 
-  // Handler: synchroniser et restaurer depuis la traçabilité
+  // Handler: synchroniser et restaurer depuis la traçabilité et la base en ligne
   const handleRunRecovery = async () => {
     setIsRecovering(true);
     setRecoveryMessage(null);
     try {
-      const res = await recoverMissingReservationsFromAudit();
-      const hasQuotaError = res.errors.some((e) => e.includes('Quota') || e.includes('quota'));
-      if (res.recoveredCount > 0) {
-        setRecoveryMessage(`✅ ${res.recoveredCount} réservation(s) manquante(s) restaurée(s) avec succès depuis la traçabilité.`);
-      } else if (hasQuotaError) {
-        setRecoveryMessage(`⚠️ Le quota de requêtes journalières Firestore est atteint. Vos réservations restent consultables et sécurisées dans la base locale.`);
+      if (onSyncReservations) {
+        const res = await onSyncReservations();
+        setRecoveryMessage(res.message);
       } else {
-        setRecoveryMessage(`ℹ️ Traçabilité vérifiée : Toutes les réservations (${res.totalAuditEntriesScanned} actions auditées) sont déjà présentes.`);
+        const resp = await fetch('/api/reservations/recover', { method: 'POST' });
+        const data = await resp.json();
+        if (data && data.success) {
+          if (data.recoveredCount > 0) {
+            setRecoveryMessage(`✅ ${data.recoveredCount} bon(s) de réservation manquant(s) restauré(s) avec succès ! Total : ${data.totalCount} réservations.`);
+          } else {
+            setRecoveryMessage(`ℹ️ Base en ligne 100% synchronisée : Les ${data.totalCount} réservations sont toutes enregistrées et sécurisées.`);
+          }
+        } else {
+          // Fallback audit local
+          const localRes = await recoverMissingReservationsFromAudit();
+          if (localRes.recoveredCount > 0) {
+            setRecoveryMessage(`✅ ${localRes.recoveredCount} réservation(s) restaurée(s) depuis la traçabilité.`);
+          } else {
+            setRecoveryMessage(`ℹ️ Traçabilité vérifiée : Les réservations sont à jour.`);
+          }
+        }
       }
       setTimeout(() => setRecoveryMessage(null), 8000);
     } catch (err: any) {
-      const isQuota =
-        err?.code === 'resource-exhausted' ||
-        err?.message?.includes('Quota') ||
-        err?.message?.includes('quota');
-      if (isQuota) {
-        setRecoveryMessage(`⚠️ Quota de requêtes journalier Firestore atteint. Les réservations restent enregistrées et consultables localement.`);
-      } else {
-        setRecoveryMessage(`❌ Erreur de synchronisation: ${err?.message || 'Erreur inconnue'}`);
-      }
+      setRecoveryMessage(`⚠️ Erreur de synchronisation : ${err?.message || 'Erreur inconnue'}`);
     } finally {
       setIsRecovering(false);
     }
@@ -468,6 +475,17 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             </button>
           )}
 
+          {/* Téléchargement Sauvegarde Base JSON */}
+          <a
+            href="/api/reservations/export"
+            download={`sauvegarde_reservations_chery_${new Date().toISOString().split('T')[0]}.json`}
+            className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl shadow border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            title="Télécharger une copie de sauvegarde JSON en ligne de toutes les réservations"
+          >
+            <Download className="w-4 h-4 text-slate-400" />
+            <span>Sauvegarde Base</span>
+          </a>
+
           {/* Export Excel Button */}
           <button
             onClick={exportToExcel}
@@ -479,6 +497,17 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Notice de visibilité par rôle */}
+      {!isAdminOrSuperAdmin && (
+        <div className="p-3.5 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-200/90 flex items-center gap-3 shadow-sm">
+          <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+          <div>
+            <span className="font-bold text-amber-300">Espace Commercial Personnel : </span>
+            Vous visualisez exclusivement vos propres bons de réservation (<strong>{accessibleReservations.length} bon(s)</strong> pour {currentCommercial.name}). L'ensemble des <strong>{reservations.length} réservations</strong> du réseau national est sécurisé dans la base en ligne et réservé aux administrateurs.
+          </div>
+        </div>
+      )}
 
       {/* Recovery notification message */}
       {recoveryMessage && (

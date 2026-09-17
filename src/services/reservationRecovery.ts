@@ -1,4 +1,4 @@
-import { db, reservationsCollection, auditLogsCollection, carsCollection, commercialsCollection, saveReservationToFirestore } from '../firebase';
+import { db, reservationsCollection, auditLogsCollection, carsCollection, commercialsCollection, saveReservationToFirestore, isFirestoreQuotaExceeded, isFirestoreQuotaError } from '../firebase';
 import { getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Reservation, CarModel, CommercialUser, AuditLogEntry, ClientInfo } from '../types';
 
@@ -58,8 +58,28 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
     errors: [],
   };
 
+  // 1. Priorité absolue : API serveur intégrée (100% Gratuite, Illimitée et Sans Quota)
   try {
-    // 1. Charger les réservations actuelles dans Firestore
+    const serverResp = await fetch('/api/reservations/recover', { method: 'POST' });
+    if (serverResp.ok) {
+      const serverData = await serverResp.json();
+      if (serverData && serverData.success) {
+        return {
+          totalAuditEntriesScanned: serverData.totalCount || 0,
+          missingFound: serverData.recoveredCount || 0,
+          recoveredCount: serverData.recoveredCount || 0,
+          recoveredReservations: serverData.newlyRestored || [],
+          alreadyPresentCount: serverData.totalCount || 0,
+          errors: [],
+        };
+      }
+    }
+  } catch (serverErr) {
+    console.warn('[Recovery] Serveur local non accessible, tentative alternative:', serverErr);
+  }
+
+  try {
+    // 2. Repli secondaire Firestore si nécessaire
     const resSnap = await getDocs(reservationsCollection);
     const existingReservations = resSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Reservation));
     const existingIds = new Set(existingReservations.map((r) => r.id));
@@ -291,24 +311,25 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
         notes: `Restauré automatiquement depuis la traçabilité (Audit #${item.originalId})`,
       };
 
-      // Sauvegarder dans Firestore
-      try {
-        await setDoc(doc(db, 'reservations', restoredReservation.id), restoredReservation);
+      // Sauvegarder dans Firestore si le quota n'est pas épuisé
+      if (!isFirestoreQuotaExceeded()) {
+        try {
+          await setDoc(doc(db, 'reservations', restoredReservation.id), restoredReservation);
+          result.recoveredReservations.push(restoredReservation);
+          result.recoveredCount++;
+          console.log(`[Recovery] Réservation restaurée avec succès : ${restoredReservation.id} pour ${item.clientName}`);
+        } catch (err: any) {
+          if (isFirestoreQuotaError(err)) {
+            console.warn(`[Recovery Quota] Limite journalière atteinte lors de la sauvegarde de ${item.clientName}.`);
+            result.errors.push(`Quota Firestore journalier atteint pour ${item.clientName}.`);
+          } else {
+            console.warn(`[Recovery Error] Échec de restauration pour ${item.clientName}:`, err?.message || err);
+            result.errors.push(`Erreur pour ${item.clientName}: ${err?.message || String(err)}`);
+          }
+        }
+      } else {
         result.recoveredReservations.push(restoredReservation);
         result.recoveredCount++;
-        console.log(`[Recovery] Réservation restaurée avec succès : ${restoredReservation.id} pour ${item.clientName}`);
-      } catch (err: any) {
-        const isQuota =
-          err?.code === 'resource-exhausted' ||
-          err?.message?.includes('Quota') ||
-          err?.message?.includes('quota');
-        if (isQuota) {
-          console.warn(`[Recovery Quota] Limite journalière atteinte lors de la sauvegarde de ${item.clientName}.`);
-          result.errors.push(`Quota Firestore journalier atteint pour ${item.clientName}.`);
-        } else {
-          console.warn(`[Recovery Error] Échec de restauration pour ${item.clientName}:`, err?.message || err);
-          result.errors.push(`Erreur pour ${item.clientName}: ${err?.message || String(err)}`);
-        }
       }
     }
   } catch (globalError: any) {

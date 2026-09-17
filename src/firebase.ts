@@ -90,6 +90,77 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 3500): Promise<
   ]);
 }
 
+// Gestion globale et proactive du quota Firestore (Spark free tier)
+const QUOTA_STORAGE_KEY = 'chery_firestore_quota_exhausted_date';
+
+function getTodayDateStr(): string {
+  try {
+    return new Date().toISOString().split('T')[0];
+  } catch {
+    return '';
+  }
+}
+
+let isQuotaExhaustedGlobal = false;
+if (typeof window !== 'undefined') {
+  try {
+    const storedDate = localStorage.getItem(QUOTA_STORAGE_KEY);
+    if (storedDate && storedDate === getTodayDateStr()) {
+      isQuotaExhaustedGlobal = true;
+    }
+  } catch {}
+}
+
+const quotaListeners = new Set<(exhausted: boolean) => void>();
+
+export function onFirestoreQuotaChange(callback: (exhausted: boolean) => void) {
+  quotaListeners.add(callback);
+  if (isQuotaExhaustedGlobal) {
+    callback(true);
+  }
+  return () => {
+    quotaListeners.delete(callback);
+  };
+}
+
+export function isFirestoreQuotaExceeded(): boolean {
+  return isQuotaExhaustedGlobal;
+}
+
+export function markFirestoreQuotaExhausted() {
+  if (!isQuotaExhaustedGlobal) {
+    isQuotaExhaustedGlobal = true;
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(QUOTA_STORAGE_KEY, getTodayDateStr());
+      }
+    } catch {}
+    quotaListeners.forEach((fn) => {
+      try { fn(true); } catch (_) {}
+    });
+  }
+}
+
+/**
+ * Détecte si une erreur Firestore provient du dépassement de quota (Free tier Spark)
+ */
+export function isFirestoreQuotaError(error: any): boolean {
+  if (!error) return false;
+  const msg = typeof error === 'string' ? error : error.message || error.code || '';
+  const isQuota =
+    error.code === 'resource-exhausted' ||
+    msg.includes('Quota limit exceeded') ||
+    msg.includes('Quota exceeded') ||
+    msg.includes('Free daily read units') ||
+    msg.includes('Free daily write units') ||
+    msg.includes('resource-exhausted') ||
+    msg.includes('free tier database');
+  if (isQuota) {
+    markFirestoreQuotaExhausted();
+  }
+  return isQuota;
+}
+
 /**
  * Safe cleanup routines that protect all user-created items from being deleted.
  */
@@ -109,9 +180,15 @@ export async function cleanupMockAuditLogsFromFirestore() {
  * Seed initial data to Firestore if collections are empty.
  */
 export async function seedInitialDataIfEmpty() {
+  if (isFirestoreQuotaExceeded()) {
+    console.log('[Firestore Quota] Quota journalier atteint, initialisation Firestore ignorée au profit de la base serveur locale.');
+    return;
+  }
+
   try {
     const carsSnap = await withTimeout(getDocs(carsCollection), 4000);
     if (carsSnap.empty) {
+      if (isFirestoreQuotaExceeded()) return;
       console.log('Seeding initial official cars to Firestore...');
       const batch = writeBatch(db);
       INITIAL_CARS.forEach((car) => {
@@ -121,6 +198,7 @@ export async function seedInitialDataIfEmpty() {
       await withTimeout(batch.commit(), 4000);
     }
 
+    if (isFirestoreQuotaExceeded()) return;
     const kbSnap = await withTimeout(getDocs(knowledgeBaseCollection), 4000);
     if (kbSnap.empty && INITIAL_KNOWLEDGE_BASE) {
       console.log('Seeding initial knowledge base to Firestore...');
@@ -132,6 +210,7 @@ export async function seedInitialDataIfEmpty() {
       await withTimeout(batch.commit(), 4000);
     }
 
+    if (isFirestoreQuotaExceeded()) return;
     const commSnap = await withTimeout(getDocs(commercialsCollection), 4000);
     if (commSnap.empty) {
       console.log('Seeding initial commercials to Firestore...');
@@ -143,12 +222,14 @@ export async function seedInitialDataIfEmpty() {
       await withTimeout(batch.commit(), 4000);
     }
 
+    if (isFirestoreQuotaExceeded()) return;
     const siteSettingsDoc = await withTimeout(getDoc(doc(db, 'settings', 'site_settings')), 4000);
     if (!siteSettingsDoc.exists()) {
       console.log('Seeding initial site settings to Firestore...');
       await withTimeout(setDoc(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(DEFAULT_SITE_SETTINGS)), 4000);
     }
 
+    if (isFirestoreQuotaExceeded()) return;
     const adminDocsSnap = await withTimeout(getDocs(adminDocsCollection), 4000);
     if (adminDocsSnap.empty) {
       console.log('Seeding initial administrative documents to Firestore...');
@@ -160,6 +241,10 @@ export async function seedInitialDataIfEmpty() {
       await withTimeout(batch.commit(), 4000);
     }
   } catch (error) {
+    if (isFirestoreQuotaError(error)) {
+      console.warn('[Firestore Quota] Quota journalier atteint durant l initialisation. Le système opère en mode serveur/local.');
+      return;
+    }
     console.warn('Note on seeding initial Firestore data (operating with local state or offline fallback):', error);
   }
 }
@@ -168,10 +253,12 @@ export async function seedInitialDataIfEmpty() {
  * Save site settings doc to Firestore
  */
 export async function saveSiteSettingsToFirestore(settings: SiteSettings) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     const sanitized = sanitizeForFirestore(settings);
     await setDoc(doc(db, 'settings', 'site_settings'), sanitized);
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving site settings to Firestore:', e);
   }
 }
@@ -180,9 +267,11 @@ export async function saveSiteSettingsToFirestore(settings: SiteSettings) {
  * Save accessory to Firestore
  */
 export async function saveAccessoryToFirestore(accessory: CarAccessory) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'accessories', accessory.id), sanitizeForFirestore(accessory));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving accessory to Firestore:', e);
   }
 }
@@ -191,9 +280,11 @@ export async function saveAccessoryToFirestore(accessory: CarAccessory) {
  * Delete accessory from Firestore
  */
 export async function deleteAccessoryFromFirestore(accId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'accessories', accId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting accessory from Firestore:', e);
   }
 }
@@ -202,9 +293,11 @@ export async function deleteAccessoryFromFirestore(accId: string) {
  * Save quote to Firestore
  */
 export async function saveQuoteToFirestore(quote: CustomQuote) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'quotes', quote.id), sanitizeForFirestore(quote));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving quote to Firestore:', e);
   }
 }
@@ -213,9 +306,11 @@ export async function saveQuoteToFirestore(quote: CustomQuote) {
  * Delete quote from Firestore
  */
 export async function deleteQuoteFromFirestore(quoteId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'quotes', quoteId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting quote from Firestore:', e);
   }
 }
@@ -295,10 +390,12 @@ export async function saveCarToFirestore(car: CarModel): Promise<boolean> {
     }
 
     const sanitized = sanitizeForFirestore(carToSave);
+    if (isFirestoreQuotaExceeded()) return true;
     await setDoc(doc(db, 'cars', carToSave.id), sanitized);
     console.log(`[Firestore] Modèle "${carToSave.name}" (${carToSave.id}) sauvegardé avec succès.`);
     return true;
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return true;
     console.error('Error saving car to Firestore:', e);
     return false;
   }
@@ -308,9 +405,11 @@ export async function saveCarToFirestore(car: CarModel): Promise<boolean> {
  * Delete car doc from Firestore
  */
 export async function deleteCarFromFirestore(carId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'cars', carId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting car from Firestore:', e);
   }
 }
@@ -319,6 +418,7 @@ export async function deleteCarFromFirestore(carId: string) {
  * Save all cars array to Firestore (batch write)
  */
 export async function saveCarsToFirestore(cars: CarModel[]) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     const batch = writeBatch(db);
     cars.forEach((car) => {
@@ -326,6 +426,7 @@ export async function saveCarsToFirestore(cars: CarModel[]) {
     });
     await batch.commit();
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving cars batch to Firestore:', e);
   }
 }
@@ -357,25 +458,13 @@ function prepareReservationForFirestore(res: Reservation): Reservation {
 }
 
 /**
- * Détecte si une erreur Firestore provient du dépassement de quota (Free tier Spark)
- */
-export function isFirestoreQuotaError(error: any): boolean {
-  if (!error) return false;
-  const msg = typeof error === 'string' ? error : error.message || error.code || '';
-  return (
-    error.code === 'resource-exhausted' ||
-    msg.includes('Quota limit exceeded') ||
-    msg.includes('Quota exceeded') ||
-    msg.includes('Free daily read units') ||
-    msg.includes('free tier database')
-  );
-}
-
-/**
  * Save single reservation to Firestore avec protection contre dépassement de taille et écrasement
  */
 export async function saveReservationToFirestore(res: Reservation): Promise<string> {
   const targetId = res.id;
+  if (isFirestoreQuotaExceeded()) {
+    return targetId;
+  }
   try {
     const payload = prepareReservationForFirestore(res);
     await setDoc(doc(db, 'reservations', targetId), payload);
@@ -415,9 +504,11 @@ export async function saveReservationToFirestore(res: Reservation): Promise<stri
  * Delete reservation from Firestore
  */
 export async function deleteReservationFromFirestore(resId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'reservations', resId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting reservation from Firestore:', e);
   }
 }
@@ -426,6 +517,7 @@ export async function deleteReservationFromFirestore(resId: string) {
  * Delete all reservations from Firestore
  */
 export async function deleteAllReservationsFromFirestore() {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     const snap = await getDocs(reservationsCollection);
     const batch = writeBatch(db);
@@ -434,6 +526,7 @@ export async function deleteAllReservationsFromFirestore() {
     });
     await batch.commit();
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error clearing reservations in Firestore:', e);
   }
 }
@@ -442,9 +535,11 @@ export async function deleteAllReservationsFromFirestore() {
  * Save single test drive appointment to Firestore
  */
 export async function saveTestDriveToFirestore(testDrive: TestDriveAppointment) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'test_drives', testDrive.id), testDrive);
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving test drive to Firestore:', e);
   }
 }
@@ -453,9 +548,11 @@ export async function saveTestDriveToFirestore(testDrive: TestDriveAppointment) 
  * Delete test drive appointment from Firestore
  */
 export async function deleteTestDriveFromFirestore(testDriveId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'test_drives', testDriveId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting test drive from Firestore:', e);
   }
 }
@@ -464,9 +561,11 @@ export async function deleteTestDriveFromFirestore(testDriveId: string) {
  * Save single commercial user to Firestore
  */
 export async function saveCommercialToFirestore(commercial: CommercialUser) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'commercials', commercial.id), commercial);
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving commercial to Firestore:', e);
   }
 }
@@ -475,9 +574,11 @@ export async function saveCommercialToFirestore(commercial: CommercialUser) {
  * Delete commercial from Firestore
  */
 export async function deleteCommercialFromFirestore(commercialId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'commercials', commercialId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting commercial from Firestore:', e);
   }
 }
@@ -486,9 +587,11 @@ export async function deleteCommercialFromFirestore(commercialId: string) {
  * Save stock request to Firestore
  */
 export async function saveStockRequestToFirestore(req: StockRequest) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'stock_requests', req.id), req);
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving stock request to Firestore:', e);
   }
 }
@@ -497,9 +600,11 @@ export async function saveStockRequestToFirestore(req: StockRequest) {
  * Delete stock request from Firestore
  */
 export async function deleteStockRequestFromFirestore(reqId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'stock_requests', reqId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting stock request from Firestore:', e);
   }
 }
@@ -508,9 +613,11 @@ export async function deleteStockRequestFromFirestore(reqId: string) {
  * Save administrative document to Firestore
  */
 export async function saveAdminDocToFirestore(adminDoc: AdministrativeDocument) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'admin_documents', adminDoc.id), sanitizeForFirestore(adminDoc));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving administrative document to Firestore:', e);
   }
 }
@@ -519,9 +626,11 @@ export async function saveAdminDocToFirestore(adminDoc: AdministrativeDocument) 
  * Delete administrative document from Firestore
  */
 export async function deleteAdminDocFromFirestore(docId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'admin_documents', docId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting administrative document from Firestore:', e);
   }
 }
@@ -530,9 +639,11 @@ export async function deleteAdminDocFromFirestore(docId: string) {
  * Save audit log entry to Firestore
  */
 export async function saveAuditLogToFirestore(auditLog: AuditLogEntry) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'audit_logs', auditLog.id), sanitizeForFirestore(auditLog));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving audit log to Firestore:', e);
   }
 }
@@ -541,9 +652,11 @@ export async function saveAuditLogToFirestore(auditLog: AuditLogEntry) {
  * Delete single audit log entry from Firestore
  */
 export async function deleteAuditLogFromFirestore(logId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'audit_logs', logId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting audit log from Firestore:', e);
   }
 }
@@ -552,6 +665,7 @@ export async function deleteAuditLogFromFirestore(logId: string) {
  * Delete multiple audit logs from Firestore
  */
 export async function deleteMultipleAuditLogsFromFirestore(logIds: string[]) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     const batch = writeBatch(db);
     logIds.forEach((id) => {
@@ -559,6 +673,7 @@ export async function deleteMultipleAuditLogsFromFirestore(logIds: string[]) {
     });
     await batch.commit();
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting multiple audit logs in Firestore:', e);
   }
 }
@@ -567,6 +682,7 @@ export async function deleteMultipleAuditLogsFromFirestore(logIds: string[]) {
  * Clear all audit logs from Firestore
  */
 export async function clearAuditLogsFromFirestore() {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     const snap = await getDocs(auditLogsCollection);
     const batch = writeBatch(db);
@@ -575,6 +691,7 @@ export async function clearAuditLogsFromFirestore() {
     });
     await batch.commit();
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error clearing audit logs in Firestore:', e);
   }
 }
@@ -583,9 +700,11 @@ export async function clearAuditLogsFromFirestore() {
  * Save Knowledge Base item to Firestore
  */
 export async function saveKnowledgeBaseItemToFirestore(item: KnowledgeBaseItem) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'knowledge_base', item.id), sanitizeForFirestore(item));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving knowledge base item to Firestore:', e);
   }
 }
@@ -594,9 +713,11 @@ export async function saveKnowledgeBaseItemToFirestore(item: KnowledgeBaseItem) 
  * Delete Knowledge Base item from Firestore
  */
 export async function deleteKnowledgeBaseItemFromFirestore(itemId: string) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'knowledge_base', itemId));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting knowledge base item from Firestore:', e);
   }
 }
@@ -605,9 +726,11 @@ export async function deleteKnowledgeBaseItemFromFirestore(itemId: string) {
  * Save Document Template Config to Firestore
  */
 export async function saveDocTemplateToFirestore(config: DocumentTemplateConfig) {
+  if (isFirestoreQuotaExceeded()) return;
   try {
     await setDoc(doc(db, 'settings', 'doc_template'), sanitizeForFirestore(config));
   } catch (e) {
+    if (isFirestoreQuotaError(e)) return;
     console.error('Error saving document template to Firestore:', e);
   }
 }
