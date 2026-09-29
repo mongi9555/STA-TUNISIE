@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   AlertCircle,
   CreditCard,
+  Landmark,
   Plus,
   Minus,
   Check,
@@ -129,7 +130,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   // Step 4: Financials & Payment Deposit & Dates
   const [depositAmount, setDepositAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>(
+  const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing' | 'Dossier Bancaire'>(
     'Chèque Certifié'
   );
   const [etaDate, setEtaDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -437,15 +438,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   );
 
   const isLeasing = paymentMethod === 'Leasing';
+  const isBankCredit = paymentMethod === 'Dossier Bancaire';
   const remainingToPay = totalCarPrice - (isLeasing ? 0 : depositAmount);
 
   // Handle payment method change
   const handlePaymentMethodChange = (
-    method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'
+    method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing' | 'Dossier Bancaire'
   ) => {
     setPaymentMethod(method);
     if (method === 'Leasing') {
       setDepositAmount(0);
+    } else if (method === 'Dossier Bancaire') {
+      // Dossier bancaire : Acompte comptabilisé minimum 20.000 TND par défaut (modifiable d'après l'espace commercial)
+      const bankMinDeposit = Math.max(20000, 20000 * totalVehiclesCount);
+      setDepositAmount(bankMinDeposit);
     } else {
       setDepositAmount(totalCalculatedDeposit > 0 ? totalCalculatedDeposit : 20000);
     }
@@ -1517,6 +1523,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                       <option value="cin_recto">🪪 CIN Client (Face Recto)</option>
                       <option value="cin_verso">🪪 CIN Client (Face Verso)</option>
                       <option value="bon_commande">📄 Bon de Commande Client</option>
+                      <option value="accord_bancaire">🏦 Accord / Dossier Crédit Bancaire</option>
                       <option value="accord_leasing">💼 Accord / Dossier Leasing Particulier</option>
                       <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance de Paiement</option>
                       <option value="cheque_reservation">💳 Copie du Chèque de Réservation</option>
@@ -1527,6 +1534,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     <>
                       <option value="registre_commerce">🏢 Extrait RNE / Registre National des Entreprises</option>
                       <option value="bon_commande">📄 Bon de Commande Officiel Société</option>
+                      <option value="accord_bancaire">🏦 Accord / Dossier Crédit Bancaire Entreprise</option>
                       <option value="accord_leasing">💼 Dossier / Accord de Leasing Entreprise</option>
                       <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance Société</option>
                       <option value="cheque_reservation">💳 Copie du Chèque Société</option>
@@ -1636,12 +1644,15 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <option value="Chèque Certifié">Chèque Certifié</option>
                   <option value="Virement Bancaire">Virement Bancaire</option>
                   <option value="Espèces">Espèces (Au comptant)</option>
+                  <option value="Dossier Bancaire">Dossier Bancaire (Crédit Bancaire)</option>
                   <option value="Leasing">Dossier Leasing</option>
                 </select>
                 <p className="text-[10px] text-slate-400 mt-1">
                   {isLeasing
                     ? 'Dossier leasing : aucun acompte requis avec Bon de Commande.'
-                    : "Paiement au comptant : l'acompte est requis."}
+                    : isBankCredit
+                    ? 'Dossier bancaire : acompte comptabilisé requis (minimum recommandé : 20.000 TND modifiable).'
+                    : "Paiement (Espèces, Chèque Certifié, Virement) : l'acompte officiel selon le modèle est requis."}
                 </p>
               </div>
 
@@ -1649,11 +1660,15 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-slate-300">
-                    Acompte Versé (TND) {!isLeasing && <span className="text-red-400">*</span>}
+                    Acompte Versé / Comptabilisé (TND) {!isLeasing && <span className="text-red-400">*</span>}
                   </label>
                   {isLeasing ? (
                     <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
                       0 TND (Dossier Leasing)
+                    </span>
+                  ) : isBankCredit ? (
+                    <span className="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-500/30">
+                      Min: {(20000 * totalVehiclesCount).toLocaleString()} TND (Modifiable)
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">
@@ -1671,17 +1686,34 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   className={`w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 ${
                     isLeasing
                       ? 'bg-slate-900/60 border-slate-800 text-slate-500 cursor-not-allowed'
+                      : isBankCredit
+                      ? 'bg-slate-900 border-blue-800/80 text-blue-300 focus:border-blue-500'
                       : 'bg-slate-900 border-slate-800 text-amber-400'
                   }`}
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   {isLeasing
                     ? 'Aucun acompte requis pour les dossiers de leasing munis d’un bon de commande.'
+                    : isBankCredit
+                    ? 'Dossier bancaire : Acompte comptabilisé minimum 20.000 TND (modifiable d’après l’espace commercial).'
                     : "Acompte requis pour valider la réservation au comptant."}
                 </p>
                 {errors.depositAmount && <p className="text-[11px] text-red-400 mt-1">{errors.depositAmount}</p>}
               </div>
             </div>
+
+            {/* Dossier Bancaire details banner */}
+            {isBankCredit && (
+              <div className="p-3 bg-blue-950/50 border border-blue-700/60 rounded-xl text-xs text-blue-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-blue-300">
+                  <Landmark className="w-4 h-4 text-blue-400" />
+                  <span>Dossier Bancaire / Financement Crédit Auto :</span>
+                </div>
+                <p className="text-[11px] text-blue-200/90 leading-relaxed">
+                  L'acompte comptabilisé standard est pré-rempli à <strong>{(20000 * totalVehiclesCount).toLocaleString()} TND</strong> (minimum de 20.000 TND par véhicule). Vous pouvez modifier librement ce montant selon l'accord conclu avec le client et l'organisme bancaire.
+                </p>
+              </div>
+            )}
 
             {/* Leasing details banner */}
             {isLeasing && (

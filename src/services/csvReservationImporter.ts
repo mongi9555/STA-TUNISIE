@@ -280,6 +280,7 @@ export function importReservationsFromCsv(
       const rawPayment = (paymentMethodCol !== -1 ? row[paymentMethodCol] : '') || existing?.paymentMethod || 'Chèque Certifié';
       let paymentMethod: Reservation['paymentMethod'] = 'Chèque Certifié';
       if (/leas/i.test(rawPayment)) paymentMethod = 'Leasing';
+      else if (/dossier.*ban|banque|bancaire|cr[eé]dit/i.test(rawPayment)) paymentMethod = 'Dossier Bancaire';
       else if (/esp/i.test(rawPayment)) paymentMethod = 'Espèces';
       else if (/vir/i.test(rawPayment)) paymentMethod = 'Virement Bancaire';
       else paymentMethod = 'Chèque Certifié';

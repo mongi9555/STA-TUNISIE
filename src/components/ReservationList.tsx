@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Reservation, CommercialUser, UploadedDocument, Car as CarModel } from '../types';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Reservation, CommercialUser, UploadedDocument, Car as CarModel, DeletedReservationItem } from '../types';
 import { evaluateLeasingStatus } from '../utils/leasingUtils';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
@@ -35,12 +35,18 @@ import {
   RefreshCw,
   ShieldCheck,
   UserCheck,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ReservationListProps {
   reservations: Reservation[];
   cars?: CarModel[];
+  commercials?: CommercialUser[];
   currentCommercial: CommercialUser;
+  trashReservations?: DeletedReservationItem[];
+  onRestoreReservation?: (reservationId: string) => void;
+  onPermanentDeleteReservation?: (reservationId: string) => void;
+  onEmptyTrash?: () => void;
   onUpdateStatus: (reservationId: string, newStatus: Reservation['status']) => void;
   onEditReservation?: (updatedReservation: Reservation) => void;
   onDeleteReservation?: (reservationId: string) => void;
@@ -55,7 +61,12 @@ interface ReservationListProps {
 export const ReservationList: React.FC<ReservationListProps> = ({
   reservations,
   cars = [],
+  commercials = [],
   currentCommercial,
+  trashReservations = [],
+  onRestoreReservation,
+  onPermanentDeleteReservation,
+  onEmptyTrash,
   onUpdateStatus,
   onEditReservation,
   onDeleteReservation,
@@ -70,28 +81,99 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const isAdminOrSuperAdmin =
     currentCommercial.role === 'admin' || currentCommercial.role === 'super_admin';
 
-  // Chaque commercial voit EXCLUSIVEMENT sa propre liste de bons de réservation
-  // Seuls les administrateurs et super-administrateurs ont accès à l'ensemble du réseau
-  const accessibleReservations = isAdminOrSuperAdmin
-    ? reservations
-    : reservations.filter((r) => {
-        const matchId = Boolean(r.commercialId && currentCommercial.id && r.commercialId === currentCommercial.id);
-        const matchName = Boolean(
-          r.commercialName &&
-          currentCommercial.name &&
-          r.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase()
-        );
-        return matchId || matchName;
-      });
+  // Mode d'affichage : Réservations Actives ou Corbeille
+  const [viewTab, setViewTab] = useState<'active' | 'trash'>('active');
+  const [trashSearchTerm, setTrashSearchTerm] = useState('');
+
+  // Helper: Détection intelligente de correspondance d'agence
+  const isSameAgency = (agency1?: string, agency2?: string): boolean => {
+    if (!agency1 || !agency2) return false;
+    const a1 = agency1.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const a2 = agency2.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (a1 === a2) return true;
+    if (a1.includes('siege') && a2.includes('siege')) return true;
+    if (a1.includes('sfax') && a2.includes('sfax')) return true;
+    if (a1.includes('nabeul') && a2.includes('nabeul')) return true;
+    if (a1.includes('sousse') && a2.includes('sousse')) return true;
+    if (a1.includes('djerba') && a2.includes('djerba')) return true;
+    if (a1.includes('charguia') && a2.includes('charguia')) return true;
+    if (a1.includes('zaghouen') && a2.includes('zaghouen')) return true;
+    if (a1.includes('gabes') && a2.includes('gabes')) return true;
+    return a1.includes(a2) || a2.includes(a1);
+  };
+
+  // Helper: Détection intelligente de correspondance de commercial
+  const isSameCommercial = (resCommercialId?: string, resCommercialName?: string, commercial?: CommercialUser): boolean => {
+    if (!commercial) return false;
+    if (resCommercialId && commercial.id && resCommercialId === commercial.id) return true;
+    if (resCommercialName && commercial.name) {
+      const n1 = resCommercialName.trim().toLowerCase();
+      const n2 = commercial.name.trim().toLowerCase();
+      if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+    }
+    return false;
+  };
+
+  // Base complète des réservations pour permettre le filtrage dynamique par onglet
+  const accessibleReservations = reservations;
+
+  const myReservationsCount = reservations.filter((r) =>
+    isSameCommercial(r.commercialId, r.commercialName, currentCommercial)
+  ).length;
+
+  const myAgencyReservationsCount = reservations.filter((r) =>
+    isSameAgency(r.agency, currentCommercial.agency)
+  ).length;
+
+  const allReservationsCount = reservations.length;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [scopeFilter, setScopeFilter] = useState<'all' | 'agency' | 'mine'>(isAdminOrSuperAdmin ? 'all' : 'mine');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'agency' | 'mine'>('all');
+  const [commercialFilter, setCommercialFilter] = useState<string>('all');
   const [carModelFilter, setCarModelFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
   const [dateStart, setDateStart] = useState<string>('');
   const [dateEnd, setDateEnd] = useState<string>('');
+  const [quickDateFilter, setQuickDateFilter] = useState<string>('all');
+
+  // Distribution dynamique et exhaustive de toutes les dates réelles présentes dans la base de données
+  const dateDistribution = useMemo(() => {
+    const dayMap = new Map<string, number>();
+    const monthMap = new Map<string, number>();
+
+    accessibleReservations.forEach((r) => {
+      const d = (r.createdAt || '').slice(0, 10);
+      if (d) {
+        dayMap.set(d, (dayMap.get(d) || 0) + 1);
+        const m = d.slice(0, 7); // YYYY-MM
+        monthMap.set(m, (monthMap.get(m) || 0) + 1);
+      }
+    });
+
+    const sortedDays = Array.from(dayMap.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, count]) => {
+        const dObj = new Date(date + 'T12:00:00Z');
+        const formatted = dObj.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: 'short',
+        });
+        return { date, count, label: formatted };
+      });
+
+    const sortedMonths = Array.from(monthMap.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([month, count]) => {
+        const [year, m] = month.split('-');
+        const mDate = new Date(parseInt(year, 10), parseInt(m, 10) - 1, 1);
+        const label = mDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        return { month, count, label: label.charAt(0).toUpperCase() + label.slice(1) };
+      });
+
+    return { dayMap, monthMap, sortedDays, sortedMonths };
+  }, [accessibleReservations]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [reservationToConfirm, setReservationToConfirm] = useState<Reservation | null>(null);
@@ -104,13 +186,6 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [isImportingCsv, setIsImportingCsv] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sécurité renforcée : forcer le scope à "mine" pour les commerciaux non-administrateurs
-  useEffect(() => {
-    if (!isAdminOrSuperAdmin && scopeFilter !== 'mine') {
-      setScopeFilter('mine');
-    }
-  }, [isAdminOrSuperAdmin, scopeFilter]);
-
   // Permission: modifier une réservation après validation
   const canEditValidated =
     currentCommercial.role === 'super_admin' ||
@@ -118,10 +193,65 @@ export const ReservationList: React.FC<ReservationListProps> = ({
 
   // Dynamic dropdown lists basées sur les réservations accessibles
   const uniqueCarModels = Array.from(new Set(accessibleReservations.map((r) => r.carName))).sort();
-  const uniqueAgencies = isAdminOrSuperAdmin
-    ? Array.from(new Set(reservations.map((r) => r.agency))).filter(Boolean).sort()
-    : [currentCommercial.agency].filter(Boolean);
-  const paymentMethods = ['Espèces', 'Chèque Certifié', 'Virement Bancaire', 'Leasing'];
+  const uniqueAgencies = Array.from(new Set(reservations.map((r) => r.agency))).filter(Boolean).sort();
+  const paymentMethods = ['Espèces', 'Chèque Certifié', 'Virement Bancaire', 'Dossier Bancaire', 'Leasing'];
+
+  // Dynamic list of unique commercials with their active reservation count
+  const uniqueCommercials = useMemo(() => {
+    const map = new Map<string, { id?: string; name: string; agency?: string; count: number }>();
+
+    // 1. From reservations
+    reservations.forEach((r) => {
+      const name = (r.commercialName || '').trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (!existing.agency && r.agency) existing.agency = r.agency;
+        if (!existing.id && r.commercialId) existing.id = r.commercialId;
+      } else {
+        map.set(key, {
+          id: r.commercialId,
+          name: name,
+          agency: r.agency || '',
+          count: 1,
+        });
+      }
+    });
+
+    // 2. From commercials prop
+    if (commercials && commercials.length > 0) {
+      commercials.forEach((c) => {
+        if (!c.name || !c.name.trim()) return;
+        const key = c.name.trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            id: c.id,
+            name: c.name.trim(),
+            agency: c.agency || '',
+            count: 0,
+          });
+        }
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      // Show commercials with reservations first (descending count), then alphabetical
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+      return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+    });
+  }, [reservations, commercials]);
+
+  // Handler for commercial filter change (ensures scope is all so results aren't accidentally hidden by mine/agency)
+  const handleCommercialFilterChange = (val: string) => {
+    setCommercialFilter(val);
+    if (val !== 'all' && scopeFilter !== 'all') {
+      setScopeFilter('all');
+    }
+  };
 
   // Handler: synchroniser et restaurer depuis la traçabilité et la base en ligne
   const handleRunRecovery = async () => {
@@ -224,36 +354,36 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
-    setScopeFilter(isAdminOrSuperAdmin ? 'all' : 'mine');
+    setScopeFilter('all');
+    setCommercialFilter('all');
     setCarModelFilter('all');
     setPaymentMethodFilter('all');
     setAgencyFilter('all');
     setDateStart('');
     setDateEnd('');
+    setQuickDateFilter('all');
   };
 
   const hasActiveFilters =
     searchTerm !== '' ||
     statusFilter !== 'all' ||
-    (isAdminOrSuperAdmin && scopeFilter !== 'all') ||
+    scopeFilter !== 'all' ||
+    commercialFilter !== 'all' ||
     carModelFilter !== 'all' ||
     paymentMethodFilter !== 'all' ||
-    (isAdminOrSuperAdmin && agencyFilter !== 'all') ||
+    agencyFilter !== 'all' ||
     dateStart !== '' ||
-    dateEnd !== '';
+    dateEnd !== '' ||
+    quickDateFilter !== 'all';
 
   // Filter and sort reservations: la dernière réservation modifiée ou créée en premier
   const filteredReservations = accessibleReservations
     .filter((res) => {
       let isOwner = true;
-      if (isAdminOrSuperAdmin) {
-        if (scopeFilter === 'agency') {
-          isOwner = res.agency === currentCommercial.agency;
-        } else if (scopeFilter === 'mine') {
-          isOwner =
-            res.commercialId === currentCommercial.id ||
-            (res.commercialName && currentCommercial.name && res.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase());
-        }
+      if (scopeFilter === 'agency') {
+        isOwner = isSameAgency(res.agency, currentCommercial.agency);
+      } else if (scopeFilter === 'mine') {
+        isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
       }
 
       const clientName =
@@ -271,15 +401,63 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           ? res.client.personnePhysique?.cin || ''
           : res.client.societe?.matriculeFiscale || '';
 
+      const clientEmail =
+        res.client.type === 'personne_physique'
+          ? res.client.personnePhysique?.email || ''
+          : res.client.societe?.email || '';
+
+      const clientCity =
+        res.client.type === 'personne_physique'
+          ? res.client.personnePhysique?.ville || ''
+          : res.client.societe?.ville || '';
+
+      // Analyse et représentations de la date pour recherche textuelle (ex: "18 septembre", "25/09", "septembre")
+      const createdDateObj = new Date(res.createdAt);
+      const isoDate = (res.createdAt || '').slice(0, 10);
+      const frDate = createdDateObj.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).toLowerCase();
+      const frShortDate = createdDateObj.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).toLowerCase();
+      const slashDate = createdDateObj.toLocaleDateString('fr-FR');
+      const dayNum = String(createdDateObj.getDate());
+      const dayNumPadded = String(createdDateObj.getDate()).padStart(2, '0');
+
+      const searchWords = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+      const searchableText = [
+        res.id,
+        res.carName,
+        res.colorChosen?.name || '',
+        clientName,
+        clientPhone,
+        cinOrMf,
+        clientEmail,
+        clientCity,
+        res.commercialName,
+        res.agency || '',
+        res.status || '',
+        res.paymentMethod || '',
+        res.notes || '',
+        isoDate,
+        frDate,
+        frShortDate,
+        slashDate,
+        `${dayNum} sept`,
+        `${dayNum} septembre`,
+        `${dayNumPadded}/09`,
+        `${dayNumPadded}-09`,
+        `${dayNumPadded} septembre`,
+      ].join(' ').toLowerCase();
+
       const matchesSearch =
-        res.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        res.carName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        clientPhone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cinOrMf.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        res.commercialName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (res.agency && res.agency.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (res.notes && res.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+        searchWords.length === 0 ||
+        searchWords.every((word) => searchableText.includes(word));
 
       const matchesStatus = statusFilter === 'all' || res.status === statusFilter;
       const matchesModel =
@@ -288,6 +466,29 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         res.carName.toLowerCase().includes(carModelFilter.toLowerCase());
       const matchesPayment = paymentMethodFilter === 'all' || res.paymentMethod === paymentMethodFilter;
       const matchesAgency = !isAdminOrSuperAdmin || agencyFilter === 'all' || res.agency === agencyFilter;
+      const matchesCommercial =
+        commercialFilter === 'all' ||
+        (res.commercialId && res.commercialId === commercialFilter) ||
+        (res.commercialName && res.commercialName.trim().toLowerCase() === commercialFilter.toLowerCase()) ||
+        (res.commercialName && commercialFilter !== 'all' && res.commercialName.trim().toLowerCase().includes(commercialFilter.toLowerCase()));
+
+      // Quick date filter matching
+      let matchesQuickDate = true;
+      if (quickDateFilter === 'all') {
+        matchesQuickDate = true;
+      } else if (quickDateFilter === 'sept-week') {
+        matchesQuickDate = isoDate >= '2026-09-18' && isoDate <= '2026-09-25';
+      } else if (quickDateFilter === 'sept-all') {
+        matchesQuickDate = isoDate.startsWith('2026-09');
+      } else if (quickDateFilter.startsWith('month:')) {
+        const monthPrefix = quickDateFilter.replace('month:', '');
+        matchesQuickDate = isoDate.startsWith(monthPrefix);
+      } else if (quickDateFilter === 'today') {
+        const todayIso = new Date().toISOString().slice(0, 10);
+        matchesQuickDate = isoDate === todayIso;
+      } else if (quickDateFilter !== 'all') {
+        matchesQuickDate = isoDate === quickDateFilter;
+      }
 
       // Date range filter
       let matchesDate = true;
@@ -303,7 +504,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         }
       }
 
-      return isOwner && matchesSearch && matchesStatus && matchesModel && matchesPayment && matchesAgency && matchesDate;
+      return isOwner && matchesSearch && matchesStatus && matchesModel && matchesPayment && matchesAgency && matchesCommercial && matchesDate && matchesQuickDate;
     })
     .sort((a, b) => {
       const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
@@ -494,8 +695,208 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const gracePeriodLeasingCount = leasingEvals.filter((x) => x.eval.state === 'GRACE_PERIOD_ACTIVE').length;
   const expiredLeasingCount = leasingEvals.filter((x) => x.eval.state === 'EXPIRED_CANCELLED').length;
 
+  // Filtrage des éléments de la corbeille selon les privilèges
+  const accessibleTrash = isAdminOrSuperAdmin
+    ? trashReservations
+    : trashReservations.filter((t) => {
+        const r = t.reservation;
+        if (!r) return true;
+        const matchId = Boolean(r.commercialId && currentCommercial.id && r.commercialId === currentCommercial.id);
+        const matchName = Boolean(
+          r.commercialName &&
+          currentCommercial.name &&
+          r.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase()
+        );
+        return matchId || matchName;
+      });
+
+  const filteredTrash = accessibleTrash.filter((t) => {
+    if (!trashSearchTerm.trim()) return true;
+    const term = trashSearchTerm.toLowerCase();
+    const r = t.reservation || ({} as any);
+    const clientName = r.client?.type === 'societe' ? (r.client.societe?.raisonSociale || '') : `${r.client?.personnePhysique?.nom || ''} ${r.client?.personnePhysique?.prenom || ''}`;
+    const cinOrMf = r.client?.type === 'societe' ? (r.client.societe?.matriculeFiscale || '') : (r.client?.personnePhysique?.cin || '');
+    const phone = r.client?.type === 'societe' ? (r.client.societe?.telephone || '') : (r.client?.personnePhysique?.telephone || '');
+    return (
+      (t.id && t.id.toLowerCase().includes(term)) ||
+      (t.deletedBy && t.deletedBy.toLowerCase().includes(term)) ||
+      (r.carName && r.carName.toLowerCase().includes(term)) ||
+      clientName.toLowerCase().includes(term) ||
+      cinOrMf.toLowerCase().includes(term) ||
+      phone.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <div className="space-y-6">
+      {/* Navigation Onglets : Réservations Actives vs Corbeille */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-2 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewTab('active')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewTab === 'active'
+                ? 'bg-red-600 text-white shadow-lg shadow-red-900/30'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Bons de Réservation Actifs</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${viewTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'}`}>
+              {accessibleReservations.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setViewTab('trash')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewTab === 'trash'
+                ? 'bg-red-950 text-red-200 border border-red-700 shadow-lg shadow-red-950/50'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Trash2 className="w-4 h-4 text-red-400" />
+            <span>Corbeille & Suppressions</span>
+            {accessibleTrash.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-red-600/30 text-red-300 border border-red-500/30 font-bold">
+                {accessibleTrash.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {viewTab === 'trash' && onEmptyTrash && accessibleTrash.length > 0 && (
+          <button
+            onClick={() => {
+              if (window.confirm('⚠️ Êtes-vous certain de vouloir vider la corbeille ? Tous les éléments seront définitivement purgés et verrouillés contre toute réapparition.')) {
+                onEmptyTrash();
+              }
+            }}
+            className="px-3.5 py-2 bg-red-950/80 hover:bg-red-800 text-red-300 hover:text-white border border-red-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Vider la corbeille ({accessibleTrash.length})</span>
+          </button>
+        )}
+      </div>
+
+      {/* VUE CORBEILLE */}
+      {viewTab === 'trash' ? (
+        <div className="space-y-4">
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-red-400" />
+                Corbeille des Bons de Réservation
+              </h3>
+              <p className="text-xs text-slate-400">
+                Les réservations supprimées sont isolées ici en toute sécurité. Elles ne bloquent aucun stock et sont protégées contre toute restauration automatique accidentelle.
+              </p>
+            </div>
+
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Rechercher dans la corbeille..."
+                value={trashSearchTerm}
+                onChange={(e) => setTrashSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+          </div>
+
+          {filteredTrash.length === 0 ? (
+            <div className="p-12 text-center bg-slate-900/50 border border-slate-800 rounded-2xl">
+              <Trash2 className="w-12 h-12 text-slate-600 mx-auto mb-3 opacity-40" />
+              <p className="text-slate-300 font-bold text-sm">La corbeille est vide</p>
+              <p className="text-slate-500 text-xs mt-1">Aucune réservation supprimée ou en attente de purge.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTrash.map((item) => {
+                const res = item.reservation || ({} as Reservation);
+                const isSociete = res.client?.type === 'societe';
+                const clientName = isSociete
+                  ? (res.client?.societe?.raisonSociale || 'Société')
+                  : `${res.client?.personnePhysique?.nom || ''} ${res.client?.personnePhysique?.prenom || ''}`.trim() || 'Client particulier';
+                const clientPhone = isSociete
+                  ? (res.client?.societe?.telephone || '')
+                  : (res.client?.personnePhysique?.telephone || '');
+                const clientCity = isSociete
+                  ? (res.client?.societe?.ville || '')
+                  : (res.client?.personnePhysique?.ville || '');
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-2xl shadow space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
+                          {item.id}
+                        </span>
+                        <span className="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                          Statut : {res.status || 'Supprimé'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-sm text-white truncate">{clientName}</h4>
+                        <p className="text-xs text-slate-400">{clientPhone ? `Tél: ${clientPhone}` : ''} {clientCity ? `• ${clientCity}` : ''}</p>
+                      </div>
+
+                      <div className="p-2 bg-slate-950 rounded-xl border border-slate-800/80 text-xs space-y-1">
+                        <div className="text-slate-300 font-medium truncate">
+                          {res.carName || 'Véhicule Chery'} {res.colorChosen?.name ? `(${res.colorChosen.name})` : ''}
+                        </div>
+                        <div className="flex justify-between text-[11px] text-slate-400">
+                          <span>Prix TTC : <strong className="text-white font-mono">{res.priceTND ? res.priceTND.toLocaleString('fr-FR') : '0'} DT</strong></span>
+                          <span>{res.paymentMethod || 'Paiement N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-slate-500 space-y-0.5 border-t border-slate-800/60 pt-2">
+                        <div>Supprimé le : <span className="text-slate-400">{new Date(item.deletedAt).toLocaleString('fr-FR')}</span></div>
+                        <div>Par : <span className="text-slate-400">{item.deletedBy} ({item.deletedByRole})</span></div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                      {onRestoreReservation && (
+                        <button
+                          onClick={() => onRestoreReservation(item.id)}
+                          className="flex-1 py-2 px-3 bg-emerald-950 hover:bg-emerald-850 text-emerald-300 hover:text-white border border-emerald-800/80 hover:border-emerald-500 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          title="Restaurer cette réservation dans la liste active"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Restaurer</span>
+                        </button>
+                      )}
+
+                      {onPermanentDeleteReservation && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Supprimer définitivement la réservation ${item.id} ? Elle ne sera plus récupérable.`)) {
+                              onPermanentDeleteReservation(item.id);
+                            }
+                          }}
+                          className="py-2 px-3 bg-slate-950 hover:bg-red-950 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-600/50 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                          title="Purger définitivement de la corbeille"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
       {/* Header with Title & Excel Export Button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm">
         <div>
@@ -505,14 +906,10 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                {isAdminOrSuperAdmin
-                  ? 'Liste des Bons de Réservation & Commandes (Réseau National)'
-                  : 'Mes Bons de Réservation Personnels'}
+                Liste des Bons de Réservation & Commandes (Toutes les dates)
               </h2>
               <p className="text-xs text-slate-400">
-                {isAdminOrSuperAdmin
-                  ? `${filteredReservations.length} sur ${reservations.length} réservation(s) affichée(s) • Administration STA`
-                  : `${filteredReservations.length} sur ${accessibleReservations.length} réservation(s) affichée(s) • Conseiller : ${currentCommercial.name} (${currentCommercial.agency})`}
+                {filteredReservations.length} sur {reservations.length} réservation(s) affichée(s) • Base centrale STA • Toutes les dates incluses
               </p>
             </div>
           </div>
@@ -586,14 +983,38 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         </div>
       </div>
 
-      {/* Notice de visibilité par rôle */}
-      {!isAdminOrSuperAdmin && (
-        <div className="p-3.5 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-200/90 flex items-center gap-3 shadow-sm">
-          <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
-          <div>
-            <span className="font-bold text-amber-300">Espace Commercial Personnel : </span>
-            Vous visualisez exclusivement vos propres bons de réservation (<strong>{accessibleReservations.length} bon(s)</strong> pour {currentCommercial.name}). L'ensemble des <strong>{reservations.length} réservations</strong> du réseau national est sécurisé dans la base en ligne et réservé aux administrateurs.
+      {/* Notice de visibilité et d'accès */}
+      <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 flex items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>
+            <strong>Base nationale intégrale :</strong> Les <strong>{reservations.length} réservations</strong> pour toutes les dates sont consultables et synchronisées en direct.
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-slate-400">
+            {dateDistribution.sortedDays.length} dates distinctes enregistrées
+          </span>
+        </div>
+      </div>
+
+      {/* Alerte si des filtres réduisent le nombre de bons affichés */}
+      {filteredReservations.length < reservations.length && (
+        <div className="p-3 bg-amber-950/40 border border-amber-800/80 rounded-xl text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Filtre actif :</strong> Seuls <strong>{filteredReservations.length}</strong> sur <strong>{reservations.length}</strong> bons sont visibles (
+              {reservations.length - filteredReservations.length} bon(s) masqué(s) par votre sélection de date, statut ou commercial).
+            </span>
           </div>
+          <button
+            onClick={handleResetFilters}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Afficher la totalité ({reservations.length} réservations)</span>
+          </button>
         </div>
       )}
 
@@ -685,49 +1106,39 @@ export const ReservationList: React.FC<ReservationListProps> = ({
 
           {/* Scope and Status Tabs */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Scope Selector: Administrateurs et Super-Administrateurs uniquement */}
-            {isAdminOrSuperAdmin ? (
-              <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
-                <button
-                  onClick={() => setScopeFilter('all')}
-                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
-                    scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Afficher toutes les réservations nationales (Vue Administrateur)"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Toutes ({reservations.length})</span>
-                </button>
-                <button
-                  onClick={() => setScopeFilter('agency')}
-                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
-                    scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Afficher uniquement mon agence"
-                >
-                  <Building className="w-3.5 h-3.5 text-slate-300" />
-                  <span>Mon agence ({reservations.filter((r) => r.agency === currentCommercial.agency).length})</span>
-                </button>
-                <button
-                  onClick={() => setScopeFilter('mine')}
-                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
-                    scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Afficher uniquement mes réservations personnelles"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-slate-300" />
-                  <span>Mes réservations ({reservations.filter((r) => r.commercialId === currentCommercial.id || (r.commercialName && currentCommercial.name && r.commercialName.trim().toLowerCase() === currentCommercial.name.trim().toLowerCase())).length})</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 border border-emerald-800/40 rounded-xl text-xs font-semibold text-emerald-300 shrink-0">
-                <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Mes réservations ({accessibleReservations.length})</span>
-                <span className="text-[10px] text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded font-normal hidden sm:inline">
-                  {currentCommercial.name}
-                </span>
-              </div>
-            )}
+            {/* Scope Selector: Accessible à tous (Commerciaux & Administrateurs) */}
+            <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
+              <button
+                onClick={() => setScopeFilter('all')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                  scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Afficher toutes les réservations du réseau Chery Tunisie"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Toutes ({allReservationsCount})</span>
+              </button>
+              <button
+                onClick={() => setScopeFilter('agency')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                  scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title={`Afficher les réservations de mon agence (${currentCommercial.agency || 'Agence'})`}
+              >
+                <Building className="w-3.5 h-3.5 text-slate-300" />
+                <span>Mon agence ({myAgencyReservationsCount})</span>
+              </button>
+              <button
+                onClick={() => setScopeFilter('mine')}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                  scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                }`}
+                title={`Afficher uniquement mes réservations (${currentCommercial.name})`}
+              >
+                <UserCheck className="w-3.5 h-3.5 text-slate-300" />
+                <span>Mes réservations ({myReservationsCount})</span>
+              </button>
+            </div>
 
             {/* Status Filter */}
             <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
@@ -773,6 +1184,42 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               </button>
             </div>
 
+            {/* Sélecteur Rapide : Agent Commercial */}
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs shrink-0 transition-all ${
+                commercialFilter !== 'all'
+                  ? 'bg-red-950/70 border-red-500 text-red-200 shadow-sm'
+                  : 'bg-slate-950 border-slate-800 text-slate-300'
+              }`}
+            >
+              <UserCheck className={`w-3.5 h-3.5 ${commercialFilter !== 'all' ? 'text-red-400' : 'text-slate-400'}`} />
+              <select
+                value={commercialFilter}
+                onChange={(e) => handleCommercialFilterChange(e.target.value)}
+                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer max-w-[170px] sm:max-w-[210px] font-medium"
+                title="Filtrer immédiatement par agent commercial"
+              >
+                <option value="all" className="bg-slate-900 text-white">
+                  Tous les commerciaux ({accessibleReservations.length})
+                </option>
+                {uniqueCommercials.map((comm) => (
+                  <option key={comm.name} value={comm.name} className="bg-slate-900 text-white">
+                    {comm.name} ({comm.count})
+                  </option>
+                ))}
+              </select>
+              {commercialFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setCommercialFilter('all')}
+                  className="text-red-400 hover:text-white ml-0.5 font-bold cursor-pointer"
+                  title="Effacer le filtre commercial"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={`px-3 py-2 border rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
@@ -787,9 +1234,96 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           </div>
         </div>
 
+        {/* Row: Raccourcis d'accès direct et dynamique à toutes les dates */}
+        <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0">
+            <Calendar className="w-3.5 h-3.5 text-red-400" />
+            Dates :
+          </span>
+
+          {/* Bouton Toutes les dates */}
+          <button
+            onClick={() => {
+              setQuickDateFilter('all');
+              setDateStart('');
+              setDateEnd('');
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all font-bold text-xs flex items-center gap-1.5 cursor-pointer ${
+              quickDateFilter === 'all' && !dateStart && !dateEnd
+                ? 'bg-red-600 text-white shadow-md shadow-red-950/40'
+                : 'bg-slate-950 text-slate-300 hover:text-white border border-slate-800'
+            }`}
+          >
+            <span>Toutes les dates</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+              quickDateFilter === 'all' && !dateStart && !dateEnd ? 'bg-white/20 text-white' : 'bg-slate-800 text-red-300'
+            }`}>
+              {accessibleReservations.length}
+            </span>
+          </button>
+
+          {/* Mois dynamiques (ex: Septembre 2026, Août 2026) */}
+          {dateDistribution.sortedMonths.map((m) => {
+            const isSelected = quickDateFilter === `month:${m.month}`;
+            return (
+              <button
+                key={m.month}
+                onClick={() => {
+                  setQuickDateFilter(isSelected ? 'all' : `month:${m.month}`);
+                  setDateStart('');
+                  setDateEnd('');
+                }}
+                className={`px-2.5 py-1.5 rounded-xl transition-all font-medium text-xs flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-red-600 text-white font-bold shadow'
+                    : 'bg-slate-950 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <span>{m.label}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+                }`}>
+                  {m.count}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Liste déroulante pour toutes les dates précises */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <select
+              value={quickDateFilter.startsWith('2026-') ? quickDateFilter : ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setQuickDateFilter(val ? val : 'all');
+                setDateStart('');
+                setDateEnd('');
+              }}
+              className="bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-medium focus:outline-none focus:ring-1 focus:ring-red-500 cursor-pointer"
+            >
+              <option value="">Sélectionner un jour précis ({dateDistribution.sortedDays.length} dates)...</option>
+              {dateDistribution.sortedDays.map((d) => (
+                <option key={d.date} value={d.date}>
+                  {d.date} ({d.count} bon{d.count > 1 ? 's' : ''})
+                </option>
+              ))}
+            </select>
+
+            {quickDateFilter !== 'all' && (
+              <button
+                onClick={() => setQuickDateFilter('all')}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs"
+                title="Réinitialiser et afficher toutes les dates"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Row 2: Advanced Dropdown Filters */}
         {showAdvancedFilters && (
-          <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-xs">
             {/* Filter Modèle */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Modèle Chery :</label>
@@ -802,6 +1336,28 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                 {uniqueCarModels.map((m) => (
                   <option key={m} value={m}>
                     {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Agent Commercial */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 flex items-center gap-1">
+                <UserCheck className="w-3.5 h-3.5 text-red-400" />
+                <span>Agent Commercial :</span>
+              </label>
+              <select
+                value={commercialFilter}
+                onChange={(e) => handleCommercialFilterChange(e.target.value)}
+                className={`w-full bg-slate-950 border rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-red-500 ${
+                  commercialFilter !== 'all' ? 'border-red-500 font-bold text-red-200' : 'border-slate-800'
+                }`}
+              >
+                <option value="all">Tous les agents commerciaux ({accessibleReservations.length})</option>
+                {uniqueCommercials.map((comm) => (
+                  <option key={comm.name} value={comm.name}>
+                    {comm.name} {comm.agency ? `(${comm.agency})` : ''} — {comm.count} bon{comm.count > 1 ? 's' : ''}
                   </option>
                 ))}
               </select>
@@ -866,9 +1422,27 @@ export const ReservationList: React.FC<ReservationListProps> = ({
 
         {/* Active Filters Bar & Sorting Indicator */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs pt-2 border-t border-slate-800/60">
-          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Tri automatique : <strong className="text-slate-200 font-semibold">Dernières réservations modifiées en premier</strong></span>
+          <div className="flex flex-wrap items-center gap-2 text-slate-400 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Tri automatique : <strong className="text-slate-200 font-semibold">Dernières réservations modifiées en premier</strong></span>
+            </div>
+
+            {/* Active filter badge for commercial agent */}
+            {commercialFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-950 border border-red-700 text-red-200 shadow-sm">
+                <UserCheck className="w-3 h-3 text-red-400" />
+                <span>Agent : {commercialFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => setCommercialFilter('all')}
+                  className="text-red-400 hover:text-white ml-0.5 font-bold cursor-pointer"
+                  title="Supprimer ce filtre"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
           </div>
 
           {hasActiveFilters && (
@@ -907,15 +1481,35 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   : `Vous n'avez pas encore créé de bon de réservation pour votre agence (${currentCommercial.agency}). Vos réservations apparaîtront ici dès leur enregistrement.`
                 : 'Ajustez vos filtres de recherche ou réinitialisez les paramètres.'}
             </p>
-            {hasActiveFilters && accessibleReservations.length > 0 && (
-              <button
-                onClick={handleResetFilters}
-                className="mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4 text-red-400" />
-                <span>Réinitialiser les filtres</span>
-              </button>
-            )}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              {scopeFilter !== 'all' && allReservationsCount > 0 && (
+                <button
+                  onClick={() => setScopeFilter('all')}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer shadow"
+                >
+                  <ShieldCheck className="w-4 h-4 text-white" />
+                  <span>Afficher toutes les agences ({allReservationsCount} réservations)</span>
+                </button>
+              )}
+              {commercialFilter !== 'all' && (
+                <button
+                  onClick={() => setCommercialFilter('all')}
+                  className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-700/80 text-red-200 rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <UserCheck className="w-4 h-4 text-red-400" />
+                  <span>Afficher tous les agents commerciaux</span>
+                </button>
+              )}
+              {hasActiveFilters && accessibleReservations.length > 0 && (
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 text-red-400" />
+                  <span>Réinitialiser les filtres</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           filteredReservations.map((res) => {
@@ -1127,8 +1721,22 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                         </div>
                       </div>
 
-                      <p className="text-slate-400 pt-1">
-                        Commercial : <strong className="text-slate-200">{res.commercialName}</strong> ({res.agency})
+                      <p className="text-slate-400 pt-1 flex items-center flex-wrap gap-1">
+                        <span>Commercial :</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCommercialFilterChange(res.commercialName)}
+                          className={`font-bold transition-colors cursor-pointer inline-flex items-center gap-1 hover:underline ${
+                            commercialFilter === res.commercialName
+                              ? 'text-red-400 underline decoration-red-500'
+                              : 'text-slate-200 hover:text-red-400'
+                          }`}
+                          title={`Filtrer tous les bons de l'agent commercial ${res.commercialName}`}
+                        >
+                          <UserCheck className="w-3 h-3 text-red-400" />
+                          <span>{res.commercialName}</span>
+                        </button>
+                        <span className="text-slate-500">({res.agency})</span>
                       </p>
                     </div>
                   </div>
@@ -1139,7 +1747,9 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                       <div className="flex items-center justify-between text-slate-300 font-bold uppercase text-[11px] border-b border-slate-800 pb-1">
                         <span>Finances & Acompte</span>
                         <span className="text-emerald-400 font-mono font-bold">
-                          {res.depositPaidTND.toLocaleString()} TND versé
+                          {res.paymentMethod === 'Leasing'
+                            ? 'Accord Leasing'
+                            : `${(res.depositPaidTND || 0).toLocaleString()} TND versé`}
                         </span>
                       </div>
 
@@ -1148,16 +1758,35 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                           <span className="text-slate-400">Prix Véhicule TTC :</span>
                           <span className="font-mono font-bold">{res.priceTND.toLocaleString()} TND</span>
                         </p>
+                        {Boolean(res.registrationFeeTND && res.registrationFeeTND > 0) && (
+                          <p className="flex justify-between text-slate-400 text-[11px]">
+                            <span>Frais Immat. & Carte Grise :</span>
+                            <span className="font-mono">{res.registrationFeeTND.toLocaleString()} TND</span>
+                          </p>
+                        )}
                         <p className="flex justify-between text-slate-400">
                           <span>Règlement Acompte :</span>
-                          <span>{res.paymentMethod}</span>
+                          <span className="font-semibold text-slate-200">{res.paymentMethod}</span>
                         </p>
-                        <p className="flex justify-between text-red-400 font-bold pt-1 border-t border-slate-800">
-                          <span>Reste à payer :</span>
-                          <span className="font-mono">
-                            {(res.priceTND + res.registrationFeeTND - res.depositPaidTND).toLocaleString()} TND
-                          </span>
-                        </p>
+                        {res.paymentMethod === 'Leasing' ? (
+                          <div className="pt-1 border-t border-slate-800 space-y-0.5">
+                            <p className="flex justify-between text-indigo-400 font-semibold text-[11px]">
+                              <span>Financement :</span>
+                              <span className="font-mono font-bold">100% Société de Leasing</span>
+                            </p>
+                            <p className="flex justify-between text-emerald-400 font-bold">
+                              <span>Solde direct client :</span>
+                              <span className="font-mono">0 TND (Accord Leasing)</span>
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="flex justify-between text-red-400 font-bold pt-1 border-t border-slate-800">
+                            <span>Reste à payer :</span>
+                            <span className="font-mono">
+                              {(res.priceTND + (res.registrationFeeTND || 0) - (res.depositPaidTND || 0)).toLocaleString()} TND
+                            </span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1193,12 +1822,12 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                     {onDeleteReservation && (
                       <button
                         onClick={() => {
-                          if (window.confirm(`Voulez-vous vraiment supprimer la réservation N° ${res.id} (${res.carName}) ?`)) {
+                          if (window.confirm(`Voulez-vous supprimer et déplacer le bon de réservation N° ${res.id} (${res.carName}) vers la corbeille ?`)) {
                             onDeleteReservation(res.id);
                           }
                         }}
                         className="px-3 py-2 bg-slate-900 hover:bg-red-950 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-                        title="Supprimer la réservation de la base de données"
+                        title="Supprimer la réservation et la déplacer vers la corbeille"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Supprimer</span>
@@ -1267,6 +1896,8 @@ export const ReservationList: React.FC<ReservationListProps> = ({
           })
         )}
       </div>
+      </>
+      )}
 
       {/* Edit Reservation Modal */}
       {editingReservation && (

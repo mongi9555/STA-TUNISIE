@@ -1,0 +1,8 @@
+{
+  "organization": "mongi95",
+  "databaseName": "chery-sta",
+  "url": "libsql://chery-sta-mongi95.turso.io",
+  "authToken": "",
+  "status": "error",
+  "lastError": "SERVER_ERROR: Server returned HTTP status 404"
+}

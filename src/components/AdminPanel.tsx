@@ -6,6 +6,7 @@ import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 import { StaLogo } from './StaLogo';
 import { AuditLogViewer } from './AuditLogViewer';
+import { TursoIntegrationCard } from './TursoIntegrationCard';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -5233,7 +5234,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {/* Sync Status Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 space-y-2 relative overflow-hidden">
+                <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+                  <Database className="w-4 h-4 text-indigo-400" />
+                  <span>Base Turso (mongi95)</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Cluster libSQL Edge distribué relié à votre compte <strong>mongi95</strong>.
+                </p>
+                <div className="text-[11px] font-mono text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded border border-indigo-800/60 w-fit">
+                  ⚡ Turso libSQL Prêt
+                </div>
+              </div>
+
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
                   <Server className="w-4 h-4" />
@@ -5286,6 +5300,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Turso Database Integration Section (Org: mongi95) */}
+            <TursoIntegrationCard />
 
             {/* Import & Restore Section */}
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">

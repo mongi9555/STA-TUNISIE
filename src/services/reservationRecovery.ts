@@ -1,6 +1,7 @@
 import { db, reservationsCollection, auditLogsCollection, carsCollection, commercialsCollection, saveReservationToFirestore, isFirestoreQuotaExceeded, isFirestoreQuotaError } from '../firebase';
 import { getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Reservation, CarModel, CommercialUser, AuditLogEntry, ClientInfo } from '../types';
+import { getDeletedReservationIds, getRequiredDepositForCar } from '../data/cheryData';
 
 export interface RecoveryResult {
   totalAuditEntriesScanned: number;
@@ -15,10 +16,11 @@ export interface RecoveryResult {
  * Nettoie le nom du client extrait des logs de traçabilité
  */
 function cleanClientName(rawName: string): string {
-  let cleaned = rawName.trim();
+  let cleaned = (rawName || '').trim();
   // Nettoyer les préfixes automatiques
-  cleaned = cleaned.replace(/^le bon de réservation #[A-Z0-9-]+\s+au nom de\s+/i, '');
-  cleaned = cleaned.replace(/^le bon de réservation #[^a-zA-Z0-9]+au nom de\s+/i, '');
+  cleaned = cleaned.replace(/^la réservation\s+(?:confirmée|en attente)?\s*#[A-Z0-9-]+\s+au nom de\s+/i, '');
+  cleaned = cleaned.replace(/^le bon de réservation\s*#[A-Z0-9-]+\s+au nom de\s+/i, '');
+  cleaned = cleaned.replace(/^le bon de réservation\s*#[^a-zA-Z0-9]+au nom de\s+/i, '');
   cleaned = cleaned.replace(/^au nom de\s+/i, '');
   cleaned = cleaned.replace(/^pour\s+/i, '');
   return cleaned.trim();
@@ -129,11 +131,28 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
       details: string;
     }> = [];
 
+    const deletedIds = getDeletedReservationIds();
+
     auditLogs.forEach((l) => {
+      const actionLabel = (l.actionLabel || '').toLowerCase();
+      const details = (l.details || '').toLowerCase();
+      const actionType = l.actionType || '';
+
+      const isDeletion =
+        actionLabel.includes('suppression') ||
+        actionLabel.includes('corbeille') ||
+        details.includes('suppression') ||
+        details.includes('corbeille') ||
+        actionType === 'reservation_delete';
+
+      if (isDeletion) return;
+
       const isResAction =
         l.actionType === 'reservation_stock_deduct' ||
-        l.actionLabel?.toLowerCase().includes('réservation') ||
-        l.actionLabel?.toLowerCase().includes('deduction stock');
+        l.actionType === 'reservation_create' ||
+        l.actionType === 'reservation_confirm' ||
+        actionLabel.includes('réservation') ||
+        actionLabel.includes('deduction stock');
 
       if (!isResAction) return;
 
@@ -141,6 +160,9 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
       const clientMatch = l.details?.match(/(?:nom de|pour)\s+([^(]+)\s*\(([^)]*)\)/i);
 
       if (idMatch && clientMatch) {
+        const resId = idMatch[1].toUpperCase();
+        if (deletedIds.has(resId)) return;
+
         const clientName = cleanClientName(clientMatch[1]);
         const clientPhone = clientMatch[2].trim();
 
@@ -307,7 +329,7 @@ export async function recoverMissingReservationsFromAudit(): Promise<RecoveryRes
         documents: [],
         priceTND: matchedCar?.priceTND || 85000,
         registrationFeeTND: 0,
-        depositPaidTND: 0,
+        depositPaidTND: getRequiredDepositForCar(item.carName || matchedCar?.name),
         paymentMethod: 'Chèque Certifié',
         status: item.status,
         createdAt: item.timestamp,

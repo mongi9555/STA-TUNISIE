@@ -10,6 +10,9 @@ export type AuditActionType =
   | 'stock_reset'
   | 'stock_request_approved'
   | 'reservation_stock_deduct'
+  | 'reservation_create'
+  | 'reservation_confirm'
+  | 'reservation_delete'
   | 'database_import';
 
 export interface AuditLogEntry {
@@ -212,11 +215,12 @@ export interface ClientInfo {
 export interface UploadedDocument {
   id: string;
   name: string;
-  category: 'cin_recto' | 'cin_verso' | 'matricule_fiscale' | 'registre_commerce' | 'permis_conduire' | 'quittance_acompte' | 'cheque_reservation' | 'virement_bancaire' | 'accord_leasing' | 'bon_commande' | 'autre';
+  category: 'cin_recto' | 'cin_verso' | 'matricule_fiscale' | 'registre_commerce' | 'permis_conduire' | 'quittance_acompte' | 'cheque_reservation' | 'virement_bancaire' | 'accord_leasing' | 'bon_commande' | 'accord_bancaire' | 'autre';
   fileType: string;
   dataUrl: string; // Base64 or object URL preview
   sizeFormatted: string;
   uploadedAt: string;
+  notes?: string;
 }
 
 export type ReservationStatus = 'En attente' | 'Confirmée' | 'Livrée' | 'Annulée';
@@ -242,13 +246,16 @@ export interface TestDriveAppointment {
 }
 
 export interface ReservationVehicleItem {
-  id: string;
+  id?: string;
   carId: string;
   carName: string;
   colorChosen: {
     id: string;
     name: string;
     hexCode: string;
+    interiorColor?: string;
+    stock?: number;
+    reserved?: number;
   };
   interiorColorChosen?: {
     id: string;
@@ -272,6 +279,9 @@ export interface Reservation {
     id: string;
     name: string;
     hexCode: string;
+    interiorColor?: string;
+    stock?: number;
+    reserved?: number;
   };
   interiorColorChosen?: {
     id: string;
@@ -284,13 +294,22 @@ export interface Reservation {
   priceTND: number;
   registrationFeeTND?: number;
   depositPaidTND: number;
-  paymentMethod: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing';
+  paymentMethod: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing' | 'Dossier Bancaire';
   status: ReservationStatus;
   createdAt: string;
   updatedAt?: string; // Date de dernière modification
   etaDate?: string; // Date ETA / Arrivage prévisionnel
   expectedDeliveryDate?: string; // Date de livraison estimée (date ETA + 30 jours)
   notes?: string;
+}
+
+export interface DeletedReservationItem {
+  id: string; // ex: RES-2026-001
+  deletedAt: string;
+  deletedBy: string;
+  deletedByRole?: string;
+  reason?: string;
+  reservation: Reservation;
 }
 
 export const TUNISIA_GOVERNORATES = [

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Reservation, TUNISIA_GOVERNORATES, ClientType, Car, CarColor, UploadedDocument, CommercialUser } from '../types';
-import { calculateDeliveryDate, canUserEditEta } from '../data/cheryData';
+import { calculateDeliveryDate, canUserEditEta, getRequiredDepositForCar } from '../data/cheryData';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
   X,
@@ -98,7 +98,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const [previewDoc, setPreviewDoc] = useState<UploadedDocument | null>(null);
 
   // Financials & Payment & Dates
-  const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing'>(
+  const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing' | 'Dossier Bancaire'>(
     reservation.paymentMethod
   );
   const [depositPaidTND, setDepositPaidTND] = useState<number>(reservation.depositPaidTND);
@@ -153,12 +153,13 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const isLeasing = paymentMethod === 'Leasing';
 
   // Handle payment method change: when leasing is selected, deposit automatically deactivates (0 TND)
-  const handlePaymentMethodChange = (method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing') => {
+  const handlePaymentMethodChange = (method: 'Espèces' | 'Chèque Certifié' | 'Virement Bancaire' | 'Leasing' | 'Dossier Bancaire') => {
     setPaymentMethod(method);
     if (method === 'Leasing') {
       setDepositPaidTND(0);
-    } else if (depositPaidTND === 0) {
-      setDepositPaidTND(20000);
+    } else {
+      const required = getRequiredDepositForCar(reservation.carName);
+      setDepositPaidTND(required);
     }
   };
 
@@ -813,6 +814,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                       <>
                         <option value="cin_recto">🪪 CIN Client (Face Recto)</option>
                         <option value="cin_verso">🪪 CIN Client (Face Verso)</option>
+                        <option value="accord_bancaire">🏦 Accord / Dossier Crédit Bancaire</option>
                         <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance de Paiement</option>
                         <option value="cheque_reservation">💳 Copie du Chèque de Réservation</option>
                         <option value="virement_bancaire">🏛️ Attestation / Ordre de Virement Bancaire</option>
@@ -823,6 +825,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     ) : (
                       <>
                         <option value="registre_commerce">🏢 Extrait RNE / Registre National des Entreprises</option>
+                        <option value="accord_bancaire">🏦 Accord / Dossier Crédit Bancaire Entreprise</option>
                         <option value="quittance_acompte">🧾 Reçu d'acompte / Quittance Société</option>
                         <option value="cheque_reservation">💳 Copie du Chèque Société</option>
                         <option value="virement_bancaire">🏛️ Attestation / Ordre de Virement Entreprise</option>
@@ -972,30 +975,35 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Mode de Règlement :</label>
+                <label className="block text-slate-300 font-medium mb-1">Mode de Règlement / Dossier :</label>
                 <select
                   disabled={isLocked}
                   value={paymentMethod}
                   onChange={(e) => handlePaymentMethodChange(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-medium focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 cursor-pointer"
                 >
                   <option value="Chèque Certifié">Chèque Certifié</option>
                   <option value="Virement Bancaire">Virement Bancaire</option>
+                  <option value="Espèces">Espèces (Au comptant)</option>
+                  <option value="Dossier Bancaire">Dossier Bancaire (Crédit Bancaire)</option>
                   <option value="Leasing">Dossier Leasing</option>
-                  <option value="Espèces">Espèces</option>
                 </select>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-slate-300 font-medium">
-                    Acompte Versé (TND) {!isLeasing && <span className="text-red-400">*</span>}
+                    Acompte Versé / Comptabilisé (TND) {!isLeasing && <span className="text-red-400">*</span>}
                   </label>
-                  {isLeasing && (
+                  {isLeasing ? (
                     <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
                       Acompte désactivé (Leasing)
                     </span>
-                  )}
+                  ) : paymentMethod === 'Dossier Bancaire' ? (
+                    <span className="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-500/30">
+                      Min: 20.000 TND (Modifiable)
+                    </span>
+                  ) : null}
                 </div>
                 <input
                   type="number"
@@ -1007,12 +1015,16 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                   className={`w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-red-500 ${
                     isLeasing
                       ? 'bg-slate-900/60 border-slate-800 text-slate-500 cursor-not-allowed'
+                      : paymentMethod === 'Dossier Bancaire'
+                      ? 'bg-slate-900 border-blue-800/80 text-blue-300'
                       : 'bg-slate-900 border-slate-800 text-amber-400'
                   } disabled:opacity-60`}
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   {isLeasing
                     ? 'Acompte désactivé automatiquement pour dossier leasing (Particulier & Société).'
+                    : paymentMethod === 'Dossier Bancaire'
+                    ? 'Dossier bancaire : Acompte comptabilisé minimum 20.000 TND (modifiable selon accord commercial).'
                     : `Prix Total: ${reservation.priceTND.toLocaleString()} TND TTC.`}
                 </p>
               </div>

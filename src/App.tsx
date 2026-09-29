@@ -20,12 +20,17 @@ import {
   AuditLogEntry,
   AuditActionType,
   UserRole,
+  DeletedReservationItem,
 } from './types';
 import {
   getStoredCars,
   saveStoredCars,
   getStoredReservations,
   saveStoredReservations,
+  getDeletedReservationIds,
+  saveDeletedReservationIds,
+  getTrashReservations,
+  saveTrashReservations,
   getStoredCommercials,
   saveStoredCommercials,
   getStoredSiteSettings,
@@ -117,6 +122,7 @@ import { AdministrativeDocuments } from './components/AdministrativeDocuments';
 import { TestDriveList } from './components/TestDriveList';
 import { TestDriveModal } from './components/TestDriveModal';
 import { StaLogo } from './components/StaLogo';
+import { NotesManager } from './components/NotesManager';
 import { CheckCircle2, X, AlertTriangle, Database, RefreshCw, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -146,6 +152,7 @@ export default function App() {
   // State initialization with localStorage fallback
   const [cars, setCars] = useState<CarModel[]>(() => getStoredCars());
   const [reservations, setReservations] = useState<Reservation[]>(() => getStoredReservations());
+  const [trashReservations, setTrashReservations] = useState<DeletedReservationItem[]>(() => getTrashReservations());
   const [commercials, setCommercials] = useState<CommercialUser[]>(() => getStoredCommercials());
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getStoredSiteSettings());
 
@@ -236,6 +243,8 @@ export default function App() {
   const stockRequestsRef = useRef(stockRequests); stockRequestsRef.current = stockRequests;
   const adminDocsRef = useRef(adminDocs); adminDocsRef.current = adminDocs;
   const auditLogsRef = useRef(auditLogs); auditLogsRef.current = auditLogs;
+  const trashReservationsRef = useRef(trashReservations); trashReservationsRef.current = trashReservations;
+  const isDbLoadedRef = useRef(false);
 
   // Persistence for Knowledge Base, Docs, Accessories, and Quotes
   const handleSaveKnowledgeBase = (newItems: KnowledgeBaseItem[]) => {
@@ -298,6 +307,8 @@ export default function App() {
   const triggerInstantDbSave = (delta?: {
     cars?: CarModel[];
     reservations?: Reservation[];
+    trashReservations?: DeletedReservationItem[];
+    deletedReservationIds?: string[];
     commercials?: CommercialUser[];
     siteSettings?: SiteSettings | null;
     accessories?: CarAccessory[];
@@ -309,8 +320,15 @@ export default function App() {
     auditLogs?: AuditLogEntry[];
     docTemplate?: DocumentTemplateConfig | null;
   }) => {
+    // Si la base n'a pas encore fini de charger depuis /api/db et qu'aucun delta explicite n'est fourni,
+    // interdire l'écrasement des données serveur avec l'état initial par défaut.
+    if (!isDbLoadedRef.current && !delta) {
+      return;
+    }
+
     if (delta?.cars) carsRef.current = delta.cars;
     if (delta?.reservations) reservationsRef.current = delta.reservations;
+    if (delta?.trashReservations) trashReservationsRef.current = delta.trashReservations;
     if (delta?.commercials) commercialsRef.current = delta.commercials;
     if (delta?.siteSettings !== undefined) siteSettingsRef.current = delta.siteSettings;
     if (delta?.accessories) accessoriesRef.current = delta.accessories;
@@ -322,20 +340,42 @@ export default function App() {
     if (delta?.auditLogs) auditLogsRef.current = delta.auditLogs;
     if (delta?.docTemplate !== undefined) docTemplateRef.current = delta.docTemplate;
 
-    const payload = {
-      cars: delta?.cars ?? carsRef.current,
-      reservations: delta?.reservations ?? reservationsRef.current,
-      commercials: delta?.commercials ?? commercialsRef.current,
-      siteSettings: delta?.siteSettings !== undefined ? delta.siteSettings : siteSettingsRef.current,
-      accessories: delta?.accessories ?? accessoriesRef.current,
-      quotes: delta?.quotes ?? quotesRef.current,
-      adminDocs: delta?.adminDocs ?? adminDocsRef.current,
-      knowledgeBase: delta?.knowledgeBase ?? knowledgeBaseRef.current,
-      testDrives: delta?.testDrives ?? testDrivesRef.current,
-      stockRequests: delta?.stockRequests ?? stockRequestsRef.current,
-      auditLogs: delta?.auditLogs ?? auditLogsRef.current,
-      docTemplate: delta?.docTemplate !== undefined ? delta.docTemplate : docTemplateRef.current,
-    };
+    const payload: Record<string, any> = {};
+    if (delta) {
+      // N'envoyer au serveur STRICTEMENT que les champs expressément modifiés par cette action
+      if (delta.cars !== undefined) payload.cars = delta.cars;
+      if (delta.reservations !== undefined) payload.reservations = delta.reservations;
+      if (delta.trashReservations !== undefined) payload.trashReservations = delta.trashReservations;
+      if (delta.deletedReservationIds !== undefined) payload.deletedReservationIds = delta.deletedReservationIds;
+      if (delta.commercials !== undefined) payload.commercials = delta.commercials;
+      if (delta.siteSettings !== undefined) payload.siteSettings = delta.siteSettings;
+      if (delta.accessories !== undefined) payload.accessories = delta.accessories;
+      if (delta.quotes !== undefined) payload.quotes = delta.quotes;
+      if (delta.adminDocs !== undefined) payload.adminDocs = delta.adminDocs;
+      if (delta.knowledgeBase !== undefined) payload.knowledgeBase = delta.knowledgeBase;
+      if (delta.testDrives !== undefined) payload.testDrives = delta.testDrives;
+      if (delta.stockRequests !== undefined) payload.stockRequests = delta.stockRequests;
+      if (delta.auditLogs !== undefined) payload.auditLogs = delta.auditLogs;
+      if (delta.docTemplate !== undefined) payload.docTemplate = delta.docTemplate;
+    } else if (isDbLoadedRef.current) {
+      // Sauvegarde complète explicite
+      payload.cars = carsRef.current;
+      payload.reservations = reservationsRef.current;
+      payload.trashReservations = trashReservationsRef.current;
+      payload.deletedReservationIds = Array.from(getDeletedReservationIds());
+      payload.commercials = commercialsRef.current;
+      payload.siteSettings = siteSettingsRef.current;
+      payload.accessories = accessoriesRef.current;
+      payload.quotes = quotesRef.current;
+      payload.adminDocs = adminDocsRef.current;
+      payload.knowledgeBase = knowledgeBaseRef.current;
+      payload.testDrives = testDrivesRef.current;
+      payload.stockRequests = stockRequestsRef.current;
+      payload.auditLogs = auditLogsRef.current;
+      payload.docTemplate = docTemplateRef.current;
+    } else {
+      return;
+    }
 
     setIsDbSynced(true);
 
@@ -420,7 +460,7 @@ export default function App() {
             return c;
           })
           .filter((car) => !isVirtualCar(car) && !deletedIds.has(car.id));
-        if (fetched.length > 0) {
+        if (fetched.length >= carsRef.current.length && isDbLoadedRef.current) {
           setCars(fetched);
           saveStoredCars(fetched);
           triggerInstantDbSave({ cars: fetched });
@@ -431,16 +471,37 @@ export default function App() {
     const unsubscribeReservations = onSnapshot(reservationsCollection, (snapshot) => {
       const fetched = snapshot.docs.map((d) => ({ ...d.data(), id: d.data().id || d.id } as Reservation));
       if (fetched.length > 0) {
+        const deletedIds = getDeletedReservationIds();
         setReservations((prev) => {
           const map = new Map<string, Reservation>();
-          // 1. Préserver toutes les réservations existantes en mémoire locale / serveur
-          prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
-          // 2. Fusionner ou mettre à jour avec les documents reçus de Firestore
-          fetched.forEach((r) => { if (r && r.id) map.set(r.id, r); });
-          const merged = Array.from(map.values());
-          saveStoredReservations(merged);
-          // 3. Sauvegarder la liste fusionnée complète sans jamais tronquer
-          triggerInstantDbSave({ reservations: merged });
+          // 1. Toujours préserver toutes les réservations actuellement en mémoire
+          prev.forEach((r) => {
+            if (r && r.id) {
+              map.set(r.id, r);
+            }
+          });
+          // 2. Fusionner les documents reçus de Firestore (si non supprimés)
+          fetched.forEach((r) => {
+            if (r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase())) {
+              const existing = map.get(r.id);
+              if (!existing) {
+                map.set(r.id, r);
+              } else {
+                map.set(r.id, {
+                  ...r,
+                  ...existing,
+                  documents: existing.documents && existing.documents.length > 0 ? existing.documents : r.documents,
+                });
+              }
+            }
+          });
+          const merged = Array.from(map.values()).sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          );
+          // Protection anti-régression : ne jamais réduire ni écraser si le snapshot Firestore est partiel
+          if (merged.length >= prev.length) {
+            saveStoredReservations(merged);
+          }
           return merged;
         });
       }
@@ -630,8 +691,6 @@ export default function App() {
     showToast('Document administratif supprimé.');
   };
 
-  const isDbLoadedRef = useRef(false);
-
   // Initialisation stable depuis le fichier de persistance locale data/db.json
   useEffect(() => {
     fetch('/api/db')
@@ -654,15 +713,29 @@ export default function App() {
               saveStoredCars(cleanCars);
             }
           }
-          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
-            setReservations((prev) => {
-              const map = new Map<string, Reservation>();
-              prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
-              data.reservations.forEach((r: Reservation) => { if (r && r.id) map.set(r.id, r); });
-              const merged = Array.from(map.values());
-              saveStoredReservations(merged);
-              return merged;
+          const deletedResIds = getDeletedReservationIds();
+          if (Array.isArray(data.deletedReservationIds)) {
+            data.deletedReservationIds.forEach((id: string) => {
+              if (id) deletedResIds.add(String(id).trim().toUpperCase());
             });
+          }
+          if (Array.isArray(data.trashReservations)) {
+            setTrashReservations(data.trashReservations);
+            saveTrashReservations(data.trashReservations);
+          }
+          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
+            // S'assurer que les réservations actives du serveur ne sont JAMAIS supprimées par un vieux cache navigateur
+            const activeIdSet = new Set(data.reservations.map((r: Reservation) => String(r.id).trim().toUpperCase()));
+            deletedResIds.forEach((id) => {
+              if (activeIdSet.has(id)) deletedResIds.delete(id);
+            });
+            saveDeletedReservationIds(deletedResIds);
+
+            const cleanIncoming = [...data.reservations].sort(
+              (a: Reservation, b: Reservation) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+            );
+            setReservations(cleanIncoming);
+            saveStoredReservations(cleanIncoming);
           }
           if (Array.isArray(data.commercials) && data.commercials.length > 0) {
             const cleanComms = data.commercials.filter((u: CommercialUser) => !isDeprecatedCommercialUser(u));
@@ -724,15 +797,44 @@ export default function App() {
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.exists) {
-          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
-            setReservations((prev) => {
-              const map = new Map<string, Reservation>();
-              prev.forEach((r) => { if (r && r.id) map.set(r.id, r); });
-              data.reservations.forEach((r: Reservation) => { if (r && r.id) map.set(r.id, r); });
-              const merged = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-              saveStoredReservations(merged);
-              return merged;
+          const deletedIds = getDeletedReservationIds();
+          if (Array.isArray(data.deletedReservationIds)) {
+            data.deletedReservationIds.forEach((id: string) => {
+              if (id) {
+                deletedIds.add(String(id).trim().toUpperCase());
+              }
             });
+          }
+          if (Array.isArray(data.trashReservations)) {
+            data.trashReservations.forEach((t: any) => {
+              const tid = t?.id || t?.reservation?.id;
+              if (tid) {
+                deletedIds.add(String(tid).trim().toUpperCase());
+              }
+            });
+          }
+          saveDeletedReservationIds(deletedIds);
+
+          if (Array.isArray(data.trashReservations)) {
+            setTrashReservations(data.trashReservations);
+            saveTrashReservations(data.trashReservations);
+          }
+
+          if (Array.isArray(data.reservations) && data.reservations.length > 0) {
+            // S'assurer que les réservations actives du serveur ne sont JAMAIS supprimées par un vieux cache navigateur
+            const activeIdSet = new Set(data.reservations.map((r: Reservation) => String(r.id).trim().toUpperCase()));
+            deletedIds.forEach((id) => {
+              if (activeIdSet.has(id)) {
+                deletedIds.delete(id);
+              }
+            });
+            saveDeletedReservationIds(deletedIds);
+
+            const cleanIncoming = [...data.reservations].sort(
+              (a: Reservation, b: Reservation) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+            );
+            setReservations(cleanIncoming);
+            saveStoredReservations(cleanIncoming);
           }
           if (Array.isArray(data.cars) && data.cars.length > 0) {
             const deletedIds = getDeletedCarIds();
@@ -1131,12 +1233,43 @@ export default function App() {
       const res = await fetch('/api/reservations/recover', { method: 'POST' });
       const data = await res.json();
       if (data && data.success && Array.isArray(data.reservations)) {
-        setReservations(data.reservations);
-        saveStoredReservations(data.reservations);
-        // Synchroniser également dans Firestore en tâche de fond
-        data.reservations.forEach((r: Reservation) => {
-          saveReservationToFirestore(r).catch(() => {});
+        const recoveredReservations: Reservation[] = data.reservations;
+
+        // 1. Déverrouiller et retirer impérativement TOUS les identifiants restaurés de la liste des suppressions
+        const deletedSet = getDeletedReservationIds();
+        recoveredReservations.forEach((r: Reservation) => {
+          if (r && r.id) {
+            deletedSet.delete(String(r.id).trim().toUpperCase());
+          }
         });
+        saveDeletedReservationIds(deletedSet);
+
+        // 2. Nettoyer également de la corbeille les éléments qui sont maintenant actifs
+        const recoveredIdSet = new Set(recoveredReservations.map((r) => String(r.id).trim().toUpperCase()));
+        const cleanTrash = trashReservations.filter((t) => !recoveredIdSet.has(String(t.id).trim().toUpperCase()));
+        setTrashReservations(cleanTrash);
+        saveTrashReservations(cleanTrash);
+
+        // 3. Mettre à jour l'état local et la référence en mémoire
+        reservationsRef.current = recoveredReservations;
+        setReservations(recoveredReservations);
+        saveStoredReservations(recoveredReservations);
+
+        // 4. VERROUILLAGE ATOMIQUE IMMÉDIAT DANS LA BASE SERVEUR
+        // Empêche toute réversion ou écrasement intempestif par un snapshot ou intervalle
+        triggerInstantDbSave({
+          reservations: recoveredReservations,
+          deletedReservationIds: Array.from(deletedSet),
+          trashReservations: cleanTrash,
+        });
+
+        // 5. Synchroniser dans Firestore en tâche de fond uniquement si quota non épuisé
+        if (!isFirestoreQuotaExceeded()) {
+          recoveredReservations.forEach((r: Reservation) => {
+            saveReservationToFirestore(r).catch(() => {});
+          });
+        }
+
         const msg = data.recoveredCount > 0
           ? `✅ ${data.recoveredCount} bon(s) de réservation manquant(s) restauré(s) avec succès ! Total : ${data.totalCount} réservations sauvegardées dans la base.`
           : `✅ Base en ligne 100% synchronisée : Les ${data.totalCount} bons de réservation sont tous enregistrés et sécurisés.`;
@@ -1710,21 +1843,170 @@ export default function App() {
       setCars(updatedCars);
       saveStoredCars(updatedCars);
       addAuditLog({
-        actionType: 'stock_update',
-        actionLabel: 'Restitution Stock (Suppression)',
-        details: `Suppression de la réservation confirmée #${reservationId} : restitution des véhicules au stock.`,
+        actionType: 'reservation_delete',
+        actionLabel: 'Mise à la corbeille (Restitution Stock)',
+        details: `Mise à la corbeille de la réservation confirmée #${reservationId} : restitution des véhicules au stock.`,
         targetCarId: target.carId,
         targetCarName: target.carName,
-        targetColorName: target.colorChosen.name,
+        targetColorName: target.colorChosen?.name || '',
+      });
+    } else {
+      addAuditLog({
+        actionType: 'reservation_delete',
+        actionLabel: 'Mise à la corbeille',
+        details: `Mise à la corbeille de la réservation #${reservationId}.`,
       });
     }
 
+    // 1. Enregistrer dans le Set local des IDs supprimés pour bloquer toute restauration automatique
+    const deletedSet = getDeletedReservationIds();
+    deletedSet.add(reservationId.toUpperCase());
+    saveDeletedReservationIds(deletedSet);
+
+    // 2. Mettre en corbeille
+    const trashItem: DeletedReservationItem = {
+      id: reservationId,
+      deletedAt: new Date().toISOString(),
+      deletedBy: currentUser?.name || 'Commercial Chery',
+      deletedByRole: currentUser?.role || 'commercial',
+      reservation: target || ({ id: reservationId } as Reservation),
+    };
+    const updatedTrash = [trashItem, ...trashReservations.filter((t) => t.id !== reservationId)];
+    setTrashReservations(updatedTrash);
+    saveTrashReservations(updatedTrash);
+
+    // 3. Mettre à jour la liste active
     const updated = reservations.filter((r) => r.id !== reservationId);
     setReservations(updated);
     saveStoredReservations(updated);
+
+    // 4. Appel serveur atomique vers /api/reservations/trash
+    fetch('/api/reservations/trash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationId, trashItem }),
+    }).catch((e) => console.warn('Erreur /api/reservations/trash:', e));
+
     deleteReservationFromFirestore(reservationId);
-    triggerInstantDbSave({ reservations: updated, cars: updatedCars });
-    showToast(`Réservation ${reservationId} supprimée de la base de données`);
+    triggerInstantDbSave({
+      reservations: updated,
+      trashReservations: updatedTrash,
+      deletedReservationIds: Array.from(deletedSet),
+      cars: updatedCars,
+    });
+    showToast(`Réservation ${reservationId} déplacée vers la corbeille`);
+  };
+
+  const handleRestoreReservation = (reservationId: string) => {
+    const item = trashReservations.find((t) => t.id === reservationId);
+    if (!item) return;
+
+    const restoredRes = item.reservation;
+    let updatedCars = cars;
+
+    // Si la réservation était Confirmée ou Livrée, déduire à nouveau les véhicules du stock
+    if (restoredRes && isStatusHoldingStock(restoredRes.status)) {
+      const itemsToDeduct = getReservationVehicleItems(restoredRes);
+      updatedCars = applyStockChanges(cars, itemsToDeduct, 'deduct');
+      setCars(updatedCars);
+      saveStoredCars(updatedCars);
+      addAuditLog({
+        actionType: 'reservation_confirm',
+        actionLabel: 'Restauration Réservation (Déduction Stock)',
+        details: `Restauration de la réservation confirmée #${reservationId} depuis la corbeille : déduction des véhicules du stock.`,
+        targetCarId: restoredRes.carId,
+        targetCarName: restoredRes.carName,
+        targetColorName: restoredRes.colorChosen?.name || '',
+      });
+    } else {
+      addAuditLog({
+        actionType: 'reservation_create',
+        actionLabel: 'Restauration Réservation',
+        details: `Restauration de la réservation #${reservationId} depuis la corbeille.`,
+      });
+    }
+
+    // 1. Retirer du set des IDs supprimés
+    const deletedSet = getDeletedReservationIds();
+    deletedSet.delete(reservationId.toUpperCase());
+    saveDeletedReservationIds(deletedSet);
+
+    // 2. Retirer de la corbeille
+    const updatedTrash = trashReservations.filter((t) => t.id !== reservationId);
+    setTrashReservations(updatedTrash);
+    saveTrashReservations(updatedTrash);
+
+    // 3. Réinjecter dans les réservations actives
+    const updated = [restoredRes, ...reservations.filter((r) => r.id !== reservationId)];
+    setReservations(updated);
+    saveStoredReservations(updated);
+
+    // 4. Appel serveur
+    fetch('/api/reservations/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationId }),
+    }).catch((e) => console.warn('Erreur /api/reservations/restore:', e));
+
+    saveReservationToFirestore(restoredRes);
+    triggerInstantDbSave({
+      reservations: updated,
+      trashReservations: updatedTrash,
+      deletedReservationIds: Array.from(deletedSet),
+      cars: updatedCars,
+    });
+    showToast(`Réservation ${reservationId} restaurée avec succès`);
+  };
+
+  const handlePermanentDeleteReservation = (reservationId: string) => {
+    // 1. S'assurer que l'identifiant reste verrouillé comme supprimé
+    const deletedSet = getDeletedReservationIds();
+    deletedSet.add(reservationId.toUpperCase());
+    saveDeletedReservationIds(deletedSet);
+
+    // 2. Retirer de la corbeille
+    const updatedTrash = trashReservations.filter((t) => t.id !== reservationId);
+    setTrashReservations(updatedTrash);
+    saveTrashReservations(updatedTrash);
+
+    // 3. Retirer également de la liste active si présente
+    const updated = reservations.filter((r) => r.id !== reservationId);
+    setReservations(updated);
+    saveStoredReservations(updated);
+
+    // 4. Appel serveur
+    fetch('/api/reservations/permanent-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationId }),
+    }).catch((e) => console.warn('Erreur /api/reservations/permanent-delete:', e));
+
+    deleteReservationFromFirestore(reservationId);
+    triggerInstantDbSave({
+      reservations: updated,
+      trashReservations: updatedTrash,
+      deletedReservationIds: Array.from(deletedSet),
+    });
+    showToast(`Réservation ${reservationId} définitivement supprimée`);
+  };
+
+  const handleEmptyTrashReservations = () => {
+    const deletedSet = getDeletedReservationIds();
+    trashReservations.forEach((t) => {
+      if (t && t.id) deletedSet.add(t.id.toUpperCase());
+    });
+    saveDeletedReservationIds(deletedSet);
+
+    setTrashReservations([]);
+    saveTrashReservations([]);
+
+    fetch('/api/reservations/empty-trash', { method: 'POST' }).catch((e) => console.warn(e));
+
+    triggerInstantDbSave({
+      trashReservations: [],
+      deletedReservationIds: Array.from(deletedSet),
+    });
+    showToast('Corbeille des réservations vidée avec succès');
   };
 
   const handleAddDocumentToReservation = (reservationId: string, doc: UploadedDocument) => {
@@ -1978,7 +2260,12 @@ export default function App() {
               <ReservationList
                 reservations={reservations}
                 cars={cars}
+                commercials={commercials}
                 currentCommercial={currentUser}
+                trashReservations={trashReservations}
+                onRestoreReservation={handleRestoreReservation}
+                onPermanentDeleteReservation={handlePermanentDeleteReservation}
+                onEmptyTrash={handleEmptyTrashReservations}
                 onUpdateStatus={handleUpdateStatus}
                 onEditReservation={handleEditReservation}
                 onDeleteReservation={handleDeleteReservation}
@@ -2028,6 +2315,13 @@ export default function App() {
                 theme={theme}
                 onConvertToReservation={handleConvertQuoteToReservation}
                 initialConfigToQuote={configForQuote}
+              />
+            )}
+
+            {activeTab === 'notes' && (
+              <NotesManager
+                currentUser={currentUser}
+                theme={theme}
               />
             )}
 

@@ -124,8 +124,10 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
   const physique = client.personnePhysique;
   const societe = client.societe;
 
-  const totalCarPrice = reservation.priceTND;
-  const remaining = totalCarPrice - reservation.depositPaidTND;
+  const regFee = reservation.registrationFeeTND || 0;
+  const totalCarPrice = reservation.priceTND + regFee;
+  const isLeasing = reservation.paymentMethod === 'Leasing';
+  const remaining = isLeasing ? 0 : totalCarPrice - reservation.depositPaidTND;
   const hasMultipleVehicles = reservation.vehicles && reservation.vehicles.length > 0;
 
   // Calcul automatique de la date de livraison estimée (Date ETA + 30 jours)
@@ -519,18 +521,39 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                     <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono font-bold">{reservation.priceTND.toLocaleString()} TND</td>
                   </tr>
                 )}
+                {regFee > 0 && (
+                  <tr>
+                    <td className="py-1.5 px-2.5 print:py-1 print:px-2">Frais d'immatriculation & Carte Grise :</td>
+                    <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono font-bold">{regFee.toLocaleString()} TND</td>
+                  </tr>
+                )}
                 <tr className="bg-slate-50 font-bold">
                   <td className="py-1.5 px-2.5 print:py-1 print:px-2">TOTAL TTC CLEF EN MAIN :</td>
                   <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">{totalCarPrice.toLocaleString()} TND</td>
                 </tr>
-                <tr className="bg-emerald-50 text-emerald-900 font-bold">
-                  <td className="py-1.5 px-2.5 print:py-1 print:px-2">Acompte Perçu ({reservation.paymentMethod}) :</td>
-                  <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">{reservation.depositPaidTND.toLocaleString()} TND</td>
-                </tr>
-                <tr className="bg-red-50 text-red-900 font-black text-sm print:text-xs">
-                  <td className="py-1.5 px-2.5 print:py-1 print:px-2">SOLDE RESTANT À PAYER À LA LIVRAISON :</td>
-                  <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono">{remaining.toLocaleString()} TND</td>
-                </tr>
+                {isLeasing ? (
+                  <>
+                    <tr className="bg-indigo-50 text-indigo-900 font-bold">
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2">Modalité Financement :</td>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">Accord Dossier Leasing (100% Organisme)</td>
+                    </tr>
+                    <tr className="bg-emerald-50 text-emerald-900 font-black text-sm print:text-xs">
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2">SOLDE DIRECT CLIENT À LA LIVRAISON :</td>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono">0 TND (Facturation Société de Leasing)</td>
+                    </tr>
+                  </>
+                ) : (
+                  <>
+                    <tr className="bg-emerald-50 text-emerald-900 font-bold">
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2">Acompte Perçu ({reservation.paymentMethod}) :</td>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono text-sm print:text-xs">{reservation.depositPaidTND.toLocaleString()} TND</td>
+                    </tr>
+                    <tr className="bg-red-50 text-red-900 font-black text-sm print:text-xs">
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2">SOLDE RESTANT À PAYER À LA LIVRAISON :</td>
+                      <td className="py-1.5 px-2.5 print:py-1 print:px-2 text-right font-mono">{remaining.toLocaleString()} TND</td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>

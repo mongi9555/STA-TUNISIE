@@ -13,6 +13,7 @@ import {
   ThemeMode,
   AdministrativeDocument,
   AuditLogEntry,
+  DeletedReservationItem,
 } from '../types';
 
 export const CHERY_MODELS_DATA = [
@@ -85,8 +86,8 @@ export const INITIAL_KNOWLEDGE_BASE: KnowledgeBaseItem[] = [
     id: 'kb-3',
     category: 'financement',
     title: 'Modalités d\'acompte et délais de livraison',
-    content: 'L\'acompte officiel de réservation est exigé pour valider et sécuriser le blocage du châssis en stock:\n- SUV Urbains / Berlines: 10 000 à 20 000 TND\n- SUV Luxe / Hybrides PHEV: 30 000 à 50 000 TND\nLe solde doit être versé avant la délivrance de la Carte Grise et de la livraison finale.',
-    tags: ['acompte', 'financement', 'délai', 'livraison'],
+    content: 'L\'acompte officiel de réservation est exigé pour valider et sécuriser le blocage du véhicule en stock (Chèque Certifié, Virement Bancaire ou Espèces) :\n- Chery Tiggo 9 PHEV : 50 000 TND\n- Chery Tiggo 8 PHEV : 40 000 TND\n- Chery Tiggo 7 PHEV & Arrizo 8 PHEV : 30 000 TND\n- Chery Tiggo 4 HEV, Himla 4X4 & I03 : 20 000 TND\n- Chery Tiggo 2 Pro Max : 10 000 TND\nLe solde restant dû est à régler avant la délivrance de la Carte Grise et de la livraison finale.',
+    tags: ['acompte', 'financement', 'délai', 'livraison', 'espèces', 'chèque', 'virement'],
     updatedAt: new Date().toISOString(),
     isPublicForAI: true,
   },
@@ -455,23 +456,20 @@ export function getRequiredDepositForCar(carNameOrModel?: string | CarModel | nu
 
   const name = String(carNameOrModel).toLowerCase();
 
-  if (name.includes('icar 03')) return 20000;
-  if (name.includes('arrizo 8') && (name.includes('phev') || name.includes('hybride'))) return 30000;
-  if (name.includes('arrizo 8')) return 25000;
-
-  if (name.includes('tiggo 7') && (name.includes('phev') || name.includes('hybride'))) return 30000;
-  if (name.includes('tiggo 7')) return 30000;
-
-  if (name.includes('tiggo 2')) return 10000;
-
-  if (name.includes('tiggo 8') && (name.includes('phev') || name.includes('hybride'))) return 40000;
-  if (name.includes('tiggo 8')) return 40000;
-
+  // Barème officiel des acomptes requis Chery Tunisie (Chèque Certifié & Virement Bancaire & Comptant)
+  // Chery Tiggo 9 PHEV : 50 000 TND
   if (name.includes('tiggo 9')) return 50000;
-
-  if (name.includes('tiggo 4') && (name.includes('hev') || name.includes('phev') || name.includes('hybride'))) return 20000;
+  // Chery Tiggo 8 PHEV : 40 000 TND
+  if (name.includes('tiggo 8')) return 40000;
+  // Chery Tiggo 7 PHEV & Arrizo 8 PHEV : 30 000 TND
+  if (name.includes('tiggo 7')) return 30000;
+  if (name.includes('arrizo 8')) return 30000;
+  // Chery Tiggo 4 HEV, Himla 4X4 & I03 : 20 000 TND
   if (name.includes('tiggo 4')) return 20000;
-
+  if (name.includes('himla')) return 20000;
+  if (name.includes('i03') || name.includes('icar 03') || name.includes('i 03')) return 20000;
+  // Chery Tiggo 2 Pro Max : 10 000 TND
+  if (name.includes('tiggo 2')) return 10000;
   if (name.includes('arrizo 5')) return 10000;
   if (name.includes('omoda 5')) return 25000;
 
@@ -689,470 +687,110 @@ export function isVirtualCar(_carOrId: CarModel | string | null | undefined): bo
   return false;
 }
 
-export const INITIAL_CARS: CarModel[] = [
-  {
-    id: "car-1785512735025",
-    name: "Chery Arrizo 8 PHEV",
-    category: "Berline",
-    engine: "1.5 T DHT",
-    energy: "Hybride",
-    transmission: "Boîte Automatique",
-    priceTND: 89900,
-    powerHP: "147 ch (8 CV Fiscaux)",
-    acceleration: "0-100 km/h en 8.9s",
-    torque: "210 Nm @ 1750-4000 tr/min",
-    consumption: "6.8 L/100km",
-    maxSpeed: "190 km/h",
-    dimensions: "4780 x 1843 x 1469 mm",
-    bootCapacity: "475 Litres",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47649.webp?t=1782727426",
-    description: "Berline Premium Hybride Rechargeable d'exception alliant raffinement et puissance.",
-    features: [
-      "Double écran incurvé HD 24.6\"",
-      "Chargeur rapide par induction 50W",
-      "Toit ouvrant panoramique électrique",
-      "Climatisation Bizone Purifiée N95 & Parfumeur d'ambiance"
-    ],
-    safetyFeatures: [
-      "10 Airbags",
-      "Conduite autonome ADAS Niveau 2+",
-      "Caméra 540° Haute Définition",
-      "Freinage d'urgence autonome (AEB)",
-      "Avertisseur d'angle mort (BSD)"
-    ],
-    colors: [
-      { id: "col-1-1785512735025", name: "Blanc Nacré", hexCode: "#F8FAFC", interiorColor: "Gris Clair & Bleu Nappa", stock: 12, reserved: 0 },
-      { id: "col-2-1785512735025", name: "Gris Platine", hexCode: "#475569", interiorColor: "Cuir Noir Surpiqué", stock: 8, reserved: 0 },
-      { id: "col-3-1785512735025", name: "Noir Carbone", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 15, reserved: 0 },
-      { id: "col-4-1785512735025", name: "Bleu Électrique", hexCode: "#1D4ED8", interiorColor: "Cuir Beige & Bleu", stock: 6, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785512823129",
-    name: "Chery Arrizo 8",
-    category: "Berline",
-    engine: "1.6 T-GDi Luxury BVA",
-    energy: "Essence",
-    transmission: "Boîte Automatique DCT 7 rapports",
-    priceTND: 100000,
-    powerHP: "197 ch (11 CV Fiscaux)",
-    acceleration: "0-100 km/h en 7.8s",
-    torque: "290 Nm @ 2000-4000 tr/min",
-    consumption: "6.5 L/100km",
-    maxSpeed: "205 km/h",
-    dimensions: "4780 x 1843 x 1469 mm",
-    bootCapacity: "475 Litres",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47408.webp?t=1780418724",
-    description: "Berline grand tourisme d'exception, design dynamique et habitacle ultra connecté.",
-    features: [
-      "Système Audio Sony 12 haut-parleurs",
-      "Écran tactile 12.3\" + Combiné numérique 12.3\"",
-      "Sièges avant chauffants & ventilés à mémoire",
-      "Éclairage d'ambiance dynamique 64 couleurs"
-    ],
-    safetyFeatures: [
-      "8 Airbags",
-      "ESP Bosch 9.3",
-      "Régulateur de vitesse adaptatif ACC",
-      "Système de maintien dans la voie (LKA)"
-    ],
-    colors: [
-      { id: "col-1-arrizo8-1", name: "Blanc Glacier", hexCode: "#F8FAFC", interiorColor: "Cuir Noir", stock: 10, reserved: 0 },
-      { id: "col-2-arrizo8-2", name: "Gris Anthracite", hexCode: "#475569", interiorColor: "Cuir Cognac", stock: 9, reserved: 0 },
-      { id: "col-3-arrizo8-3", name: "Noir Intense", hexCode: "#090D16", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
-      { id: "col-4-arrizo8-4", name: "Rouge Rubis", hexCode: "#991B1B", interiorColor: "Cuir Noir & Rouge", stock: 5, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785513071800",
-    name: "Chery Tiggo 9 PHEV",
-    category: "SUV",
-    engine: "1.5 T DHT AWD Super Hybrid",
-    energy: "Hybride",
-    transmission: "Boîte Automatique 3-DHT",
-    priceTND: 129900,
-    powerHP: "326 ch (16 CV Fiscaux)",
-    acceleration: "0-100 km/h en 5.7s",
-    torque: "545 Nm combiné",
-    consumption: "5.2 L/100km (Autonomie +1200km)",
-    maxSpeed: "210 km/h",
-    dimensions: "4820 x 1930 x 1699 mm",
-    bootCapacity: "717 Litres (jusqu'à 2065 L)",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47650.webp?t=1782984077",
-    description: "Le fleuron SUV 7 places technologique de Chery avec transmission intégrale AWD intelligente.",
-    features: [
-      "Écran géant 2.5K Ultra HD 15.6\"",
-      "Affichage tête haute HUD Réalité Augmentée",
-      "Suspension pilotée CDC adaptative",
-      "Sièges massants avec repose-mollets zéro gravité"
-    ],
-    safetyFeatures: [
-      "10 Airbags",
-      "Assistance à la conduite intelligente L2.9",
-      "Vision nocturne & Caméra 540°",
-      "Freinage d'urgence autonome multi-zones"
-    ],
-    colors: [
-      { id: "col-1-1785513071800", name: "White BX", hexCode: "#FCFCFC", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
-      { id: "col-2-1785513071800", name: "Green SJ", hexCode: "#087252", interiorColor: "Cuir Beige & Bleu", stock: 7, reserved: 0 },
-      { id: "col-3-1785513071800", name: "Tech Gray GX", hexCode: "#727783", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
-      { id: "col-1786981421374", name: "Black CM", hexCode: "#030303", interiorColor: "Cuir Beige & Bleu", stock: 16, reserved: 0 },
-      { id: "col-1786981512703", name: "Huanyu Gray", hexCode: "#A1A1A1", interiorColor: "Cuir Noir", stock: 11, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785513939488",
-    name: "CHERY Himla 4X2",
-    category: "Pick-up",
-    engine: "2.3 L Turbo Diesel 4x2",
-    energy: "Diesel",
-    transmission: "Boîte Manuelle 6 rapports",
-    priceTND: 89900,
-    powerHP: "161 ch (8 CV Fiscaux)",
-    acceleration: "0-100 km/h en 9.2s",
-    torque: "380 Nm @ 1800-2600 tr/min",
-    consumption: "7.8 L/100km",
-    maxSpeed: "165 km/h",
-    dimensions: "5330 x 1920 x 1825 mm",
-    bootCapacity: "1050 Kg (Charge Utile)",
-    payload: "1050 Kg",
-    guarantee: "5 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
-    description: "Pick-up double cabine robuste, polyvalent et ultra résistant pour tous vos trajets professionnels.",
-    features: [
-      "Écran Tactile HD 10.25\" avec Apple CarPlay & Android Auto",
-      "Châssis échelle haute résistance renforcé",
-      "Climatisation automatique avec aérateurs arrière",
-      "Caméra de recul et radars de stationnement"
-    ],
-    safetyFeatures: [
-      "4 Airbags",
-      "ABS + EBD + ESP",
-      "Aide au démarrage en côte (HAC)",
-      "Contrôle de descente (HDC)"
-    ],
-    colors: [
-      { id: "col-1-1785513939488", name: "Blanc Pur", hexCode: "#F0F2F4", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
-      { id: "col-2-1785513939488", name: "Gris Argent", hexCode: "#94A3B8", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
-      { id: "col-3-1785513939488", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785514106502",
-    name: "Chery Himla 4X4",
-    category: "Pick-up",
-    engine: "2.3 L Turbo Diesel 4x4 BVA",
-    energy: "Diesel",
-    transmission: "Boîte Automatique 8 rapports avec sélecteur 4WD",
-    priceTND: 102900,
-    powerHP: "161 ch (8 CV Fiscaux)",
-    acceleration: "0-100 km/h en 8.5s",
-    torque: "420 Nm @ 1800-2400 tr/min",
-    consumption: "8.4 L/100km",
-    maxSpeed: "170 km/h",
-    dimensions: "5330 x 1920 x 1825 mm",
-    bootCapacity: "1100 Kg (Charge Utile)",
-    payload: "1100 Kg",
-    guarantee: "5 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/07/47663.webp?t=1",
-    description: "Pick-up tout-terrain 4x4 haute puissance avec blocage de différentiel et transmission intégrale.",
-    features: [
-      "Transmission 4x4 électronique (2H / 4H / 4L) avec blocage de différentiel",
-      "Écran tactile 10.25\" & Système de navigation",
-      "Sièges cuir avec réglages électriques",
-      "Protection de benne renforcée & Marchepieds aluminium"
-    ],
-    safetyFeatures: [
-      "6 Airbags",
-      "Contrôle de stabilité de remorque (TSC)",
-      "Système de vision panoramique 360°",
-      "Freinage d'urgence autonome"
-    ],
-    colors: [
-      { id: "col-1-1785514106502", name: "Silver Gray GR", hexCode: "#BFBFBF", interiorColor: "Cuir Marron", stock: 11, reserved: 0 },
-      { id: "col-2-1785514106502", name: "Green SC", hexCode: "#38AD9A", interiorColor: "Cuir Marron", stock: 6, reserved: 0 },
-      { id: "col-3-1785514106502", name: "Orange DU", hexCode: "#FF9500", interiorColor: "Cuir Marron", stock: 5, reserved: 0 },
-      { id: "col-1786981947069", name: "Black CH", hexCode: "#0A0A0A", interiorColor: "Cuir Marron", stock: 14, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753010029",
-    name: "Chery Tiggo 2 Pro Max",
-    category: "SUV",
-    engine: "1.0 T CVT Turbo",
-    energy: "Essence",
-    transmission: "Boîte Automatique CVT 9 rapports simulés",
-    priceTND: 66990,
-    powerHP: "102 ch (5 CV Fiscaux)",
-    acceleration: "0-100 km/h en 10.5s",
-    torque: "150 Nm @ 1750-4000 tr/min",
-    consumption: "5.8 L/100km",
-    maxSpeed: "175 km/h",
-    dimensions: "4200 x 1760 x 1570 mm",
-    bootCapacity: "420 Litres",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47617.webp?t=1777544465",
-    description: "Le SUV citadin compact le plus accessible et moderne de Tunisie, économique et dynamique.",
-    features: [
-      "Écran tactile 10.25\" HD avec MirrorLink",
-      "Feux avant LED Crystal Diamond",
-      "Climatisation à commandes tactiles",
-      "Jantes alliage 17\" bicolores"
-    ],
-    safetyFeatures: [
-      "4 Airbags",
-      "ABS + EBD + ESP Bosch",
-      "Radar et caméra de recul avec lignes de guidage dynamique",
-      "Régulateur et limiteur de vitesse"
-    ],
-    colors: [
-      { id: "col-1-1785753010029", name: "Rouge Flamme", hexCode: "#DC2626", interiorColor: "Cuir Noir", stock: 8, reserved: 0 },
-      { id: "col-2-1785753010029", name: "Gris Météore", hexCode: "#5A626C", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
-      { id: "col-3-1785753010029", name: "Noir Onyx", hexCode: "#161618", interiorColor: "Cuir Noir", stock: 9, reserved: 0 },
-      { id: "col-1786983375958", name: "Blanc Glacier", hexCode: "#EDF0F7", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753066750",
-    name: "Chery Tiggo 4 HEV",
-    category: "SUV",
-    energy: "Hybride",
-    engine: "1.5 L DHT Hybrid",
-    transmission: "Boîte Automatique Hybride DHT",
-    priceTND: 79900,
-    powerHP: "147 ch (6 CV Fiscaux)",
-    acceleration: "0-100 km/h en 8.8s",
-    torque: "210 Nm @ 1750-4000 tr/min",
-    consumption: "4.9 L/100km",
-    maxSpeed: "185 km/h",
-    dimensions: "4358 x 1830 x 1670 mm",
-    bootCapacity: "430 Litres",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/06/47647.webp?t=1782726731",
-    description: "SUV compact Hybride moderne et sobre, idéal pour la ville et les longs trajets.",
-    features: [
-      "Double combiné digital 10.25\"",
-      "Démarrage sans clé & Clé intelligente avec ouverture automatique",
-      "Chargeur à induction pour smartphone",
-      "Toit ouvrant électrique"
-    ],
-    safetyFeatures: [
-      "6 Airbags",
-      "Frein de stationnement électrique avec Auto-Hold",
-      "Radar de recul & Caméra HD",
-      "Système de contrôle de la pression des pneus (TPMS)"
-    ],
-    colors: [
-      { id: "col-1-1785753066750", name: "Silver KU", hexCode: "#D1CCCC", interiorColor: "Cuir Noir", stock: 10, reserved: 0 },
-      { id: "col-2-1785753066750", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 16, reserved: 0 },
-      { id: "col-3-1785753066750", name: "Gray GV", hexCode: "#6E6F72", interiorColor: "Cuir Noir", stock: 12, reserved: 0 },
-      { id: "col-1786982272954", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 14, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753150277",
-    name: "Chery I03 4X2",
-    category: "SUV",
-    engine: "Électrique 65.7 kWh 4x2",
-    energy: "Électrique",
-    transmission: "Réducteur Automatique 1 rapport",
-    priceTND: 76900,
-    powerHP: "184 ch (7 CV Fiscaux)",
-    acceleration: "0-100 km/h en 7.5s",
-    torque: "275 Nm instantané",
-    consumption: "Autonomie 401 km (CLTC)",
-    maxSpeed: "170 km/h",
-    dimensions: "4406 x 1910 x 1715 mm",
-    bootCapacity: "450 Litres + Frunk 40L",
-    guarantee: "8 ans ou 200 000 km (Batterie)",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
-    description: "SUV 100% Électrique au look baroudeur cybernétique ultra moderne avec châssis tout aluminium.",
-    features: [
-      "Écran central tactile 15.6\" Ultra HD avec processeur Snapdragon 8155",
-      "Recharge rapide DC 30% à 80% en 30 minutes",
-      "Toit panoramique XXL avec store occultant électrique",
-      "Prise 220V V2L pour alimenter vos appareils externes"
-    ],
-    safetyFeatures: [
-      "8 Airbags",
-      "Structure en aluminium haute résistance 100%",
-      "Caméra 360° transparente 3D",
-      "Freinage d'urgence autonome multi-véhicules et piétons"
-    ],
-    colors: [
-      { id: "col-1-1785753150277", name: "Noir Cosmos", hexCode: "#000000", interiorColor: "Cuir Marron", stock: 18, reserved: 0 },
-      { id: "col-2-1785753150277", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
-      { id: "col-3-1785753150277", name: "Vert Émeraude", hexCode: "#0E775C", interiorColor: "Cuir Vert & Marron", stock: 9, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753208837",
-    name: "Chery I03 4X4",
-    category: "SUV",
-    engine: "Bi-Moteur Électrique 69.8 kWh 4x4",
-    energy: "Électrique",
-    transmission: "Transmission Intégrale e-AWD",
-    priceTND: 84900,
-    powerHP: "279 ch (9 CV Fiscaux)",
-    acceleration: "0-100 km/h en 6.5s",
-    torque: "385 Nm instantané",
-    consumption: "Autonomie 501 km (CLTC)",
-    maxSpeed: "180 km/h",
-    dimensions: "4406 x 1910 x 1715 mm",
-    bootCapacity: "450 Litres + Frunk 40L",
-    guarantee: "8 ans ou 200 000 km (Batterie)",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
-    description: "Le baroudeur 100% Électrique 4x4 tout-terrain avec double motorisation et modes de franchissement.",
-    features: [
-      "Double motorisation avant/arrière avec gestion de couple intelligente",
-      "8 modes de conduite tout-terrain (Neige, Boue, Sable, Roches, Sport...)",
-      "Système audio Surround Hi-Fi 12 haut-parleurs",
-      "Suspension tout-terrain surélevée à grand débattement"
-    ],
-    safetyFeatures: [
-      "10 Airbags",
-      "Blindage de protection sous châssis pour la batterie",
-      "Pack d'aides à la conduite ADAS complet Niveau 2+",
-      "Assistance de franchissement d'obstacles"
-    ],
-    colors: [
-      { id: "col-1-1785753208837", name: "Noir Cosmos", hexCode: "#000000", interiorColor: "Cuir Marron", stock: 31, reserved: 0 },
-      { id: "col-2-1785753208837", name: "Argent Lunaire", hexCode: "#B3C2D5", interiorColor: "Cuir Marron", stock: 23, reserved: 0 },
-      { id: "col-1786454499484", name: "Vert Safari", hexCode: "#0E775C", interiorColor: "Cuir Marron", stock: 12, reserved: 0 },
-      { id: "col-1786454514433", name: "Gris Titane", hexCode: "#6F7585", interiorColor: "Cuir Marron", stock: 28, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753278797",
-    name: "Chery Tiggo 7 PHEV",
-    category: "SUV",
-    engine: "1.5 T DHT Hybrid",
-    energy: "Hybride",
-    transmission: "Boîte Automatique Hybride DHT",
-    priceTND: 88900,
-    powerHP: "245 ch (8 CV Fiscaux)",
-    acceleration: "0-100 km/h en 7.9s",
-    torque: "510 Nm combiné",
-    consumption: "5.5 L/100km (Autonomie +1000km)",
-    maxSpeed: "195 km/h",
-    dimensions: "4500 x 1842 x 1746 mm",
-    bootCapacity: "475 Litres (jusqu'à 1500 L)",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/04/47615.webp?t=1782724835",
-    description: "SUV familial Hybride rechargeable d'excellence, confort royal et technologies de pointe.",
-    features: [
-      "Double écran HD 24.6\" incurvé",
-      "Toit panoramique géant 1.13 m²",
-      "Climatisation automatique bizone avec purificateur PM2.5",
-      "Hayon arrière électrique à ouverture mains-libres"
-    ],
-    safetyFeatures: [
-      "8 Airbags",
-      "ESP Bosch 9.3 dernière génération",
-      "Caméra 360° HD panoramique",
-      "Régulateur adaptatif avec maintien au centre de la voie"
-    ],
-    colors: [
-      { id: "col-1-1785753278797", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 25, reserved: 0 },
-      { id: "col-2-1785753278797", name: "Phantom Gray GV", hexCode: "#939AA5", interiorColor: "Cuir Noir", stock: 35, reserved: 0 },
-      { id: "col-3-1785753278797", name: "Tech Gray GX", hexCode: "#727783", interiorColor: "Cuir Noir", stock: 25, reserved: 0 },
-      { id: "col-1786454139529", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 30, reserved: 0 },
-      { id: "col-1786454192522", name: "Exclusive Blue WE", hexCode: "#217CB5", interiorColor: "Cuir Noir", stock: 20, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  },
-  {
-    id: "car-1785753367152",
-    name: "Chery Tiggo 8 PHEV",
-    category: "SUV",
-    engine: "1.5 T DHT Super Hybrid 7 Places",
-    energy: "Hybride",
-    transmission: "Boîte Automatique 3-DHT",
-    priceTND: 102990,
-    powerHP: "326 ch (10 CV Fiscaux)",
-    acceleration: "0-100 km/h en 7.0s",
-    torque: "545 Nm combiné",
-    consumption: "5.4 L/100km (Autonomie +1100km)",
-    maxSpeed: "200 km/h",
-    dimensions: "4722 x 1860 x 1745 mm",
-    bootCapacity: "7 places modulables / 890 Litres",
-    guarantee: "7 ans ou 200 000 km",
-    imageUrl: "https://catalogue.automobile.tn/big/2026/05/47635.webp?t=1782480403",
-    description: "Le grand SUV 7 places Hybride Premium, spacieux, puissant et ultra économique pour toute la famille.",
-    features: [
-      "Configuration 7 places avec sièges rabattables à plat",
-      "Double combiné numérique 24.6\" Ultra HD",
-      "Système de son Sony Premium 8 haut-parleurs",
-      "Sièges cuir chauffants et ventilés avec réglages électriques"
-    ],
-    safetyFeatures: [
-      "10 Airbags",
-      "Freinage d'urgence autonome multi-cibles",
-      "Caméra 540° avec châssis transparent",
-      "Avertisseur de trafic transversal arrière"
-    ],
-    colors: [
-      { id: "col-1-1785753367152", name: "White BW", hexCode: "#FFFFFF", interiorColor: "Cuir Noir", stock: 15, reserved: 0 },
-      { id: "col-2-1785753367152", name: "Gray UM", hexCode: "#668F88", interiorColor: "Cuir Noir", stock: 14, reserved: 0 },
-      { id: "col-3-1785753367152", name: "Black CL", hexCode: "#050505", interiorColor: "Cuir Noir", stock: 22, reserved: 0 },
-      { id: "col-1786454375127", name: "Green SJ", hexCode: "#087252", interiorColor: "Cuir Noir", stock: 12, reserved: 0 }
-    ],
-    ficheTechniqueUrl: ""
-  }
-];
+import { INITIAL_CARS } from './initialCars';
+export { INITIAL_CARS };
 
-export const INITIAL_RESERVATIONS: Reservation[] = [];
+import { INITIAL_RESERVATIONS } from './initialReservations';
+export { INITIAL_RESERVATIONS };
+
+// Strips heavy Base64 data URLs from objects saved to offline localStorage cache
+function stripHeavyBase64Data(obj: any): any {
+  if (!obj) return obj;
+  if (typeof obj === 'string') {
+    // If string is an inline data URL longer than 500 chars, strip it from local browser cache
+    if (obj.startsWith('data:') && obj.length > 500) {
+      return '';
+    }
+    return obj;
+  }
+  if (Array.isArray(obj)) return obj.map(stripHeavyBase64Data);
+  if (typeof obj === 'object') {
+    const res: any = {};
+    for (const k in obj) {
+      res[k] = stripHeavyBase64Data(obj[k]);
+    }
+    return res;
+  }
+  return obj;
+}
 
 // Helper function to safely write to localStorage with quota-exceeded fallback
 function safeLocalStorageSet(key: string, value: string): void {
+  if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(key, value);
-  } catch (e: any) {
-    if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.number === -2147024882) {
-      console.warn(`[LocalStorage QuotaExceeded] Impossible de sauvegarder la clé "${key}" en local storage direct. Tentative de sauvegarde allégée sans images base64 lourdes.`);
+  } catch (_err) {
+    try {
+      // Step 1: Strip heavy base64 strings and images
+      let parsed = JSON.parse(value);
+      parsed = stripHeavyBase64Data(parsed);
+      localStorage.setItem(key, JSON.stringify(parsed));
+    } catch (_err1) {
       try {
-        const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object') {
-          // Strips huge Base64 data URLs (>100KB) from localStorage cache to preserve non-image state
-          const stripHugeStrings = (obj: any): any => {
-            if (!obj) return obj;
-            if (typeof obj === 'string') {
-              if (obj.startsWith('data:') && obj.length > 100000) {
-                return ''; // strip heavy base64 string from local browser cache
-              }
-              return obj;
+        // Step 2: Clean up secondary caches to free space
+        const keysToClean = [
+          'chery_tn_quotes_v1',
+          'chery_tn_test_drives_v1',
+          'chery_tn_audit_logs_v1',
+          'chery_tn_stock_requests_v1',
+        ];
+        keysToClean.forEach((k) => {
+          if (k !== key) {
+            try {
+              localStorage.removeItem(k);
+            } catch (_) {}
+          }
+        });
+        let parsed = JSON.parse(value);
+        parsed = stripHeavyBase64Data(parsed);
+        // Stripping all document dataUrls ensures 100% of reservations are preserved without dropping any
+        if (Array.isArray(parsed)) {
+          const strippedReservations = parsed.map((item: any) => {
+            if (item && item.documents && Array.isArray(item.documents)) {
+              return {
+                ...item,
+                documents: item.documents.map((d: any) => ({
+                  ...d,
+                  dataUrl: '',
+                })),
+              };
             }
-            if (Array.isArray(obj)) return obj.map(stripHugeStrings);
-            if (typeof obj === 'object') {
-              const res: any = {};
-              for (const k in obj) {
-                res[k] = stripHugeStrings(obj[k]);
-              }
-              return res;
-            }
-            return obj;
-          };
-          const lightweight = stripHugeStrings(parsed);
-          localStorage.setItem(key, JSON.stringify(lightweight));
-          console.log(`[LocalStorage QuotaExceeded] Clé "${key}" enregistrée avec succès en version allégée.`);
+            return item;
+          });
+          localStorage.setItem(key, JSON.stringify(strippedReservations));
+        } else {
+          localStorage.setItem(key, JSON.stringify(parsed));
         }
-      } catch (innerErr) {
-        console.error(`[LocalStorage QuotaExceeded] Échec ultime pour ${key}`, innerErr);
+      } catch (_err2) {
+        // Step 3: Minimalist preservation of ALL reservations (never truncating the count)
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            const strippedAll = parsed.map((item: any) => ({
+              id: item?.id,
+              carId: item?.carId,
+              carName: item?.carName,
+              colorChosen: item?.colorChosen,
+              client: item?.client,
+              status: item?.status,
+              createdAt: item?.createdAt,
+              updatedAt: item?.updatedAt,
+              priceTND: item?.priceTND,
+              depositPaidTND: item?.depositPaidTND,
+              paymentMethod: item?.paymentMethod,
+              commercialId: item?.commercialId,
+              commercialName: item?.commercialName,
+              agency: item?.agency,
+              vehicles: item?.vehicles,
+              notes: item?.notes,
+              documents: [],
+            }));
+            localStorage.setItem(key, JSON.stringify(strippedAll));
+          }
+        } catch (_) {
+          // Graceful fallback: data is 100% persisted and synced in the backend / database
+        }
       }
-    } else {
-      console.error(`Error saving ${key} to storage`, e);
     }
   }
 }
@@ -1161,6 +799,8 @@ function safeLocalStorageSet(key: string, value: string): void {
 const STORAGE_KEYS = {
   CARS: 'chery_tn_cars_v1',
   RESERVATIONS: 'chery_tn_reservations_v1',
+  TRASH_RESERVATIONS: 'chery_tn_trash_reservations_v1',
+  DELETED_RESERVATION_IDS: 'chery_tn_deleted_reservation_ids_v1',
   COMMERCIALS: 'chery_tn_commercials_v1',
   SITE_SETTINGS: 'chery_tn_site_settings_v1',
   KNOWLEDGE_BASE: 'chery_tn_knowledge_base_v1',
@@ -1305,18 +945,102 @@ export function saveStoredCars(cars: CarModel[]): void {
   safeLocalStorageSet(STORAGE_KEYS.CARS, JSON.stringify(cleanCars));
 }
 
+export function getDeletedReservationIds(): Set<string> {
+  try {
+    if (typeof localStorage === 'undefined') return new Set();
+    const data = localStorage.getItem('chery_tn_deleted_reservation_ids_v1');
+    if (data) {
+      const arr = JSON.parse(data);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+}
+
+export function saveDeletedReservationIds(set: Set<string>): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem('chery_tn_deleted_reservation_ids_v1', JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+export function getTrashReservations(): DeletedReservationItem[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const data = localStorage.getItem(STORAGE_KEYS.TRASH_RESERVATIONS);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Error loading trash reservations', e);
+  }
+  return [];
+}
+
+export function saveTrashReservations(items: DeletedReservationItem[]): void {
+  const cleanItems = (items || []).map((t) => {
+    if (!t) return t;
+    if (t.reservation) {
+      return {
+        ...t,
+        reservation: {
+          ...t.reservation,
+          documents: (t.reservation.documents || []).map((doc) => ({
+            ...doc,
+            dataUrl: typeof doc.dataUrl === 'string' && doc.dataUrl.startsWith('data:') && doc.dataUrl.length > 500 ? '' : doc.dataUrl,
+          })),
+        },
+      };
+    }
+    return t;
+  });
+  safeLocalStorageSet(STORAGE_KEYS.TRASH_RESERVATIONS, JSON.stringify(cleanItems));
+}
+
 export function getStoredReservations(): Reservation[] {
+  const deletedIds = getDeletedReservationIds();
+  const map = new Map<string, Reservation>();
+  INITIAL_RESERVATIONS.forEach((r) => {
+    if (r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase())) {
+      map.set(r.id, r);
+    }
+  });
+
   try {
     const data = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
-    if (data !== null) return JSON.parse(data);
+    if (data !== null) {
+      const parsed: Reservation[] = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((r) => {
+          if (r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase())) {
+            const existing = map.get(r.id);
+            map.set(r.id, { ...existing, ...r });
+          }
+        });
+      }
+    }
   } catch (e) {
     console.error('Error loading reservations from storage', e);
   }
-  return INITIAL_RESERVATIONS;
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  );
 }
 
 export function saveStoredReservations(reservations: Reservation[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
+  const cleanReservations = (reservations || []).map((r) => {
+    if (!r) return r;
+    return {
+      ...r,
+      documents: (r.documents || []).map((doc) => ({
+        ...doc,
+        dataUrl: typeof doc.dataUrl === 'string' && doc.dataUrl.startsWith('data:') && doc.dataUrl.length > 500 ? '' : doc.dataUrl,
+      })),
+    };
+  });
+  safeLocalStorageSet(STORAGE_KEYS.RESERVATIONS, JSON.stringify(cleanReservations));
 }
 
 export function isDeprecatedCommercialUser(u: { id?: string; name?: string; email?: string }): boolean {
