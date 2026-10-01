@@ -9,6 +9,10 @@ import {
   testTursoConnection,
   syncAllToTurso,
   pullAllFromTurso,
+  getTursoStorageMetrics,
+  vacuumTursoDatabase,
+  exploreTursoTable,
+  calculateNextWeeklySync,
 } from "./src/server/tursoClient";
 
 const app = express();
@@ -1415,6 +1419,124 @@ app.post("/api/turso/pull", async (req, res) => {
   }
 });
 
+// 6. GET /api/turso/metrics - Contrôle de l'espace de stockage et métriques détaillées Turso
+app.get("/api/turso/metrics", async (req, res) => {
+  try {
+    const metrics = await getTursoStorageMetrics();
+    return res.json(metrics);
+  } catch (error: any) {
+    console.error("Erreur GET /api/turso/metrics:", error);
+    return res.status(500).json({ error: error?.message || "Erreur lors de la lecture des métriques de stockage Turso." });
+  }
+});
+
+// 7. POST /api/turso/vacuum - Optimisation et défragmentation de l'espace (VACUUM)
+app.post("/api/turso/vacuum", async (req, res) => {
+  try {
+    const result = await vacuumTursoDatabase();
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Erreur POST /api/turso/vacuum:", error);
+    return res.status(500).json({ success: false, message: error?.message || "Erreur lors de l'optimisation VACUUM." });
+  }
+});
+
+// 8. GET /api/turso/explore/:table - Explorer les lignes d'une table en direct sur Turso
+app.get("/api/turso/explore/:table", async (req, res) => {
+  try {
+    const { table } = req.params;
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+
+    const result = await exploreTursoTable(table, limit, offset, search);
+    return res.json({
+      success: true,
+      table,
+      limit,
+      offset,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error(`Erreur GET /api/turso/explore/${req.params.table}:`, error);
+    return res.status(500).json({ error: error?.message || "Erreur lors de l'exploration de la table Turso." });
+  }
+});
+
+// 9. POST /api/turso/schedule - Configurer l'exportation hebdomadaire vers Turso
+app.post("/api/turso/schedule", (req, res) => {
+  try {
+    const { enabled, day, hour, minute } = req.body || {};
+    const current = loadTursoConfig();
+    const newDay = day !== undefined ? Number(day) : (current.weeklySyncDay ?? 0);
+    const newHour = hour !== undefined ? Number(hour) : (current.weeklySyncHour ?? 2);
+    const newMinute = minute !== undefined ? Number(minute) : (current.weeklySyncMinute ?? 0);
+    const newEnabled = enabled !== undefined ? Boolean(enabled) : (current.weeklySyncEnabled ?? true);
+
+    const nextSync = calculateNextWeeklySync(newDay, newHour, newMinute);
+
+    const updated = saveTursoConfig({
+      weeklySyncEnabled: newEnabled,
+      weeklySyncDay: newDay,
+      weeklySyncHour: newHour,
+      weeklySyncMinute: newMinute,
+      nextWeeklySyncAt: nextSync,
+    });
+
+    const dayLabels = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const dayLabel = dayLabels[newDay] || 'Dimanche';
+    const timeLabel = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
+
+    console.log(`[Turso Scheduler] Configuration mise à jour : actif=${newEnabled}, jour=${dayLabel}, heure=${timeLabel}, prochain=${nextSync}`);
+
+    return res.json({
+      success: true,
+      message: newEnabled
+        ? `Sauvegarde hebdomadaire automatique programmée : chaque ${dayLabel} à ${timeLabel}.`
+        : "Sauvegarde hebdomadaire automatique désactivée.",
+      config: {
+        weeklySyncEnabled: updated.weeklySyncEnabled,
+        weeklySyncDay: updated.weeklySyncDay,
+        weeklySyncHour: updated.weeklySyncHour,
+        weeklySyncMinute: updated.weeklySyncMinute,
+        dayLabel,
+        timeLabel,
+        nextWeeklySyncAt: nextSync,
+        lastWeeklySyncAt: updated.lastWeeklySyncAt,
+      },
+    });
+  } catch (error: any) {
+    console.error("Erreur POST /api/turso/schedule:", error);
+    return res.status(500).json({ error: error?.message || "Erreur lors de la programmation hebdomadaire." });
+  }
+});
+
+// 10. GET /api/turso/history - Historique des sauvegardes et exports
+app.get("/api/turso/history", (req, res) => {
+  try {
+    const config = loadTursoConfig();
+    return res.json({
+      history: config.syncHistory || [],
+      lastWeeklySyncAt: config.lastWeeklySyncAt,
+      nextWeeklySyncAt: config.nextWeeklySyncAt,
+      weeklySyncEnabled: config.weeklySyncEnabled,
+    });
+  } catch (error: any) {
+    console.error("Erreur GET /api/turso/history:", error);
+    return res.status(500).json({ error: "Erreur lors de la lecture de l'historique." });
+  }
+});
+
+// 11. POST /api/turso/history/clear - Réinitialiser l'historique
+app.post("/api/turso/history/clear", (req, res) => {
+  try {
+    saveTursoConfig({ syncHistory: [] });
+    return res.json({ success: true, message: "Historique réinitialisé." });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erreur lors de la réinitialisation de l'historique." });
+  }
+});
+
 // Global Express Error Handling Middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (res.headersSent) {
@@ -1462,6 +1584,30 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Serveur Chery Tunisie démarré sur http://localhost:${PORT}`);
+
+    // Démarrage du planificateur de synchronisation hebdomadaire vers Turso (mongi95)
+    setInterval(async () => {
+      try {
+        const config = loadTursoConfig();
+        if (!config.weeklySyncEnabled || !config.url || !config.authToken) return;
+
+        const now = new Date();
+        const nextDate = config.nextWeeklySyncAt ? new Date(config.nextWeeklySyncAt) : null;
+
+        if (nextDate && now.getTime() >= nextDate.getTime()) {
+          console.log(`[Turso Scheduler] Exécution programmée hebdomadaire vers Turso Database (mongi95)...`);
+          ensureDataDir();
+          let currentDb: any = {};
+          if (fs.existsSync(DB_FILE_PATH)) {
+            currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+          }
+          const result = await syncAllToTurso(currentDb, 'weekly_auto');
+          console.log(`[Turso Scheduler] ✅ Synchronisation hebdomadaire réussie :`, result.message);
+        }
+      } catch (cronErr) {
+        console.error("[Turso Scheduler Error]", cronErr);
+      }
+    }, 60 * 1000); // Contrôle chaque minute
   });
 }
 

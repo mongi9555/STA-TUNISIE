@@ -117,6 +117,7 @@ export interface UserPermissions {
   canCreateReservation: boolean;
   canCancelReservation: boolean;
   canEditValidatedReservations?: boolean; // Autorise la modification de la réservation après validation
+  canViewAgencyReservations?: boolean; // Autorise la vue des réservations de toute l'agence
   canEditPrices: boolean;
   canManageStock: boolean;
   canAccessAdminPanel: boolean;

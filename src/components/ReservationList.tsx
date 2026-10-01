@@ -102,34 +102,33 @@ export const ReservationList: React.FC<ReservationListProps> = ({
     return a1.includes(a2) || a2.includes(a1);
   };
 
-  // Helper: Détection intelligente de correspondance de commercial
+  // Helper: Détection intelligente et stricte de correspondance de commercial
   const isSameCommercial = (resCommercialId?: string, resCommercialName?: string, commercial?: CommercialUser): boolean => {
     if (!commercial) return false;
-    if (resCommercialId && commercial.id && resCommercialId === commercial.id) return true;
+    // 1. Correspondance exacte par ID
+    if (resCommercialId && commercial.id && resCommercialId.trim() === commercial.id.trim()) return true;
+    
+    // 2. Correspondance par nom (insensible à la casse, aux espaces et aux accents)
     if (resCommercialName && commercial.name) {
-      const n1 = resCommercialName.trim().toLowerCase();
-      const n2 = commercial.name.trim().toLowerCase();
-      if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+      const normalizeStr = (str: string) =>
+        str
+          .trim()
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '');
+
+      const n1 = normalizeStr(resCommercialName);
+      const n2 = normalizeStr(commercial.name);
+      if (n1 && n2 && (n1 === n2 || n1.includes(n2) || n2.includes(n1))) return true;
     }
     return false;
   };
 
-  // Base complète des réservations pour permettre le filtrage dynamique par onglet
-  const accessibleReservations = reservations;
-
-  const myReservationsCount = reservations.filter((r) =>
-    isSameCommercial(r.commercialId, r.commercialName, currentCommercial)
-  ).length;
-
-  const myAgencyReservationsCount = reservations.filter((r) =>
-    isSameAgency(r.agency, currentCommercial.agency)
-  ).length;
-
-  const allReservationsCount = reservations.length;
-
+  // State des filtres
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [scopeFilter, setScopeFilter] = useState<'all' | 'agency' | 'mine'>('all');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'agency' | 'mine'>(isAdminOrSuperAdmin ? 'all' : 'mine');
   const [commercialFilter, setCommercialFilter] = useState<string>('all');
   const [carModelFilter, setCarModelFilter] = useState<string>('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
@@ -137,6 +136,41 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [dateStart, setDateStart] = useState<string>('');
   const [dateEnd, setDateEnd] = useState<string>('');
   const [quickDateFilter, setQuickDateFilter] = useState<string>('all');
+
+  // Base complète des réservations selon le rôle : chaque commercial voit ses propres bons de réservation
+  const accessibleReservations = useMemo(() => {
+    if (isAdminOrSuperAdmin) {
+      return reservations;
+    }
+    if (currentCommercial.permissions?.canViewAgencyReservations && scopeFilter === 'agency') {
+      return reservations.filter((r) => isSameAgency(r.agency, currentCommercial.agency));
+    }
+    return reservations.filter((r) =>
+      isSameCommercial(r.commercialId, r.commercialName, currentCommercial)
+    );
+  }, [reservations, isAdminOrSuperAdmin, currentCommercial, scopeFilter]);
+
+  const myReservationsCount = useMemo(() => {
+    return reservations.filter((r) =>
+      isSameCommercial(r.commercialId, r.commercialName, currentCommercial)
+    ).length;
+  }, [reservations, currentCommercial]);
+
+  const myAgencyReservationsCount = useMemo(() => {
+    return reservations.filter((r) =>
+      isSameAgency(r.agency, currentCommercial.agency)
+    ).length;
+  }, [reservations, currentCommercial]);
+
+  const allReservationsCount = reservations.length;
+
+  // Mise à jour automatique de la portée lorsque le conseiller connecté change
+  useEffect(() => {
+    if (!isAdminOrSuperAdmin) {
+      setScopeFilter('mine');
+      setCommercialFilter('all');
+    }
+  }, [currentCommercial.id, currentCommercial.name, isAdminOrSuperAdmin]);
 
   // Distribution dynamique et exhaustive de toutes les dates réelles présentes dans la base de données
   const dateDistribution = useMemo(() => {
@@ -354,7 +388,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
-    setScopeFilter('all');
+    setScopeFilter(isAdminOrSuperAdmin ? 'all' : 'mine');
     setCommercialFilter('all');
     setCarModelFilter('all');
     setPaymentMethodFilter('all');
@@ -364,10 +398,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({
     setQuickDateFilter('all');
   };
 
+  const defaultScope = isAdminOrSuperAdmin ? 'all' : 'mine';
   const hasActiveFilters =
     searchTerm !== '' ||
     statusFilter !== 'all' ||
-    scopeFilter !== 'all' ||
+    scopeFilter !== defaultScope ||
     commercialFilter !== 'all' ||
     carModelFilter !== 'all' ||
     paymentMethodFilter !== 'all' ||
@@ -380,10 +415,18 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const filteredReservations = accessibleReservations
     .filter((res) => {
       let isOwner = true;
-      if (scopeFilter === 'agency') {
-        isOwner = isSameAgency(res.agency, currentCommercial.agency);
-      } else if (scopeFilter === 'mine') {
-        isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
+      if (!isAdminOrSuperAdmin) {
+        if (scopeFilter === 'agency' && currentCommercial.permissions?.canViewAgencyReservations) {
+          isOwner = isSameAgency(res.agency, currentCommercial.agency);
+        } else {
+          isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
+        }
+      } else {
+        if (scopeFilter === 'agency') {
+          isOwner = isSameAgency(res.agency, currentCommercial.agency);
+        } else if (scopeFilter === 'mine') {
+          isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
+        }
       }
 
       const clientName =
@@ -906,10 +949,14 @@ export const ReservationList: React.FC<ReservationListProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                Liste des Bons de Réservation & Commandes (Toutes les dates)
+                {isAdminOrSuperAdmin
+                  ? "Liste des Bons de Réservation & Commandes (Toutes les agences)"
+                  : `Mes Bons de Réservation — ${currentCommercial.name}`}
               </h2>
               <p className="text-xs text-slate-400">
-                {filteredReservations.length} sur {reservations.length} réservation(s) affichée(s) • Base centrale STA • Toutes les dates incluses
+                {isAdminOrSuperAdmin
+                  ? `${filteredReservations.length} sur ${reservations.length} réservation(s) affichée(s) • Base centrale STA • Supervision Direction`
+                  : `${filteredReservations.length} bon(s) de réservation attribué(s) à ${currentCommercial.name} (${currentCommercial.agency || 'Agence'})`}
               </p>
             </div>
           </div>
@@ -988,12 +1035,16 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>
-            <strong>Base nationale intégrale :</strong> Les <strong>{reservations.length} réservations</strong> pour toutes les dates sont consultables et synchronisées en direct.
+            {isAdminOrSuperAdmin ? (
+              <><strong>Supervision Réseau :</strong> Les <strong>{reservations.length} réservations</strong> pour l'ensemble des conseillers et agences sont consultables en direct.</>
+            ) : (
+              <><strong>Espace Conseiller Sécurisé :</strong> Vous consultez vos propres bons de réservation (<strong>{myReservationsCount} bon{myReservationsCount > 1 ? 's' : ''}</strong> enregistrés sous <strong>{currentCommercial.name}</strong>).</>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-[11px] text-slate-400">
-            {dateDistribution.sortedDays.length} dates distinctes enregistrées
+            {dateDistribution.sortedDays.length} date(s) active(s)
           </span>
         </div>
       </div>
@@ -1106,39 +1157,60 @@ export const ReservationList: React.FC<ReservationListProps> = ({
 
           {/* Scope and Status Tabs */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Scope Selector: Accessible à tous (Commerciaux & Administrateurs) */}
-            <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
-              <button
-                onClick={() => setScopeFilter('all')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
-                  scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Afficher toutes les réservations du réseau Chery Tunisie"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Toutes ({allReservationsCount})</span>
-              </button>
-              <button
-                onClick={() => setScopeFilter('agency')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
-                  scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                }`}
-                title={`Afficher les réservations de mon agence (${currentCommercial.agency || 'Agence'})`}
-              >
-                <Building className="w-3.5 h-3.5 text-slate-300" />
-                <span>Mon agence ({myAgencyReservationsCount})</span>
-              </button>
-              <button
-                onClick={() => setScopeFilter('mine')}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
-                  scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                }`}
-                title={`Afficher uniquement mes réservations (${currentCommercial.name})`}
-              >
-                <UserCheck className="w-3.5 h-3.5 text-slate-300" />
-                <span>Mes réservations ({myReservationsCount})</span>
-              </button>
-            </div>
+            {/* Scope Selector: Accessible selon le rôle */}
+            {isAdminOrSuperAdmin ? (
+              <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
+                <button
+                  onClick={() => setScopeFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Afficher toutes les réservations du réseau Chery Tunisie (Mode Supervision)"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Toutes ({allReservationsCount})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('agency')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={`Afficher les réservations de l'agence (${currentCommercial.agency || 'Agence'})`}
+                >
+                  <Building className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Mon agence ({myAgencyReservationsCount})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('mine')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={`Afficher uniquement mes réservations (${currentCommercial.name})`}
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Mes réservations ({myReservationsCount})</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex bg-slate-950 p-1 border border-red-900/60 rounded-xl text-xs font-medium shrink-0 items-center">
+                <div className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-bold shadow flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Mes réservations ({myReservationsCount})</span>
+                </div>
+                {currentCommercial.permissions?.canViewAgencyReservations && (
+                  <button
+                    onClick={() => setScopeFilter(scopeFilter === 'agency' ? 'mine' : 'agency')}
+                    className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ml-1 ${
+                      scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                    title={`Afficher les réservations de mon agence (${currentCommercial.agency || 'Agence'})`}
+                  >
+                    <Building className="w-3.5 h-3.5 text-slate-300" />
+                    <span>Mon agence ({myAgencyReservationsCount})</span>
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Status Filter */}
             <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0">
@@ -1184,41 +1256,49 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               </button>
             </div>
 
-            {/* Sélecteur Rapide : Agent Commercial */}
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs shrink-0 transition-all ${
-                commercialFilter !== 'all'
-                  ? 'bg-red-950/70 border-red-500 text-red-200 shadow-sm'
-                  : 'bg-slate-950 border-slate-800 text-slate-300'
-              }`}
-            >
-              <UserCheck className={`w-3.5 h-3.5 ${commercialFilter !== 'all' ? 'text-red-400' : 'text-slate-400'}`} />
-              <select
-                value={commercialFilter}
-                onChange={(e) => handleCommercialFilterChange(e.target.value)}
-                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer max-w-[170px] sm:max-w-[210px] font-medium"
-                title="Filtrer immédiatement par agent commercial"
+            {/* Sélecteur Rapide : Agent Commercial (uniquement pour les administrateurs) */}
+            {isAdminOrSuperAdmin ? (
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs shrink-0 transition-all ${
+                  commercialFilter !== 'all'
+                    ? 'bg-red-950/70 border-red-500 text-red-200 shadow-sm'
+                    : 'bg-slate-950 border-slate-800 text-slate-300'
+                }`}
               >
-                <option value="all" className="bg-slate-900 text-white">
-                  Tous les commerciaux ({accessibleReservations.length})
-                </option>
-                {uniqueCommercials.map((comm) => (
-                  <option key={comm.name} value={comm.name} className="bg-slate-900 text-white">
-                    {comm.name} ({comm.count})
-                  </option>
-                ))}
-              </select>
-              {commercialFilter !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => setCommercialFilter('all')}
-                  className="text-red-400 hover:text-white ml-0.5 font-bold cursor-pointer"
-                  title="Effacer le filtre commercial"
+                <UserCheck className={`w-3.5 h-3.5 ${commercialFilter !== 'all' ? 'text-red-400' : 'text-slate-400'}`} />
+                <select
+                  value={commercialFilter}
+                  onChange={(e) => handleCommercialFilterChange(e.target.value)}
+                  className="bg-transparent text-xs text-white focus:outline-none cursor-pointer max-w-[170px] sm:max-w-[210px] font-medium"
+                  title="Filtrer immédiatement par agent commercial"
                 >
-                  ✕
-                </button>
-              )}
-            </div>
+                  <option value="all" className="bg-slate-900 text-white">
+                    Tous les commerciaux ({accessibleReservations.length})
+                  </option>
+                  {uniqueCommercials.map((comm) => (
+                    <option key={comm.name} value={comm.name} className="bg-slate-900 text-white">
+                      {comm.name} ({comm.count})
+                    </option>
+                  ))}
+                </select>
+                {commercialFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setCommercialFilter('all')}
+                    className="text-red-400 hover:text-white ml-0.5 font-bold cursor-pointer"
+                    title="Effacer le filtre commercial"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 shrink-0">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-semibold text-white">{currentCommercial.name}</span>
+                <span className="text-[10px] text-slate-400">({currentCommercial.agency || 'Agence'})</span>
+              </div>
+            )}
 
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -1482,7 +1562,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                 : 'Ajustez vos filtres de recherche ou réinitialisez les paramètres.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {scopeFilter !== 'all' && allReservationsCount > 0 && (
+              {isAdminOrSuperAdmin && scopeFilter !== 'all' && allReservationsCount > 0 && (
                 <button
                   onClick={() => setScopeFilter('all')}
                   className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer shadow"
@@ -1491,7 +1571,7 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                   <span>Afficher toutes les agences ({allReservationsCount} réservations)</span>
                 </button>
               )}
-              {commercialFilter !== 'all' && (
+              {isAdminOrSuperAdmin && commercialFilter !== 'all' && (
                 <button
                   onClick={() => setCommercialFilter('all')}
                   className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-700/80 text-red-200 rounded-xl text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"

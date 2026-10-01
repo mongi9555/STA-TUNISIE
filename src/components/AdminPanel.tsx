@@ -6,6 +6,7 @@ import { UserPhotoUploadModal } from './UserPhotoUploadModal';
 import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 import { StaLogo } from './StaLogo';
 import { AuditLogViewer } from './AuditLogViewer';
+import { TursoDashboard } from './TursoDashboard';
 import { TursoIntegrationCard } from './TursoIntegrationCard';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
@@ -177,7 +178,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onResetToFactoryDefaults,
   onManualSave,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'favicon' | 'database'>('inventory');
+  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'favicon' | 'database' | 'turso'>('inventory');
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stock Request Filter State
@@ -989,6 +990,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <span>Personnalisation Favicon</span>
             <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold">
               Onglet Web
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveAdminTab('turso')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'turso'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-indigo-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Database className="w-4 h-4 text-indigo-400" />
+            <span>Dashboard Turso (Espace & Export Hebdo)</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold">
+              mongi95
             </span>
           </button>
 
@@ -5202,7 +5219,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Gestion de la Base de Données & Backup JSON</span>
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-                  Toutes vos modifications (modèles de véhicules, prix, couleurs, réservations et comptes) sont automatiquement enregistrées dans <strong>localStorage</strong>, synchronisées dans <strong>/data/db.json</strong> et publiées dans le <strong>Cloud Firebase</strong>.
+                  Toutes vos modifications (modèles de véhicules, prix, couleurs, réservations et comptes) sont enregistrées de façon permanente dans <strong>/data/db.json</strong>, répliquées sur la base <strong>Turso libSQL (mongi95)</strong> et sécurisées dans le Cloud.
                 </p>
               </div>
 
@@ -5264,13 +5281,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
                   <HardDrive className="w-4 h-4" />
-                  <span>Storage Navigateur (localStorage)</span>
+                  <span>Couche API REST (api.js & Serveur)</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Sauvegarde automatique continue (Auto-Persist) sur chaque modification locale.
+                  Accès distant sécurisé via requêtes REST JSON sans persistance localStorage.
                 </p>
                 <div className="text-[11px] font-mono text-blue-400 bg-blue-950/40 px-2 py-1 rounded border border-blue-800/40 w-fit">
-                  ✅ Persistance Active ({cars.length} véhicules)
+                  ✅ API REST Active ({reservations.length} réservations)
                 </div>
               </div>
 
@@ -5302,7 +5319,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Turso Database Integration Section (Org: mongi95) */}
-            <TursoIntegrationCard />
+            <TursoDashboard />
 
             {/* Import & Restore Section */}
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
@@ -5344,6 +5361,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: TURSO DATABASE DASHBOARD (ESPACE STORAGE & EXPORT HEBDO) */}
+      {activeAdminTab === 'turso' && (
+        <TursoDashboard />
       )}
 
       {/* TAB: AUDIT LOG (10 LAST ACTIONS ON STOCKS & PRICES) */}

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { CommercialUser, ThemeMode, SiteSettings, CarModel, StockRequest } from '../types';
-import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, KeyRound, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, User, StickyNote } from 'lucide-react';
+import { Car, LayoutDashboard, FileText, Settings, AlertCircle, Lock, Key, KeyRound, X, CheckCircle2, Eye, EyeOff, LogOut, Moon, Sun, Flame, Bot, Sparkles, Megaphone, Info, AlertTriangle, BookOpen, FileCheck, Sliders, Monitor, Laptop, ChevronDown, Calendar, Bell, Send, Clock, ArrowRight, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 
-export type AppTab = 'dashboard' | 'reservations' | 'admin_docs' | 'knowledge_base' | 'documents_devis' | 'notes' | 'admin';
+export type AppTab = 'dashboard' | 'reservations' | 'admin_docs' | 'knowledge_base' | 'documents_devis' | 'admin';
 
 interface HeaderProps {
   currentUser: CommercialUser;
@@ -489,27 +489,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="relative z-10 flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 <span>Base de Connaissances</span>
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('notes')}
-              className={`relative flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                activeTab === 'notes'
-                  ? 'text-white font-bold'
-                  : isLightTheme ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              {activeTab === 'notes' && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute inset-0 bg-red-600 rounded-lg shadow-md shadow-red-600/30"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <StickyNote className="w-4 h-4" />
-                <span>Notes (API REST)</span>
               </span>
             </button>
 
