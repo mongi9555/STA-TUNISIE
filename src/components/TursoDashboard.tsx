@@ -55,6 +55,13 @@ export interface TursoStorageMetrics {
     lastUpdated?: string;
   }[];
   totalRows: number;
+  dailySync?: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly';
+    timeLabel: string;
+    nextSync: string;
+    lastSync?: string;
+  };
   weeklySync: {
     enabled: boolean;
     dayLabel: string;
@@ -71,6 +78,13 @@ export interface TursoConfigData {
   hasAuthToken: boolean;
   tokenPreview?: string;
   status: 'connected' | 'disconnected' | 'error';
+  syncFrequency?: 'daily' | 'weekly';
+  dailySyncEnabled?: boolean;
+  dailySyncHour?: number;
+  dailySyncMinute?: number;
+  lastDailySyncAt?: string;
+  nextDailySyncAt?: string;
+  weeklySyncEnabled?: boolean;
   lastSyncAt?: string;
   lastError?: string;
   tursoDashboardUrl: string;
@@ -79,7 +93,7 @@ export interface TursoConfigData {
 export interface TursoSyncHistoryItem {
   id: string;
   timestamp: string;
-  type: 'manual' | 'weekly_auto';
+  type: 'manual' | 'daily_auto' | 'weekly_auto';
   success: boolean;
   message: string;
   counts: {
@@ -94,7 +108,7 @@ export interface TursoSyncHistoryItem {
 
 export const TursoDashboard: React.FC = () => {
   // Navigation interne du dashboard Turso
-  const [subTab, setSubTab] = useState<'storage' | 'weekly_export' | 'explorer' | 'history' | 'settings'>('storage');
+  const [subTab, setSubTab] = useState<'storage' | 'daily_export' | 'weekly_export' | 'explorer' | 'history' | 'settings'>('storage');
 
   // Données de configuration et métriques
   const [config, setConfig] = useState<TursoConfigData | null>(null);
@@ -120,11 +134,12 @@ export const TursoDashboard: React.FC = () => {
   const [isVacuuming, setIsVacuuming] = useState<boolean>(false);
   const [vacuumResult, setVacuumResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  // Planification hebdomadaire (Weekly schedule)
-  const [weeklyEnabled, setWeeklyEnabled] = useState<boolean>(true);
+  // Planification de synchronisation automatique (Journalière / Quotidienne chaque jour)
+  const [syncFrequency, setSyncFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [syncEnabled, setSyncEnabled] = useState<boolean>(true);
+  const [syncHour, setSyncHour] = useState<number>(0); // 00h00 par défaut (minuit chaque jour)
+  const [syncMinute, setSyncMinute] = useState<number>(0);
   const [weeklyDay, setWeeklyDay] = useState<number>(0); // 0 = Dimanche
-  const [weeklyHour, setWeeklyHour] = useState<number>(2); // 02h00
-  const [weeklyMinute, setWeeklyMinute] = useState<number>(0);
   const [isSavingSchedule, setIsSavingSchedule] = useState<boolean>(false);
   const [scheduleFeedback, setScheduleFeedback] = useState<string | null>(null);
 
@@ -161,12 +176,16 @@ export const TursoDashboard: React.FC = () => {
       if (configRes) {
         setConfig(configRes);
         if (configRes.url) setUrlInput(configRes.url);
+        if (configRes.syncFrequency) setSyncFrequency(configRes.syncFrequency);
+        if (configRes.dailySyncEnabled !== undefined) setSyncEnabled(configRes.dailySyncEnabled);
+        if (configRes.dailySyncHour !== undefined) setSyncHour(configRes.dailySyncHour);
+        if (configRes.dailySyncMinute !== undefined) setSyncMinute(configRes.dailySyncMinute);
       }
 
       if (metricsRes) {
         setMetrics(metricsRes);
-        if (metricsRes.weeklySync) {
-          setWeeklyEnabled(metricsRes.weeklySync.enabled ?? true);
+        if (metricsRes.dailySync) {
+          setSyncEnabled(metricsRes.dailySync.enabled ?? true);
         }
       }
 
@@ -344,7 +363,7 @@ export const TursoDashboard: React.FC = () => {
     }
   };
 
-  // 7. Enregistrer la planification hebdomadaire
+  // 7. Enregistrer la planification de synchronisation automatique (quotidienne ou hebdomadaire)
   const handleSaveSchedule = async () => {
     setIsSavingSchedule(true);
     setScheduleFeedback(null);
@@ -354,10 +373,11 @@ export const TursoDashboard: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          enabled: weeklyEnabled,
+          enabled: syncEnabled,
+          frequency: syncFrequency,
+          hour: Number(syncHour),
+          minute: Number(syncMinute),
           day: Number(weeklyDay),
-          hour: Number(weeklyHour),
-          minute: Number(weeklyMinute),
         }),
       });
       const data = await res.json();
@@ -436,11 +456,11 @@ export const TursoDashboard: React.FC = () => {
 
           <h2 className="text-2xl font-extrabold text-white flex items-center gap-3">
             <Database className="w-7 h-7 text-indigo-400" />
-            <span>Contrôle de l'Espace & Export Hebdo Turso Database</span>
+            <span>Contrôle de l'Espace & Synchronisation Quotidienne Turso</span>
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-            Supervisez en temps réel le volume de données, la consommation du quota Turso, l'état physique des pages SQLite, et programmez la synchronisation hebdomadaire automatique vers votre cluster libSQL <strong>https://app.turso.tech/mongi95</strong>.
+            Supervisez en temps réel le volume de données, la consommation du quota Turso, l'état physique des pages SQLite, et programmez la synchronisation quotidienne automatique (chaque jour) vers votre base libSQL <strong>https://app.turso.tech/mongi95</strong>.
           </p>
         </div>
 
@@ -483,16 +503,16 @@ export const TursoDashboard: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setSubTab('weekly_export')}
+          onClick={() => setSubTab('daily_export')}
           className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            subTab === 'weekly_export'
+            subTab === 'daily_export' || (subTab as string) === 'weekly_export'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
           <Calendar className="w-4 h-4" />
-          <span>Export Hebdomadaire & Sync</span>
-          {metrics?.weeklySync.enabled && (
+          <span>Synchro Quotidienne (Chaque Jour)</span>
+          {(metrics?.dailySync?.enabled ?? metrics?.weeklySync?.enabled) && (
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           )}
         </button>
@@ -794,88 +814,141 @@ export const TursoDashboard: React.FC = () => {
       )}
 
       {/* ========================================================= */}
-      {/* SECTION 2: EXPORT HEBDOMADAIRE & SYNCHRONISATION          */}
+      {/* SECTION 2: SYNCHRONISATION QUOTIDIENNE (CHAQUE JOUR) TURSO */}
       {/* ========================================================= */}
-      {subTab === 'weekly_export' && (
+      {(subTab === 'daily_export' || (subTab as string) === 'weekly_export') && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Card Planification Hebdomadaire Automatique */}
+          {/* Card Planification Quotidienne Automatique */}
           <div className="bg-slate-950 p-6 sm:p-7 rounded-2xl border border-emerald-900/60 space-y-5 relative overflow-hidden">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                    Automatisme d'Entreprise
+                    Synchronisation Automatique Chaque Jour
                   </span>
-                  <span className="text-xs text-slate-400">Planificateur Hebdo (Node.js Cron)</span>
+                  <span className="text-xs text-cyan-400 font-mono">Turso libSQL Cloud (Serveur Local désactivé)</span>
+                  <span className="px-2 py-0.5 bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-mono rounded">
+                    0% LocalStorage / 100% Base de données
+                  </span>
                 </div>
                 <h3 className="text-lg font-extrabold text-white mt-1">
-                  Exportation Hebdomadaire Automatique vers Turso Database
+                  Synchronisation & Enregistrement Quotidien Automatique avec Turso
                 </h3>
                 <p className="text-xs text-slate-300 mt-0.5 max-w-2xl leading-relaxed">
-                  Activez cette option pour sauvegarder et répliquer automatiquement chaque semaine l'intégralité de la base de données (réservations, véhicules, utilisateurs et notes) sur votre compte Turso <strong>mongi95</strong>.
+                  Toutes les données sont automatiquement enregistrées et répliquées chaque jour dans la base <strong>Turso</strong> (cluster <strong>mongi95</strong>). Aucun stockage local navigateur n'est requis.
                 </p>
               </div>
 
               {/* Toggle Enable/Disable */}
               <label className="flex items-center gap-3 cursor-pointer shrink-0 bg-slate-900 px-4 py-2.5 rounded-xl border border-slate-800 hover:border-emerald-600 transition-all">
                 <span className="text-xs font-bold text-slate-300">
-                  {weeklyEnabled ? 'Planificateur Actif' : 'Planificateur Désactivé'}
+                  {syncEnabled ? 'Synchronisation Active' : 'Synchronisation Désactivée'}
                 </span>
                 <input
                   type="checkbox"
-                  checked={weeklyEnabled}
-                  onChange={(e) => setWeeklyEnabled(e.target.checked)}
+                  checked={syncEnabled}
+                  onChange={(e) => setSyncEnabled(e.target.checked)}
                   className="w-5 h-5 accent-emerald-500 cursor-pointer rounded"
                 />
               </label>
             </div>
 
-            {/* Paramètres horaires du Cron Hebdo */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Jour de la semaine */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Jour de la semaine :</span>
-                </label>
-                <select
-                  value={weeklyDay}
-                  onChange={(e) => setWeeklyDay(Number(e.target.value))}
-                  disabled={!weeklyEnabled}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+            {/* Choix de la Fréquence */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Fréquence de Synchronisation Automatique :</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSyncFrequency('daily')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    syncFrequency === 'daily'
+                      ? 'bg-emerald-950/60 border-emerald-500 text-white shadow-md shadow-emerald-950/40'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
                 >
-                  {dayOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      Chaque {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-slate-500">
-                  Par défaut : Dimanche (hors heures d'ouverture).
-                </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      Chaque Jour (Quotidienne - Recommandé)
+                    </span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">24h</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Synchronise et enregistre automatiquement toutes les données chaque jour à l'heure choisie.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSyncFrequency('weekly')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    syncFrequency === 'weekly'
+                      ? 'bg-indigo-950/60 border-indigo-500 text-white shadow-md shadow-indigo-950/40'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                      Hebdomadaire (1 fois par semaine)
+                    </span>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-bold">7 jours</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Synchronisation hebdomadaire planifiée sur un jour spécifique (ex: Dimanche soir).
+                  </p>
+                </button>
               </div>
+            </div>
+
+            {/* Paramètres horaires du planificateur */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Jour de la semaine (visible si weekly) */}
+              {syncFrequency === 'weekly' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Jour d'exécution :</span>
+                  </label>
+                  <select
+                    value={weeklyDay}
+                    onChange={(e) => setWeeklyDay(Number(e.target.value))}
+                    disabled={!syncEnabled}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                  >
+                    {dayOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        Chaque {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Heure d'exécution */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Heure d'exécution :</span>
+                  <span>Heure d'exécution {syncFrequency === 'daily' ? 'quotidienne' : ''} :</span>
                 </label>
                 <select
-                  value={weeklyHour}
-                  onChange={(e) => setWeeklyHour(Number(e.target.value))}
-                  disabled={!weeklyEnabled}
+                  value={syncHour}
+                  onChange={(e) => setSyncHour(Number(e.target.value))}
+                  disabled={!syncEnabled}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
                 >
                   {Array.from({ length: 24 }).map((_, i) => (
                     <option key={i} value={i}>
-                      {String(i).padStart(2, '0')}:00
+                      {String(i).padStart(2, '0')}:00 {i === 0 ? '(Minuit)' : ''}
                     </option>
                   ))}
                 </select>
                 <p className="text-[11px] text-slate-500">
-                  Privilégiez les heures creuses (ex: 02h00 du matin).
+                  Par défaut : 00h00 (Minuit, chaque jour).
                 </p>
               </div>
 
@@ -886,9 +959,9 @@ export const TursoDashboard: React.FC = () => {
                   <span>Minute :</span>
                 </label>
                 <select
-                  value={weeklyMinute}
-                  onChange={(e) => setWeeklyMinute(Number(e.target.value))}
-                  disabled={!weeklyEnabled}
+                  value={syncMinute}
+                  onChange={(e) => setSyncMinute(Number(e.target.value))}
+                  disabled={!syncEnabled}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
                 >
                   <option value={0}>00 min</option>
@@ -897,7 +970,7 @@ export const TursoDashboard: React.FC = () => {
                   <option value={45}>45 min</option>
                 </select>
                 <p className="text-[11px] text-slate-500">
-                  Précision de l'ordonnanceur hebdomadaire.
+                  Précision de l'ordonnanceur automatique.
                 </p>
               </div>
             </div>
@@ -907,31 +980,42 @@ export const TursoDashboard: React.FC = () => {
               <div className="space-y-1">
                 <span className="text-slate-400 font-medium flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Prochaine exécution hebdomadaire planifiée :</span>
+                  <span>Prochaine synchronisation automatique planifiée :</span>
                 </span>
                 <strong className="text-white text-sm block font-mono">
-                  {metrics?.weeklySync.nextSync
-                    ? new Date(metrics.weeklySync.nextSync).toLocaleString('fr-FR', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'Non configurée'}
+                  {syncFrequency === 'daily'
+                    ? (metrics?.dailySync?.nextSync || config?.nextDailySyncAt
+                        ? new Date(metrics?.dailySync?.nextSync || config?.nextDailySyncAt || '').toLocaleString('fr-FR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : `Chaque jour à ${String(syncHour).padStart(2, '0')}:${String(syncMinute).padStart(2, '0')}`)
+                    : (metrics?.weeklySync?.nextSync
+                        ? new Date(metrics.weeklySync.nextSync).toLocaleString('fr-FR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Non configurée')}
                 </strong>
               </div>
 
               <div className="space-y-1">
                 <span className="text-slate-400 font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Dernier export hebdomadaire exécuté :</span>
+                  <span>Dernière synchronisation avec Turso :</span>
                 </span>
                 <strong className="text-slate-300 text-sm block font-mono">
-                  {metrics?.weeklySync.lastSync
-                    ? new Date(metrics.weeklySync.lastSync).toLocaleString('fr-FR')
-                    : 'Aucun pour le moment'}
+                  {metrics?.dailySync?.lastSync || config?.lastDailySyncAt || config?.lastSyncAt
+                    ? new Date(metrics?.dailySync?.lastSync || config?.lastDailySyncAt || config?.lastSyncAt || '').toLocaleString('fr-FR')
+                    : 'En cours / Au démarrage du serveur'}
                 </strong>
               </div>
             </div>
@@ -945,9 +1029,9 @@ export const TursoDashboard: React.FC = () => {
             )}
 
             {/* Bouton Enregistrer Planification */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-2 flex-wrap gap-2">
               <span className="text-xs text-slate-400">
-                Les modifications prennent effet immédiatement sur le serveur.
+                La synchronisation automatique s'exécute chaque jour sur le serveur sans bloquer l'application.
               </span>
               <button
                 type="button"
@@ -956,7 +1040,7 @@ export const TursoDashboard: React.FC = () => {
                 className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg border border-emerald-500/40 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
               >
                 <Calendar className="w-4 h-4" />
-                <span>{isSavingSchedule ? 'Enregistrement...' : 'Enregistrer la programmation hebdomadaire'}</span>
+                <span>{isSavingSchedule ? 'Enregistrement...' : 'Enregistrer la planification de synchronisation'}</span>
               </button>
             </div>
           </div>
@@ -967,10 +1051,10 @@ export const TursoDashboard: React.FC = () => {
               <div>
                 <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
                   <UploadCloud className="w-4 h-4 text-indigo-400" />
-                  <span>Déclencheur Manuel : Exporter Tout Immédiatement vers Turso</span>
+                  <span>Déclencheur Manuel : Synchroniser Tout Immédiatement vers Turso</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Synchronise sans attendre les 280 réservations, les fiches véhicules, les utilisateurs et les notes sur votre compte <strong>mongi95</strong>.
+                  Synchronise sans attendre toutes les réservations, les fiches véhicules, les utilisateurs et les notes sur votre compte <strong>mongi95</strong>.
                 </p>
               </div>
 
@@ -981,7 +1065,7 @@ export const TursoDashboard: React.FC = () => {
                 className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg border border-indigo-500/40 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-                <span>{isSyncing ? 'Export en cours...' : '⚡ Exporter maintenant vers Turso Database'}</span>
+                <span>{isSyncing ? 'Synchronisation...' : '⚡ Synchroniser maintenant avec Turso Database'}</span>
               </button>
             </div>
 
@@ -989,7 +1073,7 @@ export const TursoDashboard: React.FC = () => {
               <div className="p-3 bg-amber-950/60 border border-amber-800 text-amber-300 text-xs rounded-xl flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>
-                  Veuillez d'abord renseigner votre token d'authentification Turso dans l'onglet <strong>Paramètres & Connexion</strong> pour activer les exports.
+                  Veuillez d'abord renseigner votre token d'authentification Turso dans l'onglet <strong>Paramètres & Connexion</strong> pour autoriser les écritures directes sur votre cluster libSQL.
                 </span>
               </div>
             )}
@@ -1205,12 +1289,14 @@ export const TursoDashboard: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            item.type === 'weekly_auto'
+                            item.type === 'daily_auto'
+                              ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                              : item.type === 'weekly_auto'
                               ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                               : 'bg-indigo-950 text-indigo-300 border border-indigo-800'
                           }`}
                         >
-                          {item.type === 'weekly_auto' ? '⏱️ Hebdo Auto' : '⚡ Manuel'}
+                          {item.type === 'daily_auto' ? '📅 Quotidien Auto' : item.type === 'weekly_auto' ? '⏱️ Hebdo Auto' : '⚡ Manuel'}
                         </span>
                         <span className="text-[11px] text-slate-400 font-mono">
                           {new Date(item.timestamp).toLocaleString('fr-FR')}

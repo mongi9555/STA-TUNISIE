@@ -11,11 +11,10 @@ export const createPool = () => {
   if (!global._postgresPool) {
     const connectionString =
       process.env.DATABASE_URL ||
-      process.env.NEON_DATABASE_URL ||
       process.env.POSTGRES_URL;
 
     if (connectionString) {
-      console.log('[PostgreSQL] Initialisation du pool avec la chaîne de connexion (Neon / PostgreSQL)...');
+      console.log('[PostgreSQL] Initialisation du pool avec la chaîne de connexion PostgreSQL...');
       global._postgresPool = new Pool({
         connectionString,
         ssl: connectionString.includes('localhost') ? false : { rejectUnauthorized: false },

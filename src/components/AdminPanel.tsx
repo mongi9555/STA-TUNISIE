@@ -7,7 +7,8 @@ import { CarPhotoUploadModal } from './CarPhotoUploadModal';
 import { StaLogo } from './StaLogo';
 import { AuditLogViewer } from './AuditLogViewer';
 import { TursoDashboard } from './TursoDashboard';
-import { TursoIntegrationCard } from './TursoIntegrationCard';
+import { SuperAdminTimesheet } from './SuperAdminTimesheet';
+import { DailyBackupsManager } from './DailyBackupsManager';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
   DEFAULT_COMMERCIAL_PERMISSIONS,
@@ -23,6 +24,7 @@ import {
   Car,
   Users,
   Building,
+  Calendar,
   CheckCircle2,
   AlertTriangle,
   DollarSign,
@@ -178,7 +180,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onResetToFactoryDefaults,
   onManualSave,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'branding' | 'favicon' | 'database' | 'turso'>('inventory');
+  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'timesheet' | 'branding' | 'favicon' | 'database' | 'turso'>('inventory');
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stock Request Filter State
@@ -857,6 +859,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* Quick Database Status Badge & Manual Save Button */}
           <div className="flex items-center gap-3 shrink-0 self-start lg:self-center flex-wrap">
+            {currentUser.role === 'super_admin' && (
+              <button
+                type="button"
+                onClick={() => setActiveAdminTab('timesheet')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md border transition-all cursor-pointer ${
+                  activeAdminTab === 'timesheet'
+                    ? 'bg-purple-600 text-white border-purple-400 shadow-purple-900/40 ring-2 ring-purple-400/60'
+                    : 'bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 border-purple-500/40'
+                }`}
+                title="Accéder au Calendrier Super Admin (Images & PDF)"
+              >
+                <Calendar className="w-4 h-4 text-purple-300" />
+                <span>Calendrier (Images & PDF)</span>
+              </button>
+            )}
+
             {onManualSave && (
               <button
                 type="button"
@@ -869,14 +887,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             )}
 
-            <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-3.5 py-2 rounded-xl shadow-inner">
+            <div className="flex items-center gap-2.5 text-xs text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-3.5 py-2 rounded-xl shadow-inner">
               <div className="relative flex items-center justify-center">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping absolute opacity-75"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping absolute opacity-75"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 relative"></div>
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-[11px] text-emerald-200">Base locale stable</span>
-                <span className="text-[10px] text-emerald-400/80 font-mono">/data/db.json • Protégée</span>
+                <span className="font-bold text-[11px] text-cyan-200">Turso libSQL Cloud</span>
+                <span className="text-[10px] text-cyan-400/80 font-mono">mongi95 • Serveur Local désactivé</span>
               </div>
             </div>
           </div>
@@ -964,6 +982,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </span>
           </button>
 
+          {/* Calendrier Super Admin */}
+          {(currentUser.role === 'super_admin' || currentUser.role === 'admin') && (
+            <button
+              type="button"
+              onClick={() => setActiveAdminTab('timesheet')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+                activeAdminTab === 'timesheet'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/40 ring-2 ring-purple-400/50'
+                  : 'text-purple-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-purple-400" />
+              <span>Calendrier (Images & PDF)</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 text-[10px] font-mono font-bold">
+                DSI
+              </span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setActiveAdminTab('branding')}
@@ -1003,7 +1040,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }`}
           >
             <Database className="w-4 h-4 text-indigo-400" />
-            <span>Dashboard Turso (Espace & Export Hebdo)</span>
+            <span>Dashboard Turso (Espace & Synchro Quotidienne)</span>
             <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold">
               mongi95
             </span>
@@ -4125,35 +4162,82 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">Téléverser Fiche Technique (PDF / Image) :</label>
-                    <label className="flex items-center justify-center gap-2 p-2.5 bg-slate-900 border border-dashed border-amber-500/40 hover:border-amber-500 rounded-xl cursor-pointer text-xs text-slate-300 transition-colors">
-                      <Upload className="w-4 h-4 text-amber-400" />
-                      <span>Joindre Fiche PDF / Image</span>
-                      <input
-                        type="file"
-                        accept="application/pdf,image/*"
-                        onChange={(e) => handleFicheFileUpload(e, true)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                {editingCarModel.ficheTechniqueUrl ? (
+                  <div className="bg-slate-900 border border-emerald-500/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                        {editingCarModel.ficheTechniqueUrl.toLowerCase().endsWith('.pdf') || editingCarModel.ficheTechniqueUrl.startsWith('data:application/pdf') ? (
+                          <FileText className="w-5 h-5" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-white">Document Fiche Technique joint</span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-1.5 py-0.2 rounded border border-emerald-800 uppercase">
+                            {editingCarModel.ficheTechniqueUrl.toLowerCase().endsWith('.pdf') || editingCarModel.ficheTechniqueUrl.startsWith('data:application/pdf') ? 'Fichier PDF' : 'Image Fiche'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate max-w-sm font-mono mt-0.5">
+                          {editingCarModel.ficheTechniqueUrl.split('/').pop() || 'Fichier téléversé'}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">Ou Lien URL Fiche Technique :</label>
-                    <input
-                      type="url"
-                      placeholder="https://...fiche-technique.pdf"
-                      value={editingCarModel.ficheTechniqueUrl || ''}
-                      onChange={(e) => setEditingCarModel({ ...editingCarModel, ficheTechniqueUrl: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      💡 Les PDF téléversés sont convertis en flux Blob pour éviter les blocages de sécurité Chrome.
-                    </p>
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <a
+                        href={editingCarModel.ficheTechniqueUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Visualiser</span>
+                      </a>
+
+                      <label className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shadow">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Remplacer</span>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/png,image/jpeg,image/webp,image/jpg"
+                          onChange={(e) => handleFicheFileUpload(e, true)}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setEditingCarModel({ ...editingCarModel, ficheTechniqueUrl: '' })}
+                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                        title="Supprimer la fiche technique"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-2 p-5 bg-slate-900 border-2 border-dashed border-slate-700 hover:border-amber-500 rounded-xl cursor-pointer text-center transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block group-hover:text-amber-400 transition-colors">
+                        Téléverser une image ou un fichier PDF (Fiche Technique)
+                      </span>
+                      <span className="text-[11px] text-slate-400 block mt-0.5">
+                        Formats acceptés : <strong>Fichier PDF (.pdf)</strong> ou <strong>Image (.jpg, .png, .webp)</strong> uniquement
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/png,image/jpeg,image/webp,image/jpg"
+                      onChange={(e) => handleFicheFileUpload(e, true)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
 
                 {/* Spécifications Détaillées */}
                 <div className="pt-3 border-t border-slate-800 space-y-3">
@@ -4274,6 +4358,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="text"
                   value={editingCarModel.guarantee}
                   onChange={(e) => setEditingCarModel({ ...editingCarModel, guarantee: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="font-semibold text-slate-300 block">
+                  Garantie de la batterie <span className="text-xs text-slate-500 font-normal">(Arrizo 8 PHEV, Tiggo 4 HEV, Tiggo 7/8/9 PHEV, I03)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="8 ans ou 160 000 km"
+                  value={editingCarModel.batteryGuarantee || ''}
+                  onChange={(e) => setEditingCarModel({ ...editingCarModel, batteryGuarantee: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                 />
               </div>
@@ -4619,32 +4716,82 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">Téléverser Fiche Technique (PDF / Image) :</label>
-                    <label className="flex items-center justify-center gap-2 p-2.5 bg-slate-900 border border-dashed border-amber-500/40 hover:border-amber-500 rounded-xl cursor-pointer text-xs text-slate-300 transition-colors">
-                      <Upload className="w-4 h-4 text-amber-400" />
-                      <span>Joindre Fiche PDF / Image</span>
-                      <input
-                        type="file"
-                        accept="application/pdf,image/*"
-                        onChange={(e) => handleFicheFileUpload(e, false)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                {newCarFicheUrl ? (
+                  <div className="bg-slate-900 border border-emerald-500/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                        {newCarFicheUrl.toLowerCase().endsWith('.pdf') || newCarFicheUrl.startsWith('data:application/pdf') ? (
+                          <FileText className="w-5 h-5" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-white">Document Fiche Technique joint</span>
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-1.5 py-0.2 rounded border border-emerald-800 uppercase">
+                            {newCarFicheUrl.toLowerCase().endsWith('.pdf') || newCarFicheUrl.startsWith('data:application/pdf') ? 'Fichier PDF' : 'Image Fiche'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate max-w-sm font-mono mt-0.5">
+                          {newCarFicheUrl.split('/').pop() || 'Fichier téléversé'}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">Ou Lien URL Fiche Technique :</label>
-                    <input
-                      type="url"
-                      placeholder="https://...fiche-technique.pdf"
-                      value={newCarFicheUrl}
-                      onChange={(e) => setNewCarFicheUrl(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white font-mono"
-                    />
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <a
+                        href={newCarFicheUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Visualiser</span>
+                      </a>
+
+                      <label className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shadow">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Remplacer</span>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/png,image/jpeg,image/webp,image/jpg"
+                          onChange={(e) => handleFicheFileUpload(e, false)}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewCarFicheUrl('')}
+                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                        title="Supprimer la fiche technique"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-2 p-5 bg-slate-900 border-2 border-dashed border-slate-700 hover:border-amber-500 rounded-xl cursor-pointer text-center transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block group-hover:text-amber-400 transition-colors">
+                        Téléverser une image ou un fichier PDF (Fiche Technique)
+                      </span>
+                      <span className="text-[11px] text-slate-400 block mt-0.5">
+                        Formats acceptés : <strong>Fichier PDF (.pdf)</strong> ou <strong>Image (.jpg, .png, .webp)</strong> uniquement
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/png,image/jpeg,image/webp,image/jpg"
+                      onChange={(e) => handleFicheFileUpload(e, false)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
 
                 <div className="pt-2 border-t border-slate-800 space-y-2 text-xs">
                   <div className="flex items-center gap-2">
@@ -5219,7 +5366,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Gestion de la Base de Données & Backup JSON</span>
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-                  Toutes vos modifications (modèles de véhicules, prix, couleurs, réservations et comptes) sont enregistrées de façon permanente dans <strong>/data/db.json</strong>, répliquées sur la base <strong>Turso libSQL (mongi95)</strong> et sécurisées dans le Cloud.
+                  Toutes vos modifications (modèles de véhicules, prix, couleurs, réservations et comptes) sont synchronisées de façon permanente dans <strong>Turso libSQL Cloud (mongi95)</strong> et sécurisées avec <strong>Firebase Firestore</strong>. Le serveur local (<code className="text-slate-400 font-mono">data/db.json</code> & clichés quotidiens) est désactivé.
                 </p>
               </div>
 
@@ -5251,17 +5398,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {/* Sync Status Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 space-y-2 relative overflow-hidden">
                 <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
                   <Database className="w-4 h-4 text-indigo-400" />
                   <span>Base Turso (mongi95)</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Cluster libSQL Edge distribué relié à votre compte <strong>mongi95</strong>.
+                  Cluster libSQL Edge distribué relié à votre compte <strong>mongi95</strong>. Synchro quotidienne active.
                 </p>
                 <div className="text-[11px] font-mono text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded border border-indigo-800/60 w-fit">
-                  ⚡ Turso libSQL Prêt
+                  ⚡ Turso libSQL Cloud Actif
                 </div>
               </div>
 
@@ -5281,42 +5428,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
                   <HardDrive className="w-4 h-4" />
-                  <span>Couche API REST (api.js & Serveur)</span>
+                  <span>Synchronisation Automatique Continue</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Accès distant sécurisé via requêtes REST JSON sans persistance localStorage.
+                  Zéro LocalStorage (0% quota) : synchronisation automatique quotidienne et continue.
                 </p>
                 <div className="text-[11px] font-mono text-blue-400 bg-blue-950/40 px-2 py-1 rounded border border-blue-800/40 w-fit">
-                  ✅ API REST Active ({reservations.length} réservations)
+                  ✅ Synchro Active ({reservations.length} réservations)
                 </div>
               </div>
 
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
-                  <FileJson className="w-4 h-4" />
-                  <span>Base Locale Projet (/data/db.json)</span>
+                <div className="flex items-center gap-2 text-slate-400 font-bold text-xs">
+                  <FileJson className="w-4 h-4 text-slate-500" />
+                  <span>Serveur Local & Clichés</span>
                 </div>
-                <p className="text-xs text-slate-300">
-                  Écriture atomique instantanée sur chaque clic & modification avec backup (.bak).
+                <p className="text-xs text-slate-400">
+                  Fichiers locaux data/db.json et clichés quotidiens désactivés au profit de Turso Cloud.
                 </p>
-                <div className="text-[11px] font-mono text-amber-400 bg-amber-950/40 px-2 py-1 rounded border border-amber-800/40 w-fit">
-                  ✅ Synchronisé
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
-                  <Database className="w-4 h-4" />
-                  <span>Base Neon PostgreSQL</span>
-                </div>
-                <p className="text-xs text-slate-300">
-                  Support prêt pour Neon PostgreSQL via chaîne de connexion DATABASE_URL.
-                </p>
-                <div className="text-[11px] font-mono text-purple-300 bg-purple-950/40 px-2 py-1 rounded border border-purple-800/40 w-fit">
-                  ⚡ Prêt & Configurable
+                <div className="text-[11px] font-mono text-slate-400 bg-slate-900/60 px-2 py-1 rounded border border-slate-800 w-fit">
+                  ⚪ Désactivé (100% Cloud)
                 </div>
               </div>
             </div>
+
+            {/* Daily Backups Management Component */}
+            <DailyBackupsManager onDatabaseRestored={onManualSave} />
 
             {/* Turso Database Integration Section (Org: mongi95) */}
             <TursoDashboard />
@@ -5379,6 +5516,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onDeleteMultipleLogs={onDeleteMultipleAuditLogs}
           onResetDefaultLogs={onResetDefaultLogs}
           onAddManualLog={onAddManualLog}
+        />
+      )}
+
+      {/* TAB: SUPER ADMIN CALENDAR & TIMESHEET (NOTES JOUR / SEMAINE / MOIS) */}
+      {activeAdminTab === 'timesheet' && (
+        <SuperAdminTimesheet
+          currentUser={currentUser}
+          onNotification={(msg) => onManualSave && onManualSave()}
         />
       )}
 

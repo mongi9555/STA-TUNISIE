@@ -5,6 +5,7 @@ import { Printer, Download, X, CheckCircle2, Shield, Building, User, FileText, P
 import cheryLogo from '../assets/images/chery_logo_emblem_1785417732982.jpg';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
+import { hasBatteryWarranty, OFFICIAL_BATTERY_WARRANTY } from '../utils/warrantyUtils';
 
 interface ReservationVoucherProps {
   reservation: Reservation;
@@ -427,6 +428,11 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                     ))}
                   </div>
                   <p className="text-[10px] print:text-[8.5px] text-slate-600"><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
+                  {(reservation.vehicles?.some(v => hasBatteryWarranty(v.carName)) || hasBatteryWarranty(reservation.carName)) && (
+                    <p className="text-[10px] print:text-[8.5px] text-slate-600">
+                      <span className="text-slate-500">Garantie de la batterie :</span> {OFFICIAL_BATTERY_WARRANTY}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-1 print:space-y-0.5">
@@ -461,6 +467,9 @@ export const ReservationVoucher: React.FC<ReservationVoucherProps> = ({
                   </div>
 
                   <p><span className="text-slate-500">Garantie Constructeur :</span> 7 ans / 200 000 km</p>
+                  {hasBatteryWarranty(reservation.carName) && (
+                    <p><span className="text-slate-500">Garantie de la batterie :</span> {OFFICIAL_BATTERY_WARRANTY}</p>
+                  )}
                 </div>
               )}
 

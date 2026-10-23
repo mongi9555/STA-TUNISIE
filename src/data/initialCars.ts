@@ -54,6 +54,7 @@ export const INITIAL_CARS: CarModel[] = [
     "imageUrl": "https://catalogue.automobile.tn/big/2026/06/47649.webp?t=1782727426",
     "dimensions": "4780 x 1843 x 1469 mm",
     "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "id": "car-1785512735025",
     "powerHP": "147 ch (8 CV Fiscaux)",
     "maxSpeed": "190 km/h",
@@ -106,6 +107,7 @@ export const INITIAL_CARS: CarModel[] = [
     ],
     "priceTND": 129900,
     "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "name": "Chery Tiggo 9 PHEV",
     "colors": [
       {
@@ -264,7 +266,8 @@ export const INITIAL_CARS: CarModel[] = [
       "Toit ouvrant électrique"
     ],
     "description": "SUV compact Hybride moderne et sobre, idéal pour la ville et les longs trajets.",
-    "guarantee": "5 ans ou 150 000 km",
+    "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "bootCapacity": "430 Litres",
     "energy": "Hybride",
     "engine": "1.5 L DHT Hybrid",
@@ -329,7 +332,8 @@ export const INITIAL_CARS: CarModel[] = [
     "features": [
       ""
     ],
-    "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
+    "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "safetyFeatures": [
       ""
     ],
@@ -407,7 +411,8 @@ export const INITIAL_CARS: CarModel[] = [
     "powerHP": "",
     "imageUrl": "https://catalogue.automobile.tn/big/2026/04/47620.webp?t=1",
     "consumption": "",
-    "guarantee": "7 ans ou 200 000 km (8 ans batterie)",
+    "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "engine": "2 Moteurs Électriques 69.8 kWh 4X4",
     "energy": "Électrique",
     "description": "",
@@ -484,6 +489,7 @@ export const INITIAL_CARS: CarModel[] = [
     "id": "car-1785753278797",
     "torque": "",
     "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "priceTND": 88900,
     "features": [
       ""
@@ -507,6 +513,7 @@ export const INITIAL_CARS: CarModel[] = [
     "transmission": "Boîte Automatique 3-DHT",
     "id": "car-1785753367152",
     "guarantee": "7 ans ou 200 000 km",
+    "batteryGuarantee": "8 ans ou 160 000 km",
     "dimensions": "4722 x 1860 x 1745 mm",
     "torque": "545 Nm combiné",
     "safetyFeatures": [

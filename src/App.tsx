@@ -59,6 +59,7 @@ import {
   isDeprecatedCommercialUser,
   getDeletedCarIds,
   saveDeletedCarIds,
+  purgeLocalStorageData,
 } from './data/cheryData';
 import {
   db,
@@ -103,8 +104,12 @@ import {
   isFirestoreQuotaExceeded,
   markFirestoreQuotaExhausted,
   onFirestoreQuotaChange,
+  resetFirestoreQuota,
+  syncAllReservationsToFirestore,
+  fetchAllReservationsFromFirestore,
 } from './firebase';
 import { evaluateLeasingStatus } from './utils/leasingUtils';
+import { validateFullClientInfo } from './utils/clientValidation';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { Header, AppTab } from './components/Header';
 import { StockDashboard } from './components/StockDashboard';
@@ -126,20 +131,12 @@ import { CheckCircle2, X, AlertTriangle, Database, RefreshCw, ShieldCheck } from
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  // Thème automobile 100% sombre exclusif (aucun thème clair)
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('chery_theme') as ThemeMode;
-    const lightThemes = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'];
-    if (saved && !lightThemes.includes(saved)) return saved;
-    return 'carbon'; // Défaut: Fibre de Carbone Sport (Sombre Haute Précision)
-  });
+  // Thème automobile 100% sombre exclusif (aucun thème clair, 0% localStorage)
+  const [theme, setTheme] = useState<ThemeMode>('carbon');
 
   useEffect(() => {
     const lightThemes = ['light', 'nordic_clean', 'pearl_luxury', 'crystal_cyan'];
     const activeTheme = lightThemes.includes(theme) ? 'carbon' : theme;
-    localStorage.setItem('chery_theme', activeTheme);
-    localStorage.setItem('chery_theme_mode', 'dark');
-    localStorage.setItem('chery_theme_manual', 'true');
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', activeTheme);
       document.documentElement.setAttribute('data-theme-mode', 'dark');
@@ -486,10 +483,14 @@ export default function App() {
               if (!existing) {
                 map.set(r.id, r);
               } else {
+                const dateExisting = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+                const dateFetched = new Date(r.updatedAt || r.createdAt || 0).getTime();
+                const primary = dateFetched >= dateExisting ? r : existing;
+                const secondary = dateFetched >= dateExisting ? existing : r;
                 map.set(r.id, {
-                  ...r,
-                  ...existing,
-                  documents: existing.documents && existing.documents.length > 0 ? existing.documents : r.documents,
+                  ...secondary,
+                  ...primary,
+                  documents: (primary.documents && primary.documents.length > 0) ? primary.documents : secondary.documents,
                 });
               }
             }
@@ -613,29 +614,13 @@ export default function App() {
     };
   }, []);
 
-  // Sync state changes with localStorage backup
+  // Nettoyage immédiat et complet de localStorage pour libérer le navigateur STA (0% quota, 100% base de données)
   useEffect(() => {
-    saveStoredCars(cars);
-  }, [cars]);
+    purgeLocalStorageData();
+  }, []);
 
+  // Synchronisation dynamique du favicon et du titre du site
   useEffect(() => {
-    saveStoredReservations(reservations);
-  }, [reservations]);
-
-  useEffect(() => {
-    saveStoredTestDrives(testDrives);
-  }, [testDrives]);
-
-  useEffect(() => {
-    saveStoredStockRequests(stockRequests);
-  }, [stockRequests]);
-
-  useEffect(() => {
-    saveStoredCommercials(commercials);
-  }, [commercials]);
-
-  useEffect(() => {
-    saveStoredSiteSettings(siteSettings);
 
     // Dynamically update browser tab Favicon
     const faviconHref = siteSettings?.faviconUrl || '/favicon.svg';
@@ -1036,6 +1021,15 @@ export default function App() {
   // RÈGLE : Tant que la réservation est "En attente", AUCUNE voiture n'est déduite du stock.
   // La déduction n'intervient que si le statut est "Confirmée" (ou "Livrée").
   const handleSaveReservation = (newReservation: Reservation) => {
+    // 0. Contrôle de conformité stricte : Blocage impératif de "( chery client )" et profils factices
+    const clientValidation = validateFullClientInfo(newReservation.client);
+    if (!clientValidation.isValid) {
+      const firstError = Object.values(clientValidation.errors)[0] || 'Coordonnées client obligatoires non renseignées';
+      showToast(`⛔ Création bloquée : ${firstError}`);
+      console.warn('Création de réservation rejetée (non conforme) :', clientValidation.errors);
+      return;
+    }
+
     // 1. Add to reservation list in Firestore & state
     const updatedReservations = [newReservation, ...reservations];
     setReservations(updatedReservations);
@@ -1169,6 +1163,14 @@ export default function App() {
 
   // Handler: Edit Existing Reservation with Stock Synchronization
   const handleEditReservation = (updatedReservation: Reservation) => {
+    // Contrôle de conformité des coordonnées lors de la mise à jour
+    const clientValidation = validateFullClientInfo(updatedReservation.client);
+    if (!clientValidation.isValid) {
+      const firstError = Object.values(clientValidation.errors)[0] || 'Coordonnées client obligatoires non renseignées';
+      showToast(`⛔ Modification bloquée : ${firstError}`);
+      return;
+    }
+
     const oldReservation = reservations.find((r) => r.id === updatedReservation.id);
 
     let updatedCars = cars;
@@ -1226,61 +1228,101 @@ export default function App() {
     showToast(`Réservation ${updatedReservation.id} mise à jour avec succès.`);
   };
 
-  // Synchronisation & Restauration garantie depuis la base en ligne
+  // Synchronisation & Restauration garantie depuis Firestore et le Cloud multi-sources
   const handleSyncAndRecoverReservations = async (): Promise<{ success: boolean; message: string; count: number }> => {
     try {
+      resetFirestoreQuota();
+      // 1. Récupération multi-sources côté serveur (fichiers, clichés, Turso, audit)
       const res = await fetch('/api/reservations/recover', { method: 'POST' });
       const data = await res.json();
-      if (data && data.success && Array.isArray(data.reservations)) {
-        const recoveredReservations: Reservation[] = data.reservations;
+      const serverReservations: Reservation[] = (data && data.success && Array.isArray(data.reservations)) ? data.reservations : [];
 
-        // 1. Déverrouiller et retirer impérativement TOUS les identifiants restaurés de la liste des suppressions
-        const deletedSet = getDeletedReservationIds();
-        recoveredReservations.forEach((r: Reservation) => {
-          if (r && r.id) {
-            deletedSet.delete(String(r.id).trim().toUpperCase());
-          }
-        });
-        saveDeletedReservationIds(deletedSet);
-
-        // 2. Nettoyer également de la corbeille les éléments qui sont maintenant actifs
-        const recoveredIdSet = new Set(recoveredReservations.map((r) => String(r.id).trim().toUpperCase()));
-        const cleanTrash = trashReservations.filter((t) => !recoveredIdSet.has(String(t.id).trim().toUpperCase()));
-        setTrashReservations(cleanTrash);
-        saveTrashReservations(cleanTrash);
-
-        // 3. Mettre à jour l'état local et la référence en mémoire
-        reservationsRef.current = recoveredReservations;
-        setReservations(recoveredReservations);
-        saveStoredReservations(recoveredReservations);
-
-        // 4. VERROUILLAGE ATOMIQUE IMMÉDIAT DANS LA BASE SERVEUR
-        // Empêche toute réversion ou écrasement intempestif par un snapshot ou intervalle
-        triggerInstantDbSave({
-          reservations: recoveredReservations,
-          deletedReservationIds: Array.from(deletedSet),
-          trashReservations: cleanTrash,
-        });
-
-        // 5. Synchroniser dans Firestore en tâche de fond uniquement si quota non épuisé
-        if (!isFirestoreQuotaExceeded()) {
-          recoveredReservations.forEach((r: Reservation) => {
-            saveReservationToFirestore(r).catch(() => {});
-          });
-        }
-
-        const msg = data.recoveredCount > 0
-          ? `✅ ${data.recoveredCount} bon(s) de réservation manquant(s) restauré(s) avec succès ! Total : ${data.totalCount} réservations sauvegardées dans la base.`
-          : `✅ Base en ligne 100% synchronisée : Les ${data.totalCount} bons de réservation sont tous enregistrés et sécurisés.`;
-        showToast(msg);
-        return {
-          success: true,
-          count: data.totalCount,
-          message: msg,
-        };
+      // 2. Récupération directe depuis Firestore pour garantir zéro perte
+      let firestoreReservations: Reservation[] = [];
+      try {
+        firestoreReservations = await fetchAllReservationsFromFirestore();
+      } catch (e) {
+        console.warn('[Sync] Firestore fetch note:', e);
       }
-      return { success: false, count: reservations.length, message: 'Échec de synchronisation avec le serveur.' };
+
+      // 3. Fusionner de façon exhaustive et dédoublonnée
+      const resMap = new Map<string, Reservation>();
+      // Commencer par les réservations actuellement en mémoire
+      reservations.forEach((r) => { if (r && r.id) resMap.set(r.id, r); });
+      // Ajouter celles du serveur
+      serverReservations.forEach((r) => {
+        if (r && r.id) {
+          if (!resMap.has(r.id)) {
+            resMap.set(r.id, r);
+          } else {
+            const cur = resMap.get(r.id)!;
+            if (r.documents && r.documents.length > (cur.documents?.length || 0)) {
+              cur.documents = r.documents;
+            }
+            if (r.notes && !cur.notes) cur.notes = r.notes;
+          }
+        }
+      });
+      // Ajouter celles de Firestore
+      firestoreReservations.forEach((r) => {
+        if (r && r.id) {
+          if (!resMap.has(r.id)) {
+            resMap.set(r.id, r);
+          } else {
+            const cur = resMap.get(r.id)!;
+            if (r.documents && r.documents.length > (cur.documents?.length || 0)) {
+              cur.documents = r.documents;
+            }
+            if (r.notes && !cur.notes) cur.notes = r.notes;
+          }
+        }
+      });
+
+      const allMerged = Array.from(resMap.values()).sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+
+      // 4. Déverrouiller et retirer impérativement TOUS les identifiants restaurés de la liste des suppressions
+      const deletedSet = getDeletedReservationIds();
+      allMerged.forEach((r: Reservation) => {
+        if (r && r.id) {
+          deletedSet.delete(String(r.id).trim().toUpperCase());
+        }
+      });
+      saveDeletedReservationIds(deletedSet);
+
+      // 5. Nettoyer également de la corbeille les éléments qui sont maintenant actifs
+      const activeIdSet = new Set(allMerged.map((r) => String(r.id).trim().toUpperCase()));
+      const cleanTrash = trashReservations.filter((t) => !activeIdSet.has(String(t.id).trim().toUpperCase()));
+      setTrashReservations(cleanTrash);
+      saveTrashReservations(cleanTrash);
+
+      // 6. Mettre à jour l'état local et la référence en mémoire
+      reservationsRef.current = allMerged;
+      setReservations(allMerged);
+      saveStoredReservations(allMerged);
+
+      // 7. Enregistrer immédiatement dans la base serveur (Turso Cloud)
+      triggerInstantDbSave({
+        reservations: allMerged,
+        deletedReservationIds: Array.from(deletedSet),
+        trashReservations: cleanTrash,
+      });
+
+      // 8. Synchroniser immédiatement et intégralement avec Firebase Firestore
+      syncAllReservationsToFirestore(allMerged).catch((fsErr) => {
+        console.warn('[Sync] Erreur sync Firestore en arrière-plan:', fsErr);
+      });
+
+      const msg = `✅ ${allMerged.length} bon(s) de réservation restaurés et synchronisés en direct avec Firestore & Turso Cloud !`;
+      showToast(msg);
+      return {
+        success: true,
+        count: allMerged.length,
+        message: msg,
+      };
     } catch (err: any) {
+      console.error('Erreur handleSyncAndRecoverReservations:', err);
       return { success: false, count: reservations.length, message: err?.message || 'Erreur réseau.' };
     }
   };
@@ -1672,9 +1714,7 @@ export default function App() {
   };
 
   const handleResetToFactoryDefaults = async () => {
-    try {
-      localStorage.removeItem('chery_tn_deleted_car_ids_v1');
-    } catch {}
+    saveDeletedCarIds(new Set<string>());
 
     setCars(INITIAL_CARS);
     saveStoredCars(INITIAL_CARS);

@@ -7,7 +7,7 @@ const TURSO_CONFIG_PATH = path.resolve(process.cwd(), 'data', 'turso_config.json
 export interface TursoSyncHistoryItem {
   id: string;
   timestamp: string;
-  type: 'manual' | 'weekly_auto';
+  type: 'manual' | 'daily_auto' | 'weekly_auto';
   success: boolean;
   message: string;
   counts: {
@@ -28,6 +28,14 @@ export interface TursoConfig {
   status?: 'connected' | 'disconnected' | 'error';
   lastSyncAt?: string;
   lastError?: string;
+  // Synchronisation Automatique Quotidienne (Chaque Jour)
+  syncFrequency: 'daily' | 'weekly';
+  dailySyncEnabled: boolean;
+  dailySyncHour: number; // 0-23 (Défaut : 0h / minuit)
+  dailySyncMinute: number; // 0-59 (Défaut : 0 min)
+  lastDailySyncAt?: string;
+  nextDailySyncAt?: string;
+  // Synchronisation Hebdomadaire (Conservée pour compatibilité)
   weeklySyncEnabled: boolean;
   weeklySyncDay: number; // 0 = Dimanche, 1 = Lundi, ..., 6 = Samedi
   weeklySyncHour: number; // 0-23
@@ -60,6 +68,13 @@ export interface TursoStorageMetrics {
   sqliteVersion?: string;
   tables: TursoTableStats[];
   totalRows: number;
+  dailySync: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly';
+    timeLabel: string;
+    nextSync: string;
+    lastSync?: string;
+  };
   weeklySync: {
     enabled: boolean;
     dayLabel: string;
@@ -67,6 +82,20 @@ export interface TursoStorageMetrics {
     nextSync: string;
     lastSync?: string;
   };
+}
+
+// Calcul de la prochaine date de synchronisation quotidienne (chaque jour)
+export function calculateNextDailySync(hour: number = 0, minute: number = 0): string {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(hour, minute, 0, 0);
+
+  // Si l'heure est déjà passée aujourd'hui, programmer pour demain
+  if (now.getTime() >= next.getTime()) {
+    next.setDate(next.getDate() + 1);
+  }
+
+  return next.toISOString();
 }
 
 // Calcul de la prochaine date de synchronisation hebdomadaire
@@ -93,6 +122,11 @@ const DEFAULT_CONFIG: TursoConfig = {
   url: process.env.TURSO_DATABASE_URL || 'libsql://chery-sta-mongi95.turso.io',
   authToken: process.env.TURSO_AUTH_TOKEN || '',
   status: 'disconnected',
+  syncFrequency: 'daily',
+  dailySyncEnabled: true,
+  dailySyncHour: 0, // Minuit par défaut (chaque jour)
+  dailySyncMinute: 0,
+  nextDailySyncAt: calculateNextDailySync(0, 0),
   weeklySyncEnabled: true,
   weeklySyncDay: 0, // Dimanche par défaut
   weeklySyncHour: 2, // 02h00 du matin
@@ -111,8 +145,21 @@ export function loadTursoConfig(): TursoConfig {
         ...parsed,
         url: process.env.TURSO_DATABASE_URL || parsed.url || DEFAULT_CONFIG.url,
         authToken: process.env.TURSO_AUTH_TOKEN || parsed.authToken || DEFAULT_CONFIG.authToken,
+        syncFrequency: parsed.syncFrequency || 'daily',
+        dailySyncEnabled: parsed.dailySyncEnabled !== undefined ? Boolean(parsed.dailySyncEnabled) : true,
+        dailySyncHour: parsed.dailySyncHour !== undefined ? Number(parsed.dailySyncHour) : 0,
+        dailySyncMinute: parsed.dailySyncMinute !== undefined ? Number(parsed.dailySyncMinute) : 0,
         syncHistory: Array.isArray(parsed.syncHistory) ? parsed.syncHistory : [],
       };
+
+      // Recalculer nextDailySyncAt si manquant
+      if (!config.nextDailySyncAt) {
+        config.nextDailySyncAt = calculateNextDailySync(
+          config.dailySyncHour ?? 0,
+          config.dailySyncMinute ?? 0
+        );
+      }
+
       // Recalculer nextWeeklySyncAt si manquant
       if (!config.nextWeeklySyncAt) {
         config.nextWeeklySyncAt = calculateNextWeeklySync(
@@ -136,16 +183,29 @@ export function saveTursoConfig(newConfig: Partial<TursoConfig>): TursoConfig {
     ...newConfig,
   };
 
-  // Recalculer la prochaine date si les paramètres horaires ont changé
+  // Recalculer la prochaine date de synchronisation quotidienne si les paramètres ont changé
+  if (
+    newConfig.dailySyncHour !== undefined ||
+    newConfig.dailySyncMinute !== undefined ||
+    newConfig.dailySyncEnabled !== undefined ||
+    !updated.nextDailySyncAt
+  ) {
+    updated.nextDailySyncAt = calculateNextDailySync(
+      updated.dailySyncHour ?? 0,
+      updated.dailySyncMinute ?? 0
+    );
+  }
+
+  // Recalculer la prochaine date hebdomadaire si les paramètres ont changé
   if (
     newConfig.weeklySyncDay !== undefined ||
     newConfig.weeklySyncHour !== undefined ||
     newConfig.weeklySyncMinute !== undefined
   ) {
     updated.nextWeeklySyncAt = calculateNextWeeklySync(
-      updated.weeklySyncDay,
-      updated.weeklySyncHour,
-      updated.weeklySyncMinute
+      updated.weeklySyncDay ?? 0,
+      updated.weeklySyncHour ?? 2,
+      updated.weeklySyncMinute ?? 0
     );
   }
 
@@ -316,6 +376,7 @@ export async function getTursoStorageMetrics(): Promise<TursoStorageMetrics> {
   const dayLabels = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
   const dayLabel = dayLabels[config.weeklySyncDay ?? 0] || 'Dimanche';
   const timeLabel = `${String(config.weeklySyncHour ?? 2).padStart(2, '0')}:${String(config.weeklySyncMinute ?? 0).padStart(2, '0')}`;
+  const dailyTimeLabel = `${String(config.dailySyncHour ?? 0).padStart(2, '0')}:${String(config.dailySyncMinute ?? 0).padStart(2, '0')}`;
 
   const client = getTursoClient();
   const defaultQuotaBytes = 9 * 1024 * 1024 * 1024; // 9 Go (Quota Turso Starter)
@@ -335,6 +396,13 @@ export async function getTursoStorageMetrics(): Promise<TursoStorageMetrics> {
       latencyMs: 0,
       tables: [],
       totalRows: 0,
+      dailySync: {
+        enabled: config.dailySyncEnabled ?? true,
+        frequency: config.syncFrequency || 'daily',
+        timeLabel: dailyTimeLabel,
+        nextSync: config.nextDailySyncAt || calculateNextDailySync(0, 0),
+        lastSync: config.lastDailySyncAt || config.lastSyncAt,
+      },
       weeklySync: {
         enabled: config.weeklySyncEnabled,
         dayLabel,
@@ -439,6 +507,13 @@ export async function getTursoStorageMetrics(): Promise<TursoStorageMetrics> {
       sqliteVersion,
       tables,
       totalRows,
+      dailySync: {
+        enabled: config.dailySyncEnabled ?? true,
+        frequency: config.syncFrequency || 'daily',
+        timeLabel: dailyTimeLabel,
+        nextSync: config.nextDailySyncAt || calculateNextDailySync(0, 0),
+        lastSync: config.lastDailySyncAt || config.lastSyncAt,
+      },
       weeklySync: {
         enabled: config.weeklySyncEnabled,
         dayLabel,
@@ -463,6 +538,13 @@ export async function getTursoStorageMetrics(): Promise<TursoStorageMetrics> {
       latencyMs: Date.now() - start,
       tables: [],
       totalRows: 0,
+      dailySync: {
+        enabled: config.dailySyncEnabled ?? true,
+        frequency: config.syncFrequency || 'daily',
+        timeLabel: dailyTimeLabel,
+        nextSync: config.nextDailySyncAt || calculateNextDailySync(0, 0),
+        lastSync: config.lastDailySyncAt || config.lastSyncAt,
+      },
       weeklySync: {
         enabled: config.weeklySyncEnabled,
         dayLabel,
@@ -574,7 +656,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = 15000, errorMsg = "Dél
  */
 export async function syncAllToTurso(
   dbData: any,
-  syncType: 'manual' | 'weekly_auto' = 'manual'
+  syncType: 'manual' | 'daily_auto' | 'weekly_auto' = 'manual'
 ): Promise<{
   success: boolean;
   message: string;
@@ -779,6 +861,11 @@ export async function syncAllToTurso(
   saveTursoConfig({
     lastSyncAt: now,
     status: 'connected',
+    lastDailySyncAt: now,
+    nextDailySyncAt: calculateNextDailySync(
+      currentConfig.dailySyncHour ?? 0,
+      currentConfig.dailySyncMinute ?? 0
+    ),
     ...(syncType === 'weekly_auto'
       ? {
           lastWeeklySyncAt: now,

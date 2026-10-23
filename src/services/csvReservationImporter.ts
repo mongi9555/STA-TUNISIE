@@ -1,4 +1,5 @@
 import { Reservation, CarModel, CommercialUser, ReservationStatus } from '../types';
+import { isForbiddenClientName } from '../utils/clientValidation';
 
 export interface CsvImportResult {
   reservations: Reservation[];
@@ -224,6 +225,12 @@ export function importReservationsFromCsv(
       const rawPhone = (phoneCol !== -1 ? row[phoneCol] : '') || '';
       const rawEmail = (emailCol !== -1 ? row[emailCol] : '') || '';
       const rawVille = (villeCol !== -1 ? row[villeCol] : '') || 'Tunis';
+
+      // Rejeter strictement toute mention générique interdite (« Chery Client », « Client »...)
+      if (!rawClientName.trim() || isForbiddenClientName(rawClientName)) {
+        errors.push(`Ligne ${rowIndex + 1} (${resId}) rejetée : Nom de client générique interdit ou manquant (« ${rawClientName || 'vide'} »).`);
+        continue;
+      }
 
       const isSociete =
         Boolean(rawType && /\b(societe|société|ste|sarl|suarl|sa|holding|groupe|entreprise|morale)\b/i.test(rawType)) ||

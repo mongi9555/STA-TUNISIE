@@ -18,6 +18,14 @@ import {
 } from '../data/cheryData';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
+  validateFullClientInfo,
+  isForbiddenClientName,
+  validateCinNumber,
+  validatePhoneNumber,
+  validatePhysicalAddress,
+  validateMatriculeFiscale,
+} from '../utils/clientValidation';
+import {
   X,
   Car,
   User,
@@ -505,7 +513,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setDocuments((prev) => prev.filter((d) => d.id !== id));
   };
 
-  // Form Validation
+  // Form Validation stricte avec blocage impératif de toute mention générique "( chery client )"
   const validateForm = (): boolean => {
     const errs: Record<string, string> = {};
 
@@ -513,26 +521,40 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       errs.vehicles = 'Veuillez sélectionner au moins un véhicule Chery';
     }
 
+    // Validation approfondie des coordonnées clients
     if (clientType === 'personne_physique') {
-      if (!physiqueNom.trim()) errs.physiqueNom = 'Le nom est obligatoire';
-      if (!physiquePrenom.trim()) errs.physiquePrenom = 'Le prénom est obligatoire';
-      if (!physiqueCin.trim() || physiqueCin.length !== 8) {
-        errs.physiqueCin = 'N° CIN valide requis (exactement 8 chiffres)';
-      }
-      if (!physiqueTel.trim()) {
-        errs.physiqueTel = 'Numéro de téléphone obligatoire';
-      } else if (physiqueTel.length !== 8) {
-        errs.physiqueTel = 'Le numéro de téléphone doit comporter exactement 8 chiffres';
+      const clientValidation = validateFullClientInfo({
+        type: 'personne_physique',
+        personnePhysique: {
+          nom: physiqueNom,
+          prenom: physiquePrenom,
+          cin: physiqueCin,
+          ville: physiqueVille,
+          telephone: physiqueTel,
+          email: physiqueEmail,
+          adresse: physiqueAdresse,
+        },
+      });
+
+      if (!clientValidation.isValid) {
+        Object.assign(errs, clientValidation.errors);
       }
     } else {
-      if (!societeRaison.trim()) errs.societeRaison = 'La raison sociale est obligatoire';
-      if (!societeMatriculeFiscale.trim()) {
-        errs.societeMatriculeFiscale = 'La matricule fiscale est obligatoire (ex: 1234567/A/M/000)';
-      }
-      if (!societeTel.trim()) {
-        errs.societeTel = 'Numéro de téléphone obligatoire';
-      } else if (societeTel.length !== 8) {
-        errs.societeTel = 'Le numéro de téléphone doit comporter exactement 8 chiffres';
+      const societeValidation = validateFullClientInfo({
+        type: 'societe',
+        societe: {
+          raisonSociale: societeRaison,
+          matriculeFiscale: societeMatriculeFiscale,
+          ville: societeVille,
+          telephone: societeTel,
+          email: societeEmail,
+          adresse: societeAdresse,
+          registreCommerce: societeRegistreCommerce,
+        },
+      });
+
+      if (!societeValidation.isValid) {
+        Object.assign(errs, societeValidation.errors);
       }
     }
 
@@ -1009,6 +1031,19 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
           {/* SECTION 2: CLIENT TYPE & COORDINATES */}
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+            {/* Bannière de conformité stricte et blocage des faux profils */}
+            <div className="p-3 bg-red-950/40 border border-red-800/80 rounded-xl flex items-start gap-2.5 text-xs text-red-200">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-bold text-red-300">
+                  Règle de Conformité STA : Blocage strict des mentions génériques « ( chery client ) »
+                </p>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Tous les champs d'identification du client (Nom, Prénom, CIN 8 chiffres, Téléphone direct 8 chiffres, Adresse physique complète) sont <strong>strictement obligatoires</strong>. Les créations avec pseudonymes, tests ou mentions factices telles que « Chery Client » sont automatiquement refusées par le système.
+                </p>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
               <div>
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -1064,9 +1099,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     placeholder="ex: Ben Ammar"
                     value={physiqueNom}
                     onChange={(e) => setPhysiqueNom(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                      isForbiddenClientName(physiqueNom) && physiqueNom.trim().length >= 2
+                        ? 'border-red-500 focus:ring-red-500 bg-red-950/20'
+                        : 'border-slate-800 focus:ring-red-500'
+                    }`}
                   />
-                  {errors.physiqueNom && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueNom}</p>}
+                  {errors.physiqueNom && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiqueNom}</p>}
+                  {isForbiddenClientName(physiqueNom) && physiqueNom.trim().length >= 2 && !errors.physiqueNom && (
+                    <p className="text-[11px] text-amber-400 mt-1">⚠️ Mention générique interdite (« Chery », « Client »...)</p>
+                  )}
                 </div>
 
                 <div>
@@ -1081,9 +1123,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     placeholder="ex: Mohamed Anouar"
                     value={physiquePrenom}
                     onChange={(e) => setPhysiquePrenom(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                      isForbiddenClientName(physiquePrenom) && physiquePrenom.trim().length >= 2
+                        ? 'border-red-500 focus:ring-red-500 bg-red-950/20'
+                        : 'border-slate-800 focus:ring-red-500'
+                    }`}
                   />
-                  {errors.physiquePrenom && <p className="text-[11px] text-red-400 mt-1">{errors.physiquePrenom}</p>}
+                  {errors.physiquePrenom && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiquePrenom}</p>}
+                  {isForbiddenClientName(physiquePrenom) && physiquePrenom.trim().length >= 2 && !errors.physiquePrenom && (
+                    <p className="text-[11px] text-amber-400 mt-1">⚠️ Prénom générique interdit</p>
+                  )}
                 </div>
 
                 <div>
@@ -1101,11 +1150,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     onChange={(e) => setPhysiqueCin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
-                  {errors.physiqueCin && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueCin}</p>}
+                  {errors.physiqueCin && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiqueCin}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Gouvernorat / Ville :</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Gouvernorat / Ville <span className="text-red-400">*</span>
+                  </label>
                   <select
                     value={physiqueVille}
                     onChange={(e) => setPhysiqueVille(e.target.value)}
@@ -1117,6 +1168,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                       </option>
                     ))}
                   </select>
+                  {errors.physiqueVille && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiqueVille}</p>}
                 </div>
 
                 <div>
@@ -1137,7 +1189,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-13 pr-3 py-2 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
-                  {errors.physiqueTel && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueTel}</p>}
+                  {errors.physiqueTel && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiqueTel}</p>}
                 </div>
 
                 <div>
@@ -1154,16 +1206,22 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
 
                 <div className="sm:col-span-2 lg:col-span-3">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Adresse Physique Complète :</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Adresse Physique Complète (Rue, Résidence, N°...) <span className="text-red-400">*</span>
+                  </label>
                   <input
                     type="text"
                     name="client_adresse"
                     autoComplete="off"
+                    required
                     placeholder="ex: Rue les Jardins, Résidence Ennasr 2, Tunis"
                     value={physiqueAdresse}
                     onChange={(e) => setPhysiqueAdresse(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                      errors.physiqueAdresse ? 'border-red-500 focus:ring-red-500' : 'border-slate-800 focus:ring-red-500'
+                    }`}
                   />
+                  {errors.physiqueAdresse && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.physiqueAdresse}</p>}
                 </div>
               </div>
             )}
@@ -1183,9 +1241,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     placeholder="ex: STE MEDITERRANEENNE DE SERVICES SARL"
                     value={societeRaison}
                     onChange={(e) => setSocieteRaison(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                      isForbiddenClientName(societeRaison) && societeRaison.trim().length >= 2
+                        ? 'border-red-500 focus:ring-red-500 bg-red-950/20'
+                        : 'border-slate-800 focus:ring-red-500'
+                    }`}
                   />
-                  {errors.societeRaison && <p className="text-[11px] text-red-400 mt-1">{errors.societeRaison}</p>}
+                  {errors.societeRaison && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.societeRaison}</p>}
+                  {isForbiddenClientName(societeRaison) && societeRaison.trim().length >= 2 && !errors.societeRaison && (
+                    <p className="text-[11px] text-amber-400 mt-1">⚠️ Raison sociale générique interdite (« Chery », « Client »...)</p>
+                  )}
                 </div>
 
                 <div>
@@ -1273,17 +1338,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
                 <div className="sm:col-span-2 lg:col-span-3">
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Siège Social / Adresse Entreprise :
+                    Siège Social / Adresse Entreprise <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     name="company_address"
                     autoComplete="off"
+                    required
                     placeholder="ex: Zone Industrielle Charguia 2, 2035 Tunis"
                     value={societeAdresse}
                     onChange={(e) => setSocieteAdresse(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${
+                      errors.societeAdresse ? 'border-red-500 focus:ring-red-500' : 'border-slate-800 focus:ring-red-500'
+                    }`}
                   />
+                  {errors.societeAdresse && <p className="text-[11px] text-red-400 mt-1 font-medium">{errors.societeAdresse}</p>}
                 </div>
               </div>
             )}
@@ -1853,6 +1922,24 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
+
+            {/* Récapitulatif d'erreur de validation & blocage */}
+            {Object.keys(errors).length > 0 && (
+              <div className="p-3.5 bg-red-950/80 border border-red-500 rounded-xl space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2 text-red-300 font-bold text-xs">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>Création bloquée : Coordonnées obligatoires incomplètes ou profil factice</span>
+                </div>
+                <p className="text-[11px] text-red-200">
+                  La création avec « ( chery client ) » ou sans coordonnées réelles est strictement interdite. Veuillez corriger :
+                </p>
+                <ul className="text-[11px] text-red-300 list-disc list-inside space-y-0.5 font-medium pl-1">
+                  {Object.values(errors).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Form Actions - Button type='button' prevents Chrome's password manager trigger */}

@@ -3,6 +3,11 @@ import { Reservation, TUNISIA_GOVERNORATES, ClientType, Car, CarColor, UploadedD
 import { calculateDeliveryDate, canUserEditEta, getRequiredDepositForCar } from '../data/cheryData';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 import {
+  validateFullClientInfo,
+  isForbiddenClientName,
+  isReservationIncompleteOrDummy,
+} from '../utils/clientValidation';
+import {
   X,
   User,
   Building,
@@ -110,10 +115,12 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
     return calculateDeliveryDate(base, 30);
   });
   const [notes, setNotes] = useState<string>(reservation.notes || '');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Synchroniser l'état local quand une réservation différente est ouverte
   useEffect(() => {
     if (reservation) {
+      setErrors({});
       setClientType(reservation.client.type);
       setColorChosen(reservation.colorChosen);
       setInteriorColorChosen(reservation.interiorColorChosen);
@@ -241,6 +248,40 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLocked) return;
+
+    // Validation stricte des coordonnées du client
+    const clientValidation = validateFullClientInfo({
+      type: clientType,
+      personnePhysique:
+        clientType === 'personne_physique'
+          ? {
+              nom: nom.trim(),
+              prenom: prenom.trim(),
+              cin: cin.trim(),
+              telephone: telPhysique.trim(),
+              email: emailPhysique.trim(),
+              ville: villePhysique,
+              adresse: adressePhysique.trim(),
+            }
+          : undefined,
+      societe:
+        clientType === 'societe'
+          ? {
+              raisonSociale: raisonSociale.trim(),
+              matriculeFiscale: matriculeFiscale.trim(),
+              telephone: telSociete.trim(),
+              email: emailSociete.trim(),
+              ville: villeSociete,
+              adresse: adresseSociete.trim(),
+              registreCommerce: registreCommerce.trim(),
+            }
+          : undefined,
+    });
+
+    if (!clientValidation.isValid) {
+      setErrors(clientValidation.errors);
+      return;
+    }
 
     const updatedReservation: Reservation = {
       ...reservation,
@@ -492,10 +533,29 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
           </div>
 
           {/* Client Details Section */}
+          {(() => {
+            const incompleteCheck = isReservationIncompleteOrDummy(reservation);
+            if (!incompleteCheck.isIncomplete) return null;
+            return (
+              <div className="p-3 bg-amber-950/40 border border-amber-700/80 rounded-xl text-xs text-amber-200 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-amber-300">
+                    ⚠️ Bon de réservation à régulariser : Coordonnées client incomplètes ou profil « Chery Client »
+                  </p>
+                  <p className="text-[11px] text-slate-300">
+                    Motifs détectés : <strong>{incompleteCheck.reasons.join(' • ')}</strong>.
+                    Veuillez renseigner toutes les coordonnées réelles ci-dessous avant d'enregistrer.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
           {clientType === 'personne_physique' ? (
             <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Informations Client Particulier
+                Informations Client Particulier (Toutes coordonnées obligatoires)
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -507,8 +567,13 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     disabled={isLocked}
                     value={nom}
                     onChange={(e) => setNom(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.physiqueNom || (isForbiddenClientName(nom) && nom.trim().length >= 2)
+                        ? 'border-red-500 bg-red-950/20'
+                        : 'border-slate-800'
+                    }`}
                   />
+                  {errors.physiqueNom && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueNom}</p>}
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Prénom *</label>
@@ -518,19 +583,28 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     disabled={isLocked}
                     value={prenom}
                     onChange={(e) => setPrenom(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.physiquePrenom || (isForbiddenClientName(prenom) && prenom.trim().length >= 2)
+                        ? 'border-red-500 bg-red-950/20'
+                        : 'border-slate-800'
+                    }`}
                   />
+                  {errors.physiquePrenom && <p className="text-[11px] text-red-400 mt-1">{errors.physiquePrenom}</p>}
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">N° CIN *</label>
+                  <label className="block text-slate-300 font-medium mb-1">N° CIN (8 chiffres) *</label>
                   <input
                     type="text"
                     required
+                    maxLength={8}
                     disabled={isLocked}
                     value={cin}
-                    onChange={(e) => setCin(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                    onChange={(e) => setCin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.physiqueCin ? 'border-red-500' : 'border-slate-800'
+                    }`}
                   />
+                  {errors.physiqueCin && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueCin}</p>}
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Téléphone (8 chiffres) *</label>
@@ -544,12 +618,15 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                       placeholder="ex: 22100200"
                       value={telPhysique}
                       onChange={(e) => setTelPhysique(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-13 pr-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                      className={`w-full bg-slate-900 border rounded-xl pl-13 pr-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                        errors.physiqueTel ? 'border-red-500' : 'border-slate-800'
+                      }`}
                     />
                   </div>
+                  {errors.physiqueTel && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueTel}</p>}
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Gouvernorat / Ville</label>
+                  <label className="block text-slate-300 font-medium mb-1">Gouvernorat / Ville *</label>
                   <select
                     disabled={isLocked}
                     value={villePhysique}
@@ -573,12 +650,29 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Adresse Physique Complète (Rue, Résidence...) <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isLocked}
+                    placeholder="ex: Rue les Jardins, Résidence Ennasr 2, Tunis"
+                    value={adressePhysique}
+                    onChange={(e) => setAdressePhysique(e.target.value)}
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.physiqueAdresse ? 'border-red-500' : 'border-slate-800'
+                    }`}
+                  />
+                  {errors.physiqueAdresse && <p className="text-[11px] text-red-400 mt-1">{errors.physiqueAdresse}</p>}
+                </div>
               </div>
             </div>
           ) : (
             <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Informations Société / Personne Morale
+                Informations Société / Personne Morale (Toutes coordonnées obligatoires)
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -590,8 +684,13 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     disabled={isLocked}
                     value={raisonSociale}
                     onChange={(e) => setRaisonSociale(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.societeRaison || (isForbiddenClientName(raisonSociale) && raisonSociale.trim().length >= 2)
+                        ? 'border-red-500 bg-red-950/20'
+                        : 'border-slate-800'
+                    }`}
                   />
+                  {errors.societeRaison && <p className="text-[11px] text-red-400 mt-1">{errors.societeRaison}</p>}
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Matricule Fiscale *</label>
@@ -601,8 +700,13 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                     disabled={isLocked}
                     value={matriculeFiscale}
                     onChange={(e) => setMatriculeFiscale(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.societeMatriculeFiscale ? 'border-red-500' : 'border-slate-800'
+                    }`}
                   />
+                  {errors.societeMatriculeFiscale && (
+                    <p className="text-[11px] text-red-400 mt-1">{errors.societeMatriculeFiscale}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Téléphone Société (8 chiffres) *</label>
@@ -616,12 +720,15 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                       placeholder="ex: 71800900"
                       value={telSociete}
                       onChange={(e) => setTelSociete(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-13 pr-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
+                      className={`w-full bg-slate-900 border rounded-xl pl-13 pr-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                        errors.societeTel ? 'border-red-500' : 'border-slate-800'
+                      }`}
                     />
                   </div>
+                  {errors.societeTel && <p className="text-[11px] text-red-400 mt-1">{errors.societeTel}</p>}
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Gouvernorat / Ville</label>
+                  <label className="block text-slate-300 font-medium mb-1">Gouvernorat / Ville *</label>
                   <select
                     disabled={isLocked}
                     value={villeSociete}
@@ -634,6 +741,23 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Siège Social / Adresse Entreprise <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isLocked}
+                    placeholder="ex: Zone Industrielle Charguia 2, 2035 Tunis"
+                    value={adresseSociete}
+                    onChange={(e) => setAdresseSociete(e.target.value)}
+                    className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 ${
+                      errors.societeAdresse ? 'border-red-500' : 'border-slate-800'
+                    }`}
+                  />
+                  {errors.societeAdresse && <p className="text-[11px] text-red-400 mt-1">{errors.societeAdresse}</p>}
                 </div>
               </div>
             </div>
@@ -1107,6 +1231,24 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60 resize-none"
               />
             </div>
+
+            {/* Récapitulatif d'erreur de validation & blocage */}
+            {Object.keys(errors).length > 0 && (
+              <div className="p-3.5 bg-red-950/80 border border-red-500 rounded-xl space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2 text-red-300 font-bold text-xs">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>Modification bloquée : Coordonnées obligatoires à régulariser</span>
+                </div>
+                <p className="text-[11px] text-red-200">
+                  Impossible d'enregistrer avec des coordonnées incomplètes ou un profil « Chery Client » :
+                </p>
+                <ul className="text-[11px] text-red-300 list-disc list-inside space-y-0.5 font-medium pl-1">
+                  {Object.values(errors).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Footer Buttons */}

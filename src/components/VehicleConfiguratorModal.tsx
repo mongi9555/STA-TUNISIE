@@ -5,6 +5,7 @@ import {
   CarAccessory,
   VehicleConfiguration,
 } from '../types';
+import { hasBatteryWarranty } from '../utils/warrantyUtils';
 import {
   Sliders,
   Check,
@@ -216,11 +217,18 @@ export const VehicleConfiguratorModal: React.FC<VehicleConfiguratorModalProps> =
                 </div>
 
                 <div className="space-y-2 text-xs flex-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <h3 className="font-extrabold text-lg text-white">{selectedCar.name}</h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      Garantie {selectedCar.guarantee}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        Garantie {selectedCar.guarantee}
+                      </span>
+                      {hasBatteryWarranty(selectedCar.name) && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Batterie 8 ans / 160 000 km
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-slate-400 line-clamp-2">{selectedCar.description}</p>
 

@@ -13,6 +13,7 @@ import {
   vacuumTursoDatabase,
   exploreTursoTable,
   calculateNextWeeklySync,
+  calculateNextDailySync,
 } from "./src/server/tursoClient";
 
 const app = express();
@@ -91,24 +92,22 @@ import { carModels, reservations, stockRequests, siteSettings, users } from "./s
 
 app.get("/api/sql/status", async (req, res) => {
   try {
-    const isNeon = Boolean(process.env.DATABASE_URL || process.env.NEON_DATABASE_URL);
     const carList = await db.select().from(carModels);
     return res.json({
       connected: true,
-      provider: isNeon ? "Neon PostgreSQL" : "PostgreSQL (Cloud SQL)",
-      message: isNeon ? "Connexion Neon PostgreSQL active." : "Connexion PostgreSQL active.",
+      provider: "PostgreSQL",
+      message: "Connexion PostgreSQL active.",
       carsCount: carList.length,
     });
   } catch (error: any) {
     const hasConfig = Boolean(
       process.env.DATABASE_URL ||
-      process.env.NEON_DATABASE_URL ||
       process.env.SQL_HOST
     );
     return res.json({
       connected: false,
       configured: hasConfig,
-      provider: (process.env.DATABASE_URL || process.env.NEON_DATABASE_URL) ? "Neon PostgreSQL" : "PostgreSQL",
+      provider: "PostgreSQL",
       message: hasConfig
         ? "En attente de connexion à la base PostgreSQL."
         : "Base PostgreSQL non configurée (utilise Firestore et data/db.json).",
@@ -117,16 +116,92 @@ app.get("/api/sql/status", async (req, res) => {
   }
 });
 
-// --- BASE DE DONNÉES LOCALE (data/db.json dans le dossier du projet) ---
+// --- CONFIGURATION DU STOCKAGE : SERVEUR LOCAL (data/db.json & clichés quotidiens) DÉSACTIVÉ ---
+// Le stockage local fichier (data/db.json) et la génération automatique de clichés quotidiens
+// sont désactivés à la demande de l'utilisateur au profit de Turso libSQL Cloud (mongi95) & Firestore.
+const LOCAL_DB_ENABLED = false;
+
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE_PATH = path.join(DATA_DIR, "db.json");
 const DB_BAK_PATH = path.join(DATA_DIR, "db.json.bak");
 const DB_TMP_PATH = path.join(DATA_DIR, "db.json.tmp");
+const DAILY_BACKUP_DIR = path.join(DATA_DIR, "daily_backups");
+
+let inMemoryDbPayload: any = null;
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
+  if (LOCAL_DB_ENABLED && !fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
+}
+
+function ensureDailyBackupDir() {
+  if (LOCAL_DB_ENABLED && !fs.existsSync(DAILY_BACKUP_DIR)) {
+    fs.mkdirSync(DAILY_BACKUP_DIR, { recursive: true });
+  }
+}
+
+/**
+ * Clichés quotidiens : Désactivés lorsque LOCAL_DB_ENABLED est false.
+ */
+function performDailyBackup(force: boolean = false): { success: boolean; date: string; filename: string; count: number; message: string } {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!LOCAL_DB_ENABLED && !force) {
+    return {
+      success: false,
+      date: today,
+      filename: "",
+      count: 0,
+      message: "Serveur local (data/db.json) et clichés quotidiens désactivés au profit de Turso libSQL Cloud."
+    };
+  }
+
+  try {
+    ensureDailyBackupDir();
+    const backupFilename = `backup_chery_${today}.json`;
+    const backupFilePath = path.join(DAILY_BACKUP_DIR, backupFilename);
+    const latestDailyPath = path.join(DAILY_BACKUP_DIR, `daily_backup_latest.json`);
+
+    if (!fs.existsSync(DB_FILE_PATH)) {
+      return { success: false, date: today, filename: backupFilename, count: 0, message: "Fichier db.json introuvable" };
+    }
+
+    const content = fs.readFileSync(DB_FILE_PATH, "utf-8");
+    const parsed = safeParseJSON(content);
+    if (!parsed) {
+      return { success: false, date: today, filename: backupFilename, count: 0, message: "Format db.json corrompu" };
+    }
+
+    fs.writeFileSync(backupFilePath, JSON.stringify(parsed, null, 2), "utf-8");
+    fs.writeFileSync(latestDailyPath, JSON.stringify(parsed, null, 2), "utf-8");
+
+    const resCount = Array.isArray(parsed.reservations) ? parsed.reservations.length : 0;
+    const carsCount = Array.isArray(parsed.cars) ? parsed.cars.length : 0;
+
+    return {
+      success: true,
+      date: today,
+      filename: backupFilename,
+      count: resCount,
+      message: `Sauvegarde quotidienne enregistrée pour le ${today} (${resCount} réservations)`
+    };
+  } catch (err: any) {
+    console.error("[Chery Daily Backup Error]:", err);
+    return { success: false, date: today, filename: "", count: 0, message: err?.message || String(err) };
+  }
+}
+
+// Planificateurs locaux : actifs uniquement si LOCAL_DB_ENABLED est vrai
+if (LOCAL_DB_ENABLED) {
+  ensureDataDir();
+  ensureDailyBackupDir();
+  setTimeout(() => {
+    performDailyBackup();
+  }, 2000);
+
+  setInterval(() => {
+    performDailyBackup();
+  }, 30 * 60 * 1000);
 }
 
 function safeParseJSON(str: string | null | undefined) {
@@ -162,32 +237,79 @@ function createDefaultDbPayload() {
   };
 }
 
+function getLatestDbPayload(): any {
+  if (inMemoryDbPayload) {
+    return inMemoryDbPayload;
+  }
+  if (fs.existsSync(DB_FILE_PATH)) {
+    try {
+      const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
+      const parsed = safeParseJSON(fileContent);
+      if (parsed) {
+        inMemoryDbPayload = parsed;
+        return inMemoryDbPayload;
+      }
+    } catch (_) {}
+  }
+  if (fs.existsSync(DB_BAK_PATH)) {
+    try {
+      const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
+      const parsedBak = safeParseJSON(bakContent);
+      if (parsedBak) {
+        inMemoryDbPayload = parsedBak;
+        return inMemoryDbPayload;
+      }
+    } catch (_) {}
+  }
+  inMemoryDbPayload = createDefaultDbPayload();
+  return inMemoryDbPayload;
+}
+
 let dbWriteQueue: Promise<any> = Promise.resolve();
 
 async function safeAtomicWriteDb(dbPayload: any): Promise<boolean> {
   const current = dbWriteQueue.then(async () => {
-    ensureDataDir();
-    const jsonString = JSON.stringify(dbPayload, null, 2);
-    const uniqueTmp = path.join(DATA_DIR, `db.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`);
-    fs.writeFileSync(uniqueTmp, jsonString, "utf-8");
-    const check = safeParseJSON(fs.readFileSync(uniqueTmp, "utf-8"));
-    if (!check) {
-      try { fs.unlinkSync(uniqueTmp); } catch (_) {}
-      throw new Error("Erreur d'intégrité JSON détectée");
-    }
-    if (fs.existsSync(DB_FILE_PATH)) {
+    inMemoryDbPayload = dbPayload;
+
+    if (LOCAL_DB_ENABLED) {
+      ensureDataDir();
+      const jsonString = JSON.stringify(dbPayload, null, 2);
+      const uniqueTmp = path.join(DATA_DIR, `db.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`);
+      fs.writeFileSync(uniqueTmp, jsonString, "utf-8");
+      const check = safeParseJSON(fs.readFileSync(uniqueTmp, "utf-8"));
+      if (!check) {
+        try { fs.unlinkSync(uniqueTmp); } catch (_) {}
+        throw new Error("Erreur d'intégrité JSON détectée");
+      }
+      if (fs.existsSync(DB_FILE_PATH)) {
+        try {
+          const cur = fs.readFileSync(DB_FILE_PATH, "utf-8");
+          if (safeParseJSON(cur)) fs.writeFileSync(DB_BAK_PATH, cur, "utf-8");
+        } catch (_) {}
+      }
+      fs.renameSync(uniqueTmp, DB_FILE_PATH);
+      if (Array.isArray(dbPayload.reservations) && dbPayload.reservations.length > 0) {
+        try {
+          fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(dbPayload.reservations, null, 2), "utf-8");
+        } catch (_) {}
+      }
       try {
-        const cur = fs.readFileSync(DB_FILE_PATH, "utf-8");
-        if (safeParseJSON(cur)) fs.writeFileSync(DB_BAK_PATH, cur, "utf-8");
+        performDailyBackup(false);
       } catch (_) {}
+    } else {
+      console.log(`[Chery DB] Serveur Local (data/db.json) désactivé. Données maintenues en mémoire vive et synchronisées vers Turso Cloud.`);
     }
-    fs.renameSync(uniqueTmp, DB_FILE_PATH);
-    if (Array.isArray(dbPayload.reservations) && dbPayload.reservations.length > 0) {
-      try {
-        fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(dbPayload.reservations, null, 2), "utf-8");
-      } catch (_) {}
-    }
-    console.log(`[Chery DB Safe] Base enregistrée (${dbPayload.reservations?.length || 0} réservations, ${dbPayload.cars?.length || 0} modèles).`);
+
+    // Synchronisation automatique en arrière-plan avec Turso si configuré
+    try {
+      const tursoCfg = loadTursoConfig();
+      if (tursoCfg.url && tursoCfg.authToken) {
+        syncAllToTurso(dbPayload, 'manual').catch((tursoErr) => {
+          console.warn('[Turso Auto-Sync Warning] Échec synchronisation immédiate Turso:', tursoErr?.message);
+        });
+      }
+    } catch (_) {}
+    console.log(`[Chery DB Safe] Données traitées (${dbPayload.reservations?.length || 0} réservations, ${dbPayload.cars?.length || 0} modèles) -> Turso libSQL Cloud.`);
     return true;
   });
   dbWriteQueue = current.catch((err) => {
@@ -197,77 +319,22 @@ async function safeAtomicWriteDb(dbPayload: any): Promise<boolean> {
   return current;
 }
 
-// Endpoint pour lire la base de données locale du dossier projet (avec auto-réparation intelligente)
+// Endpoint pour lire la base de données
 app.get("/api/db", (req, res) => {
   try {
-    ensureDataDir();
-
-    let data: any = null;
-
-    // 1. Tenter la lecture du fichier principal db.json
-    if (fs.existsSync(DB_FILE_PATH)) {
-      try {
-        const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
-        data = safeParseJSON(fileContent);
-      } catch (e) {
-        console.warn("[Chery DB Warning] Impossible de lire db.json:", e);
-      }
-    }
-
-    // 2. Si db.json est absent ou corrompu, tenter la sauvegarde db.json.bak
-    if (!data && fs.existsSync(DB_BAK_PATH)) {
-      console.warn("[Chery DB Warning] db.json invalide ou manquant. Restauration depuis db.json.bak...");
-      try {
-        const bakContent = fs.readFileSync(DB_BAK_PATH, "utf-8");
-        data = safeParseJSON(bakContent);
-        if (data) {
-          fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-          console.log("[Chery DB Success] Fichier db.json restauré avec succès depuis le backup.");
-        }
-      } catch (e) {
-        console.warn("[Chery DB Warning] Backup db.json.bak également illisible:", e);
-      }
-    }
-
-    // 3. Si aucun fichier lisible n'existe, auto-génération sécurisée d'une base saine
-    if (!data) {
-      console.log("[Chery DB Recovery] Initialisation d'une nouvelle base locale saine et création du backup...");
-      data = createDefaultDbPayload();
-      const initialJson = JSON.stringify(data, null, 2);
-      try {
-        fs.writeFileSync(DB_FILE_PATH, initialJson, "utf-8");
-        fs.writeFileSync(DB_BAK_PATH, initialJson, "utf-8");
-        console.log("[Chery DB Success] Base locale saine générée avec succès.");
-      } catch (writeErr) {
-        console.error("[Chery DB Error] Impossible d'écrire la base saine:", writeErr);
-      }
-    }
-
-    return res.json({ exists: true, ...data });
+    const data = getLatestDbPayload();
+    return res.json({ exists: true, localDbDisabled: !LOCAL_DB_ENABLED, ...data });
   } catch (error: any) {
-    console.error("Erreur lecture db.json:", error);
+    console.error("Erreur lecture db:", error);
     const fallback = createDefaultDbPayload();
-    return res.json({ exists: true, ...fallback, recovered: true });
+    return res.json({ exists: true, localDbDisabled: !LOCAL_DB_ENABLED, ...fallback, recovered: true });
   }
 });
 
-// Endpoint pour enregistrer / synchroniser la base de données dans data/db.json (écriture atomique)
+// Endpoint pour enregistrer / synchroniser la base de données (vers Turso Cloud, serveur local désactivé)
 app.post("/api/db/save", (req, res) => {
   try {
-    ensureDataDir();
-
-    let existingData: any = {};
-    if (fs.existsSync(DB_FILE_PATH)) {
-      try {
-        const fileContent = fs.readFileSync(DB_FILE_PATH, "utf-8");
-        const parsed = safeParseJSON(fileContent);
-        if (parsed && typeof parsed === "object") {
-          existingData = parsed;
-        }
-      } catch (err) {
-        // ignore
-      }
-    }
+    const existingData: any = getLatestDbPayload() || {};
 
     const {
       cars,
@@ -376,44 +443,55 @@ app.post("/api/db/save", (req, res) => {
       knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : (existingData.knowledgeBase || []),
       testDrives: Array.isArray(testDrives) ? testDrives : (existingData.testDrives || []),
       stockRequests: Array.isArray(stockRequests) ? stockRequests : (existingData.stockRequests || []),
+      timesheetNotes: Array.isArray((req.body || {}).timesheetNotes) ? (req.body || {}).timesheetNotes : (existingData.timesheetNotes || []),
       docTemplate: docTemplate !== undefined ? docTemplate : (existingData.docTemplate || null),
       auditLogs: Array.isArray(auditLogs) ? auditLogs : (existingData.auditLogs || []),
     };
 
-    const jsonString = JSON.stringify(dbPayload, null, 2);
+    inMemoryDbPayload = dbPayload;
 
-    // Écrire d'abord dans un fichier temporaire
-    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
-
-    // Valider l'intégrité JSON du fichier temporaire avant de remplacer la base
-    const verifyContent = fs.readFileSync(DB_TMP_PATH, "utf-8");
-    if (!safeParseJSON(verifyContent)) {
-      throw new Error("Erreur d'intégrité JSON détectée lors de l'écriture temporaire.");
-    }
-
-    // Sauvegarder la version actuelle dans .bak UNIQUEMENT si elle est 100% valide
-    if (fs.existsSync(DB_FILE_PATH)) {
-      try {
-        const currentLive = fs.readFileSync(DB_FILE_PATH, "utf-8");
-        if (safeParseJSON(currentLive)) {
-          fs.writeFileSync(DB_BAK_PATH, currentLive, "utf-8");
-        }
-      } catch (e) {
-        console.warn("[Chery DB Warning] Échec de la mise à jour du backup .bak:", e);
+    if (LOCAL_DB_ENABLED) {
+      const jsonString = JSON.stringify(dbPayload, null, 2);
+      fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+      const verifyContent = fs.readFileSync(DB_TMP_PATH, "utf-8");
+      if (!safeParseJSON(verifyContent)) {
+        throw new Error("Erreur d'intégrité JSON détectée lors de l'écriture temporaire.");
       }
+      if (fs.existsSync(DB_FILE_PATH)) {
+        try {
+          const currentLive = fs.readFileSync(DB_FILE_PATH, "utf-8");
+          if (safeParseJSON(currentLive)) {
+            fs.writeFileSync(DB_BAK_PATH, currentLive, "utf-8");
+          }
+        } catch (e) {
+          console.warn("[Chery DB Warning] Échec de la mise à jour du backup .bak:", e);
+        }
+      }
+      fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+      try {
+        fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(cleanReservations, null, 2), "utf-8");
+      } catch (_) {}
+      console.log(`[Chery DB] Base de données enregistrée en mode atomique dans : ${DB_FILE_PATH}`);
+    } else {
+      console.log(`[Chery DB] Serveur Local (data/db.json) désactivé. Données maintenues en mémoire vive et synchronisées vers Turso Cloud.`);
     }
 
-    // Renommage atomique
-    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    // Synchronisation automatique en arrière-plan avec Turso si configuré
     try {
-      fs.writeFileSync("data/db_reservations_backup_safe.json", JSON.stringify(cleanReservations, null, 2), "utf-8");
+      const tursoCfg = loadTursoConfig();
+      if (tursoCfg.url && tursoCfg.authToken) {
+        syncAllToTurso(dbPayload, 'manual').catch((tursoErr) => {
+          console.warn('[Turso Auto-Sync Warning] Échec synchronisation Turso:', tursoErr?.message);
+        });
+      }
     } catch (_) {}
-    console.log(`[Chery DB] Base de données enregistrée en mode atomique dans : ${DB_FILE_PATH}`);
 
     return res.json({
       success: true,
       savedAt: dbPayload.savedAt,
-      filePath: "data/db.json",
+      filePath: LOCAL_DB_ENABLED ? "data/db.json" : "Turso libSQL Cloud (Serveur Local désactivé)",
+      localDbDisabled: !LOCAL_DB_ENABLED,
+      tursoSynced: true,
       counts: {
         cars: dbPayload.cars.length,
         reservations: dbPayload.reservations.length,
@@ -514,20 +592,92 @@ app.post("/api/reservations/save", (req, res) => {
 
     // Si un bon unique est soumis
     if (reservation && reservation.id && !deletedIds.has(String(reservation.id).trim().toUpperCase())) {
+      const p = reservation.client?.personnePhysique;
+      const s = reservation.client?.societe;
+      const rawNom = (p ? `${p.nom || ''} ${p.prenom || ''}` : (s?.raisonSociale || '')).toLowerCase().trim();
+      const norm = rawNom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+      const isForbidden = 
+        norm === 'chery client' ||
+        norm === 'client chery' ||
+        norm === 'client' ||
+        norm === 'chery' ||
+        norm === 'test' ||
+        norm.includes('chery client') ||
+        norm.includes('client chery') ||
+        (norm.includes('chery') && norm.includes('client'));
+
+      if (isForbidden) {
+        return res.status(400).json({
+          success: false,
+          error: 'Création de bon bloquée : profil générique interdit (« Chery Client »). Renseignez l\'identité réelle et les coordonnées du client.'
+        });
+      }
+
+      // Vérification approfondie des coordonnées pour les nouveaux bons
+      if (p) {
+        if (!p.nom || p.nom.trim().length < 2 || !p.prenom || p.prenom.trim().length < 2) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : Le nom et prénom du client sont obligatoires (au moins 2 lettres).'
+          });
+        }
+        const cinClean = (p.cin || '').trim();
+        if (!cinClean || !/^\d{8}$/.test(cinClean)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : Le N° CIN (8 chiffres obligatoires) doit être renseigné.'
+          });
+        }
+        const phoneClean = (p.telephone || '').replace(/\D/g, '');
+        if (!phoneClean || phoneClean.length !== 8) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : Le numéro de téléphone direct (8 chiffres) est obligatoire.'
+          });
+        }
+        if (!p.adresse || p.adresse.trim().length < 5) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : L\'adresse physique complète du client est obligatoire.'
+          });
+        }
+      } else if (s) {
+        if (!s.raisonSociale || s.raisonSociale.trim().length < 3) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : La raison sociale de la société est obligatoire.'
+          });
+        }
+        if (!s.matriculeFiscale || s.matriculeFiscale.trim().length < 5) {
+          return res.status(400).json({
+            success: false,
+            error: 'Création de bon bloquée : La matricule fiscale de la société est obligatoire.'
+          });
+        }
+      }
+
       resMap.set(reservation.id, reservation);
     }
 
     const mergedList = Array.from(resMap.values());
     currentDb.reservations = mergedList;
     currentDb.savedAt = new Date().toISOString();
+    inMemoryDbPayload = currentDb;
 
-    const jsonString = JSON.stringify(currentDb, null, 2);
-    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
-    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    if (LOCAL_DB_ENABLED) {
+      try {
+        const jsonString = JSON.stringify(currentDb, null, 2);
+        fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+        fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+        fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8");
+        fs.writeFileSync(path.join(DATA_DIR, "db_reservations_backup_safe.json"), JSON.stringify(mergedList, null, 2), "utf-8");
+      } catch (_) {}
+    }
 
-    // Mettre à jour la copie de sécurité
     try {
-      fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8");
+      syncAllToTurso(currentDb, 'manual').catch((tursoErr) => {
+        console.warn("[Save Sync Turso Warning]", tursoErr?.message);
+      });
     } catch (_) {}
 
     return res.json({
@@ -811,6 +961,89 @@ app.delete("/api/reservations/:id", (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// 3g. Super Admin Timesheet & Calendrier Notes (Jour / Semaine / Mois)
+// -------------------------------------------------------------
+app.get("/api/timesheet/notes", (req, res) => {
+  try {
+    ensureDataDir();
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+    const notes = Array.isArray(currentDb.timesheetNotes) ? currentDb.timesheetNotes : [];
+    return res.json({ success: true, notes });
+  } catch (error: any) {
+    console.error("Erreur lecture /api/timesheet/notes:", error);
+    return res.status(500).json({ success: false, error: "Impossible de charger les notes du calendrier." });
+  }
+});
+
+app.post("/api/timesheet/notes", (req, res) => {
+  try {
+    ensureDataDir();
+    const { note, notes } = req.body || {};
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+    let existingNotes: any[] = Array.isArray(currentDb.timesheetNotes) ? currentDb.timesheetNotes : [];
+
+    if (Array.isArray(notes)) {
+      existingNotes = notes;
+    } else if (note && note.id) {
+      const idx = existingNotes.findIndex((n) => n.id === note.id);
+      if (idx >= 0) {
+        existingNotes[idx] = note;
+      } else {
+        existingNotes.unshift(note);
+      }
+    } else {
+      return res.status(400).json({ success: false, error: "Données de note invalides" });
+    }
+
+    currentDb.timesheetNotes = existingNotes;
+    currentDb.savedAt = new Date().toISOString();
+
+    const jsonString = JSON.stringify(currentDb, null, 2);
+    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    try { fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8"); } catch (_) {}
+
+    return res.json({ success: true, notes: existingNotes });
+  } catch (error: any) {
+    console.error("Erreur écriture /api/timesheet/notes:", error);
+    return res.status(500).json({ success: false, error: "Impossible d'enregistrer les notes du calendrier." });
+  }
+});
+
+app.delete("/api/timesheet/notes/:id", (req, res) => {
+  try {
+    ensureDataDir();
+    const noteId = req.params.id;
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+    const existingNotes: any[] = Array.isArray(currentDb.timesheetNotes) ? currentDb.timesheetNotes : [];
+    const filtered = existingNotes.filter((n) => n.id !== noteId);
+
+    currentDb.timesheetNotes = filtered;
+    currentDb.savedAt = new Date().toISOString();
+
+    const jsonString = JSON.stringify(currentDb, null, 2);
+    fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+    fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+    try { fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8"); } catch (_) {}
+
+    return res.json({ success: true, notes: filtered, deletedId: noteId });
+  } catch (error: any) {
+    console.error("Erreur suppression note timesheet:", error);
+    return res.status(500).json({ success: false, error: "Impossible de supprimer la note." });
+  }
+});
+
+
 // 4. Fonction de reconstruction intégrale de tous les bons de réservation depuis les journaux d'audit
 function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
   const existing: any[] = Array.isArray(currentDb.reservations) ? currentDb.reservations : [];
@@ -916,8 +1149,14 @@ function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
   const newlyRestored: any[] = [];
   for (const [id, l] of missingLogs.entries()) {
     const clientMatch = l.details?.match(/(?:nom de|pour)\s+([^(]+)\s*\(([^)]*)\)/i);
-    let rawName = clientMatch ? cleanClientName(clientMatch[1]) : "Client Chery";
+    let rawName = clientMatch ? cleanClientName(clientMatch[1]) : "";
     const phone = clientMatch ? clientMatch[2].trim() : "";
+
+    // RÈGLE COMMERCIALE : Bloquer impérativement la restauration de tout bon factice "( chery client )" ou incomplet
+    const norm = (rawName || '').toLowerCase().trim();
+    if (!rawName || norm === "client chery" || norm === "chery client" || norm === "client" || norm === "chery" || norm.includes("chery client") || norm === "test") {
+      continue;
+    }
 
     const isSociete = /ste|societe|société|sarl|ltd|mbs/i.test(rawName);
     const carName = l.targetCarName || "Chery";
@@ -1043,23 +1282,176 @@ function recoverAllMissingReservationsFromAuditLogs(currentDb: any) {
   };
 }
 
-// 4. Endpoint de restauration intelligente depuis les journaux d'audit
-app.post("/api/reservations/recover", (req, res) => {
+// 4. Fonction de récupération Firestore côté serveur
+async function fetchAllReservationsFromFirestoreServer(): Promise<any[]> {
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (!fs.existsSync(configPath)) return [];
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    if (!config.projectId) return [];
+    const { initializeApp, getApps, getApp } = await import("firebase/app");
+    const { getFirestore, collection, getDocs } = await import("firebase/firestore");
+    const app = getApps().length > 0 ? getApp() : initializeApp(config);
+    const db = getFirestore(app, config.firestoreDatabaseId);
+    const snap = await getDocs(collection(db, "reservations"));
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  } catch(e: any) {
+    console.warn("[Firestore Recovery] Info récupération Firestore côté serveur:", e?.message);
+    return [];
+  }
+}
+
+// 4b. Endpoint de restauration et synchronisation intégrale multi-sources (Firestore + Turso + Sauvegardes + Audit)
+app.post("/api/reservations/recover", async (req, res) => {
   try {
     ensureDataDir();
-    let currentDb: any = {};
-    if (fs.existsSync(DB_FILE_PATH)) {
-      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    const currentDb = getLatestDbPayload();
+    const existing: any[] = Array.isArray(currentDb.reservations) ? currentDb.reservations : [];
+    const resMap = new Map<string, any>();
+
+    // 1. Réservations actuellement chargées en mémoire
+    existing.forEach((r) => {
+      if (r && r.id) resMap.set(r.id, r);
+    });
+
+    // 2. Parcourir tous les fichiers de sauvegarde locale et clichés quotidiens
+    const backupFiles = [
+      DB_FILE_PATH,
+      DB_BAK_PATH,
+      path.join(DATA_DIR, "db_backup.json"),
+      path.join(DATA_DIR, "db_reservations_backup_safe.json"),
+    ];
+    if (fs.existsSync(DAILY_BACKUP_DIR)) {
+      try {
+        const dFiles = fs.readdirSync(DAILY_BACKUP_DIR);
+        dFiles.forEach((f) => backupFiles.push(path.join(DAILY_BACKUP_DIR, f)));
+      } catch (_) {}
     }
 
-    const result = recoverAllMissingReservationsFromAuditLogs(currentDb);
+    for (const bPath of backupFiles) {
+      if (fs.existsSync(bPath)) {
+        try {
+          const parsed = safeParseJSON(fs.readFileSync(bPath, "utf-8"));
+          const bList = Array.isArray(parsed) ? parsed : (parsed?.reservations || []);
+          bList.forEach((r: any) => {
+            if (r && r.id) {
+              if (!resMap.has(r.id)) {
+                resMap.set(r.id, r);
+              } else {
+                const cur = resMap.get(r.id);
+                if (r.documents && r.documents.length > (cur.documents?.length || 0)) {
+                  cur.documents = r.documents;
+                }
+                if (r.notes && !cur.notes) cur.notes = r.notes;
+              }
+            }
+          });
+        } catch (_) {}
+      }
+    }
+
+    // 3. Récupérer depuis Turso libSQL Cloud
+    try {
+      const tursoData = await pullAllFromTurso();
+      if (tursoData && Array.isArray(tursoData.reservations)) {
+        tursoData.reservations.forEach((r: any) => {
+          if (r && r.id) {
+            if (!resMap.has(r.id)) {
+              resMap.set(r.id, r);
+            } else {
+              const cur = resMap.get(r.id);
+              if (r.documents && r.documents.length > (cur.documents?.length || 0)) {
+                cur.documents = r.documents;
+              }
+            }
+          }
+        });
+      }
+    } catch (tursoErr: any) {
+      console.warn("[Recovery] Note Turso Cloud:", tursoErr?.message);
+    }
+
+    // 4. Récupérer depuis Firestore Cloud Database
+    try {
+      const firestoreRes = await fetchAllReservationsFromFirestoreServer();
+      firestoreRes.forEach((r: any) => {
+        if (r && r.id) {
+          if (!resMap.has(r.id)) {
+            resMap.set(r.id, r);
+          } else {
+            const cur = resMap.get(r.id);
+            if (r.documents && r.documents.length > (cur.documents?.length || 0)) {
+              cur.documents = r.documents;
+            }
+          }
+        }
+      });
+    } catch (fsErr: any) {
+      console.warn("[Recovery] Note Firestore Cloud:", fsErr?.message);
+    }
+
+    // 5. Analyser et reconstruire depuis les journaux d'audit
+    const auditRes = recoverAllMissingReservationsFromAuditLogs(currentDb);
+    if (auditRes && Array.isArray(auditRes.reservations)) {
+      auditRes.reservations.forEach((r: any) => {
+        if (r && r.id && !resMap.has(r.id)) {
+          resMap.set(r.id, r);
+        }
+      });
+    }
+
+    const mergedReservations = Array.from(resMap.values()).sort(
+      (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    const activeIds = new Set(mergedReservations.map((r) => String(r.id).trim().toUpperCase()));
+
+    // Déverrouiller et purger impérativement de deletedReservationIds & trashReservations
+    if (Array.isArray(currentDb.deletedReservationIds)) {
+      currentDb.deletedReservationIds = currentDb.deletedReservationIds.filter(
+        (id: string) => !activeIds.has(String(id).trim().toUpperCase())
+      );
+    }
+    if (Array.isArray(currentDb.trashReservations)) {
+      currentDb.trashReservations = currentDb.trashReservations.filter(
+        (t: any) => t && t.id && !activeIds.has(String(t.id).trim().toUpperCase())
+      );
+    }
+
+    currentDb.reservations = mergedReservations;
+    currentDb.savedAt = new Date().toISOString();
+    inMemoryDbPayload = currentDb;
+
+    // Enregistrement sur disque si activé
+    if (LOCAL_DB_ENABLED) {
+      try {
+        const jsonString = JSON.stringify(currentDb, null, 2);
+        fs.writeFileSync(DB_TMP_PATH, jsonString, "utf-8");
+        fs.renameSync(DB_TMP_PATH, DB_FILE_PATH);
+        fs.writeFileSync(DB_BAK_PATH, jsonString, "utf-8");
+        fs.writeFileSync(path.join(DATA_DIR, "db_reservations_backup_safe.json"), JSON.stringify(mergedReservations, null, 2), "utf-8");
+      } catch (_) {}
+    }
+
+    // Synchronisation automatique immédiate vers Turso libSQL Cloud
+    try {
+      syncAllToTurso(currentDb, 'manual').catch((tursoErr) => {
+        console.warn("[Recovery Sync Turso Warning]", tursoErr?.message);
+      });
+    } catch (_) {}
+
+    const recoveredCount = mergedReservations.length - existing.length;
+    console.log(`[Chery DB Recovery] Synchronisation Multi-Sources terminée : Total = ${mergedReservations.length} réservations (+${Math.max(0, recoveredCount)} récupérées).`);
+
     return res.json({
       success: true,
-      ...result
+      recoveredCount: Math.max(0, recoveredCount),
+      totalCount: mergedReservations.length,
+      reservations: mergedReservations,
     });
   } catch (error: any) {
     console.error("Erreur /api/reservations/recover:", error);
-    return res.status(500).json({ success: false, error: "Erreur lors de la restauration." });
+    return res.status(500).json({ success: false, error: "Erreur lors de la restauration multi-sources." });
   }
 });
 
@@ -1078,6 +1470,137 @@ app.get("/api/reservations/export", (req, res) => {
     return res.send(JSON.stringify(reservations, null, 2));
   } catch (error: any) {
     return res.status(500).json({ error: "Erreur export sauvegarde" });
+  }
+});
+
+// 6. Lister toutes les sauvegardes quotidiennes automatiques
+app.get("/api/db/daily-backups", (req, res) => {
+  try {
+    if (!LOCAL_DB_ENABLED) {
+      return res.json({
+        success: true,
+        backups: [],
+        totalBackups: 0,
+        latestBackup: null,
+        autoDailyEnabled: false,
+        disabled: true,
+        message: "Serveur local (data/db.json) et clichés quotidiens désactivés au profit de Turso libSQL Cloud.",
+      });
+    }
+
+    ensureDailyBackupDir();
+    const files = fs.readdirSync(DAILY_BACKUP_DIR);
+    const backupList: any[] = [];
+
+    files.forEach((file) => {
+      if (file.startsWith("backup_chery_") && file.endsWith(".json")) {
+        const filePath = path.join(DAILY_BACKUP_DIR, file);
+        const stat = fs.statSync(filePath);
+        let resCount = 0;
+        let carsCount = 0;
+        try {
+          const parsed = safeParseJSON(fs.readFileSync(filePath, "utf-8"));
+          if (parsed) {
+            resCount = Array.isArray(parsed.reservations) ? parsed.reservations.length : 0;
+            carsCount = Array.isArray(parsed.cars) ? parsed.cars.length : 0;
+          }
+        } catch (_) {}
+
+        backupList.push({
+          filename: file,
+          date: file.replace("backup_chery_", "").replace(".json", ""),
+          sizeBytes: stat.size,
+          sizeFormatted: `${(stat.size / 1024 / 1024).toFixed(2)} Mo`,
+          modifiedAt: stat.mtime.toISOString(),
+          reservationCount: resCount,
+          carsCount: carsCount,
+        });
+      }
+    });
+
+    backupList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return res.json({
+      success: true,
+      backups: backupList,
+      totalBackups: backupList.length,
+      latestBackup: backupList[0] || null,
+      autoDailyEnabled: true,
+      disabled: false,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: "Impossible de lister les sauvegardes quotidiennes" });
+  }
+});
+
+// 7. Télécharger une sauvegarde quotidienne spécifique
+app.get("/api/db/daily-backups/download/:filename", (req, res) => {
+  try {
+    ensureDailyBackupDir();
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(DAILY_BACKUP_DIR, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: "Fichier de sauvegarde introuvable" });
+    }
+
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", "application/json");
+    return res.sendFile(filePath);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: "Erreur téléchargement sauvegarde" });
+  }
+});
+
+// 8. Déclencher immédiatement une sauvegarde quotidienne
+app.post("/api/db/daily-backups/run-now", (req, res) => {
+  try {
+    if (!LOCAL_DB_ENABLED) {
+      return res.json({
+        success: false,
+        disabled: true,
+        message: "Serveur local (data/db.json) et clichés quotidiens désactivés au profit de Turso libSQL Cloud.",
+      });
+    }
+    const result = performDailyBackup(true);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message || String(err) });
+  }
+});
+
+// 9. Restaurer depuis une sauvegarde quotidienne
+app.post("/api/db/daily-backups/restore/:filename", async (req, res) => {
+  try {
+    ensureDailyBackupDir();
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(DAILY_BACKUP_DIR, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: "Fichier de sauvegarde introuvable" });
+    }
+
+    const content = fs.readFileSync(filePath, "utf-8");
+    const parsed = safeParseJSON(content);
+    if (!parsed) {
+      return res.status(400).json({ success: false, error: "Fichier de sauvegarde corrompu ou illisible" });
+    }
+
+    // Effectuer une sauvegarde de sécurité avant la restauration
+    performDailyBackup(true);
+
+    const ok = await safeAtomicWriteDb(parsed);
+    if (ok) {
+      return res.json({
+        success: true,
+        message: `Restauration effectuée avec succès depuis ${filename}`,
+        reservationCount: Array.isArray(parsed.reservations) ? parsed.reservations.length : 0,
+      });
+    } else {
+      return res.status(500).json({ success: false, error: "Échec de l'écriture en base" });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message || String(err) });
   }
 });
 
@@ -1331,6 +1854,13 @@ app.get("/api/turso/config", (req, res) => {
       hasAuthToken: Boolean(config.authToken && config.authToken.trim()),
       tokenPreview: config.authToken ? `${config.authToken.substring(0, 8)}...` : "",
       status: config.status || "disconnected",
+      syncFrequency: config.syncFrequency || "daily",
+      dailySyncEnabled: config.dailySyncEnabled ?? true,
+      dailySyncHour: config.dailySyncHour ?? 0,
+      dailySyncMinute: config.dailySyncMinute ?? 0,
+      lastDailySyncAt: config.lastDailySyncAt || config.lastSyncAt,
+      nextDailySyncAt: config.nextDailySyncAt,
+      weeklySyncEnabled: config.weeklySyncEnabled ?? true,
       lastSyncAt: config.lastSyncAt,
       lastError: config.lastError,
       tursoDashboardUrl: `https://app.turso.tech/${config.organization || "mongi95"}`,
@@ -1344,12 +1874,16 @@ app.get("/api/turso/config", (req, res) => {
 // 2. POST /api/turso/config - Sauvegarder la configuration Turso
 app.post("/api/turso/config", (req, res) => {
   try {
-    const { url, authToken, organization, databaseName } = req.body || {};
+    const { url, authToken, organization, databaseName, syncFrequency, dailySyncEnabled, dailySyncHour, dailySyncMinute } = req.body || {};
     const updated = saveTursoConfig({
       ...(url !== undefined ? { url: url.trim() } : {}),
       ...(authToken !== undefined ? { authToken: authToken.trim() } : {}),
       ...(organization !== undefined ? { organization: organization.trim() } : {}),
       ...(databaseName !== undefined ? { databaseName: databaseName.trim() } : {}),
+      ...(syncFrequency !== undefined ? { syncFrequency } : {}),
+      ...(dailySyncEnabled !== undefined ? { dailySyncEnabled: Boolean(dailySyncEnabled) } : {}),
+      ...(dailySyncHour !== undefined ? { dailySyncHour: Number(dailySyncHour) } : {}),
+      ...(dailySyncMinute !== undefined ? { dailySyncMinute: Number(dailySyncMinute) } : {}),
     });
 
     return res.json({
@@ -1361,6 +1895,11 @@ app.post("/api/turso/config", (req, res) => {
         url: updated.url,
         hasAuthToken: Boolean(updated.authToken && updated.authToken.trim()),
         status: updated.status,
+        syncFrequency: updated.syncFrequency,
+        dailySyncEnabled: updated.dailySyncEnabled,
+        dailySyncHour: updated.dailySyncHour,
+        dailySyncMinute: updated.dailySyncMinute,
+        nextDailySyncAt: updated.nextDailySyncAt,
       },
     });
   } catch (error: any) {
@@ -1463,51 +2002,86 @@ app.get("/api/turso/explore/:table", async (req, res) => {
   }
 });
 
-// 9. POST /api/turso/schedule - Configurer l'exportation hebdomadaire vers Turso
+// 9. POST /api/turso/schedule - Configurer la synchronisation automatique (quotidienne ou hebdomadaire) vers Turso
 app.post("/api/turso/schedule", (req, res) => {
   try {
-    const { enabled, day, hour, minute } = req.body || {};
+    const { enabled, frequency, day, hour, minute } = req.body || {};
     const current = loadTursoConfig();
+    const newFrequency = frequency === 'weekly' ? 'weekly' : 'daily';
+    const newHour = hour !== undefined ? Number(hour) : (newFrequency === 'daily' ? (current.dailySyncHour ?? 0) : (current.weeklySyncHour ?? 2));
+    const newMinute = minute !== undefined ? Number(minute) : (newFrequency === 'daily' ? (current.dailySyncMinute ?? 0) : (current.weeklySyncMinute ?? 0));
+    const newEnabled = enabled !== undefined ? Boolean(enabled) : true;
     const newDay = day !== undefined ? Number(day) : (current.weeklySyncDay ?? 0);
-    const newHour = hour !== undefined ? Number(hour) : (current.weeklySyncHour ?? 2);
-    const newMinute = minute !== undefined ? Number(minute) : (current.weeklySyncMinute ?? 0);
-    const newEnabled = enabled !== undefined ? Boolean(enabled) : (current.weeklySyncEnabled ?? true);
 
-    const nextSync = calculateNextWeeklySync(newDay, newHour, newMinute);
+    const nextDailySync = calculateNextDailySync(newHour, newMinute);
+    const nextWeeklySync = calculateNextWeeklySync(newDay, newHour, newMinute);
 
     const updated = saveTursoConfig({
-      weeklySyncEnabled: newEnabled,
+      syncFrequency: newFrequency,
+      dailySyncEnabled: newFrequency === 'daily' ? newEnabled : (current.dailySyncEnabled ?? true),
+      dailySyncHour: newHour,
+      dailySyncMinute: newMinute,
+      nextDailySyncAt: nextDailySync,
+      weeklySyncEnabled: newFrequency === 'weekly' ? newEnabled : (current.weeklySyncEnabled ?? true),
       weeklySyncDay: newDay,
       weeklySyncHour: newHour,
       weeklySyncMinute: newMinute,
-      nextWeeklySyncAt: nextSync,
+      nextWeeklySyncAt: nextWeeklySync,
     });
 
+    const timeLabel = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
     const dayLabels = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const dayLabel = dayLabels[newDay] || 'Dimanche';
-    const timeLabel = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
 
-    console.log(`[Turso Scheduler] Configuration mise à jour : actif=${newEnabled}, jour=${dayLabel}, heure=${timeLabel}, prochain=${nextSync}`);
+    const msg = newFrequency === 'daily'
+      ? (newEnabled ? `Synchronisation quotidienne automatique activée : chaque jour à ${timeLabel}.` : "Synchronisation quotidienne désactivée.")
+      : (newEnabled ? `Synchronisation hebdomadaire programmée : chaque ${dayLabel} à ${timeLabel}.` : "Synchronisation hebdomadaire désactivée.");
+
+    console.log(`[Turso Scheduler] Configuration mise à jour : fréquence=${newFrequency}, actif=${newEnabled}, heure=${timeLabel}`);
 
     return res.json({
       success: true,
-      message: newEnabled
-        ? `Sauvegarde hebdomadaire automatique programmée : chaque ${dayLabel} à ${timeLabel}.`
-        : "Sauvegarde hebdomadaire automatique désactivée.",
+      message: msg,
       config: {
+        syncFrequency: updated.syncFrequency,
+        dailySyncEnabled: updated.dailySyncEnabled,
+        dailySyncHour: updated.dailySyncHour,
+        dailySyncMinute: updated.dailySyncMinute,
+        nextDailySyncAt: updated.nextDailySyncAt,
         weeklySyncEnabled: updated.weeklySyncEnabled,
         weeklySyncDay: updated.weeklySyncDay,
-        weeklySyncHour: updated.weeklySyncHour,
-        weeklySyncMinute: updated.weeklySyncMinute,
-        dayLabel,
+        nextWeeklySyncAt: updated.nextWeeklySyncAt,
         timeLabel,
-        nextWeeklySyncAt: nextSync,
-        lastWeeklySyncAt: updated.lastWeeklySyncAt,
+        dayLabel,
       },
     });
   } catch (error: any) {
     console.error("Erreur POST /api/turso/schedule:", error);
-    return res.status(500).json({ error: error?.message || "Erreur lors de la programmation hebdomadaire." });
+    return res.status(500).json({ error: error?.message || "Erreur lors de la programmation de la synchronisation Turso." });
+  }
+});
+
+// 9b. POST /api/turso/sync-daily - Déclencher immédiatement une synchronisation journalière vers Turso
+app.post("/api/turso/sync-daily", async (req, res) => {
+  try {
+    ensureDataDir();
+    let currentDb: any = {};
+    if (fs.existsSync(DB_FILE_PATH)) {
+      currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+    }
+
+    const result = await syncAllToTurso(currentDb, 'daily_auto');
+    return res.json({
+      ...result,
+      syncType: 'daily_auto',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("Erreur POST /api/turso/sync-daily:", error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Erreur lors de la synchronisation quotidienne vers Turso.",
+    });
   }
 });
 
@@ -1585,24 +2159,54 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Serveur Chery Tunisie démarré sur http://localhost:${PORT}`);
 
-    // Démarrage du planificateur de synchronisation hebdomadaire vers Turso (mongi95)
+    // Démarrage initial : synchronisation Turso libSQL Cloud (Serveur Local data/db.json désactivé)
+    setTimeout(async () => {
+      try {
+        console.log(`[Chery DB] Serveur Local (data/db.json & clichés quotidiens) désactivé. Turso libSQL Cloud actif.`);
+        const config = loadTursoConfig();
+        if (config.url && config.authToken && config.dailySyncEnabled) {
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const lastSyncDateStr = (config.lastDailySyncAt || config.lastSyncAt || '').slice(0, 10);
+          if (todayStr !== lastSyncDateStr) {
+            console.log(`[Turso Startup] 🚀 Exécution de la synchronisation automatique quotidienne vers Turso (mongi95)...`);
+            const currentDb = getLatestDbPayload();
+            const res = await syncAllToTurso(currentDb, 'daily_auto');
+            console.log(`[Turso Startup] ✅ Synchronisation quotidienne avec Turso réussie :`, res.message);
+          }
+        }
+      } catch (startupSyncErr: any) {
+        console.warn(`[Turso Startup Warning]`, startupSyncErr?.message);
+      }
+    }, 5000);
+
+    // Planificateur automatique chaque minute : synchronisation automatique chaque jour avec Turso
     setInterval(async () => {
       try {
         const config = loadTursoConfig();
-        if (!config.weeklySyncEnabled || !config.url || !config.authToken) return;
+        if (!config.url || !config.authToken) return;
 
         const now = new Date();
-        const nextDate = config.nextWeeklySyncAt ? new Date(config.nextWeeklySyncAt) : null;
 
-        if (nextDate && now.getTime() >= nextDate.getTime()) {
-          console.log(`[Turso Scheduler] Exécution programmée hebdomadaire vers Turso Database (mongi95)...`);
-          ensureDataDir();
-          let currentDb: any = {};
-          if (fs.existsSync(DB_FILE_PATH)) {
-            currentDb = safeParseJSON(fs.readFileSync(DB_FILE_PATH, "utf-8")) || {};
+        // 1. Synchronisation Quotidienne Automatique (Chaque Jour)
+        if (config.dailySyncEnabled) {
+          const nextDaily = config.nextDailySyncAt ? new Date(config.nextDailySyncAt) : null;
+          if (nextDaily && now.getTime() >= nextDaily.getTime()) {
+            console.log(`[Turso Scheduler] 🔄 Exécution de la synchronisation automatique quotidienne vers Turso Database (mongi95)...`);
+            const currentDb = getLatestDbPayload();
+            const result = await syncAllToTurso(currentDb, 'daily_auto');
+            console.log(`[Turso Scheduler] ✅ Synchronisation quotidienne avec Turso réussie :`, result.message);
           }
-          const result = await syncAllToTurso(currentDb, 'weekly_auto');
-          console.log(`[Turso Scheduler] ✅ Synchronisation hebdomadaire réussie :`, result.message);
+        }
+
+        // 2. Synchronisation Hebdomadaire Automatique (si activée)
+        if (config.weeklySyncEnabled && config.syncFrequency === 'weekly') {
+          const nextWeekly = config.nextWeeklySyncAt ? new Date(config.nextWeeklySyncAt) : null;
+          if (nextWeekly && now.getTime() >= nextWeekly.getTime()) {
+            console.log(`[Turso Scheduler] 🔄 Exécution de la synchronisation hebdomadaire vers Turso Database...`);
+            const currentDb = getLatestDbPayload();
+            const result = await syncAllToTurso(currentDb, 'weekly_auto');
+            console.log(`[Turso Scheduler] ✅ Synchronisation hebdomadaire réussie :`, result.message);
+          }
         }
       } catch (cronErr) {
         console.error("[Turso Scheduler Error]", cronErr);

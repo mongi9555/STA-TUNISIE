@@ -115,7 +115,7 @@ export const DEFAULT_DOCUMENT_TEMPLATE: DocumentTemplateConfig = {
   droitDeTimbreTND: 1.0,
   validityDays: 30,
   quoteHeaderNote: 'DOCUMENT OFFICIEL STA CHERY',
-  quoteFooterTerms: '1. Le présent bon de commande/réservation constitue un engagement ferme sous réserve de versement de l\'acompte prévu.\n2. Les prix s\'entendent TTC en Dinars Tunisiens (TND).\n3. Garantie constructeur officielle STA : 7 ans ou 200 000 km selon carnet d\'entretien.',
+  quoteFooterTerms: '1. Le présent bon de commande/réservation constitue un engagement ferme sous réserve de versement de l\'acompte prévu.\n2. Les prix s\'entendent TTC en Dinars Tunisiens (TND).\n3. Garantie constructeur officielle STA : 7 ans ou 200 000 km (Garantie batterie : 8 ans ou 160 000 km pour PHEV/HEV/I03) selon carnet d\'entretien.',
   defaultRegistrationFeeTND: 0,
 };
 
@@ -590,16 +590,8 @@ export function generateChronologicalReservationId(
   reservations.forEach((r) => processId(r.id));
   extraIds.forEach((id) => processId(id));
 
-  // Vérifier également les réservations en cache local si disponibles
-  try {
-    const cached = localStorage.getItem('chery_tn_reservations_v1');
-    if (cached) {
-      const parsedList = JSON.parse(cached);
-      if (Array.isArray(parsedList)) {
-        parsedList.forEach((r: any) => processId(r?.id));
-      }
-    }
-  } catch (_) {}
+  // Vérifier également les réservations en mémoire
+  inMemoryReservations.forEach((r: any) => processId(r?.id));
 
   let nextSeq = Math.max(maxSeq + 1, 1014);
   let candidate = `RES-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
@@ -693,429 +685,200 @@ export { INITIAL_CARS };
 import { INITIAL_RESERVATIONS } from './initialReservations';
 export { INITIAL_RESERVATIONS };
 
-// Strips heavy Base64 data URLs from objects saved to offline localStorage cache
-function stripHeavyBase64Data(obj: any): any {
-  if (!obj) return obj;
-  if (typeof obj === 'string') {
-    // If string is an inline data URL longer than 500 chars, strip it from local browser cache
-    if (obj.startsWith('data:') && obj.length > 500) {
-      return '';
-    }
-    return obj;
-  }
-  if (Array.isArray(obj)) return obj.map(stripHeavyBase64Data);
-  if (typeof obj === 'object') {
-    const res: any = {};
-    for (const k in obj) {
-      res[k] = stripHeavyBase64Data(obj[k]);
-    }
-    return res;
-  }
-  return obj;
-}
+// =========================================================================
+// Gestion de Persistance et Synchronisation 100% Base de Données
+// AUCUN recours à localStorage pour les données lourdes (fini le quota 5MB)
+// =========================================================================
 
-// Helper function to safely write to localStorage with quota-exceeded fallback
-function safeLocalStorageSet(key: string, value: string): void {
+/**
+ * Nettoie et purge définitivement tout reliquat de cache localStorage des versions antérieures
+ * afin de libérer l'espace du navigateur et éviter les blocages de QuotaExceededError.
+ */
+export function purgeLocalStorageData(): void {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(key, value);
-  } catch (_err) {
-    try {
-      // Step 1: Strip heavy base64 strings and images
-      let parsed = JSON.parse(value);
-      parsed = stripHeavyBase64Data(parsed);
-      localStorage.setItem(key, JSON.stringify(parsed));
-    } catch (_err1) {
+    const keysToPurge = [
+      'chery_tn_cars_v1',
+      'chery_tn_reservations_v1',
+      'chery_tn_trash_reservations_v1',
+      'chery_tn_deleted_reservation_ids_v1',
+      'chery_tn_deleted_car_ids_v1',
+      'chery_tn_commercials_v1',
+      'chery_tn_site_settings_v1',
+      'chery_tn_knowledge_base_v1',
+      'chery_tn_doc_template_v1',
+      'chery_tn_accessories_v1',
+      'chery_tn_quotes_v1',
+      'chery_tn_admin_docs_v1',
+      'chery_tn_test_drives_v1',
+      'chery_tn_stock_requests_v1',
+      'chery_tn_audit_logs_v1',
+      'chery_timesheet_notes',
+    ];
+    keysToPurge.forEach((key) => {
       try {
-        // Step 2: Clean up secondary caches to free space
-        const keysToClean = [
-          'chery_tn_quotes_v1',
-          'chery_tn_test_drives_v1',
-          'chery_tn_audit_logs_v1',
-          'chery_tn_stock_requests_v1',
-        ];
-        keysToClean.forEach((k) => {
-          if (k !== key) {
-            try {
-              localStorage.removeItem(k);
-            } catch (_) {}
-          }
-        });
-        let parsed = JSON.parse(value);
-        parsed = stripHeavyBase64Data(parsed);
-        // Stripping all document dataUrls ensures 100% of reservations are preserved without dropping any
-        if (Array.isArray(parsed)) {
-          const strippedReservations = parsed.map((item: any) => {
-            if (item && item.documents && Array.isArray(item.documents)) {
-              return {
-                ...item,
-                documents: item.documents.map((d: any) => ({
-                  ...d,
-                  dataUrl: '',
-                })),
-              };
-            }
-            return item;
-          });
-          localStorage.setItem(key, JSON.stringify(strippedReservations));
-        } else {
-          localStorage.setItem(key, JSON.stringify(parsed));
-        }
-      } catch (_err2) {
-        // Step 3: Minimalist preservation of ALL reservations (never truncating the count)
+        localStorage.removeItem(key);
+      } catch (_) {}
+    });
+
+    // Scanner également les clés dynamiques commençant par chery_tn_
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('chery_tn_') || k === 'chery_timesheet_notes')) {
         try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed)) {
-            const strippedAll = parsed.map((item: any) => ({
-              id: item?.id,
-              carId: item?.carId,
-              carName: item?.carName,
-              colorChosen: item?.colorChosen,
-              client: item?.client,
-              status: item?.status,
-              createdAt: item?.createdAt,
-              updatedAt: item?.updatedAt,
-              priceTND: item?.priceTND,
-              depositPaidTND: item?.depositPaidTND,
-              paymentMethod: item?.paymentMethod,
-              commercialId: item?.commercialId,
-              commercialName: item?.commercialName,
-              agency: item?.agency,
-              vehicles: item?.vehicles,
-              notes: item?.notes,
-              documents: [],
-            }));
-            localStorage.setItem(key, JSON.stringify(strippedAll));
-          }
-        } catch (_) {
-          // Graceful fallback: data is 100% persisted and synced in the backend / database
-        }
+          localStorage.removeItem(k);
+        } catch (_) {}
       }
     }
-  }
+  } catch (_) {}
 }
 
-// Helper functions for LocalStorage persistence
-const STORAGE_KEYS = {
-  CARS: 'chery_tn_cars_v1',
-  RESERVATIONS: 'chery_tn_reservations_v1',
-  TRASH_RESERVATIONS: 'chery_tn_trash_reservations_v1',
-  DELETED_RESERVATION_IDS: 'chery_tn_deleted_reservation_ids_v1',
-  COMMERCIALS: 'chery_tn_commercials_v1',
-  SITE_SETTINGS: 'chery_tn_site_settings_v1',
-  KNOWLEDGE_BASE: 'chery_tn_knowledge_base_v1',
-  DOC_TEMPLATE: 'chery_tn_doc_template_v1',
-  ACCESSORIES: 'chery_tn_accessories_v1',
-  QUOTES: 'chery_tn_quotes_v1',
-  ADMIN_DOCS: 'chery_tn_admin_docs_v1',
-};
+// État mémoire initialisé avec les données de base officielles STA
+let inMemoryCars: CarModel[] = [...INITIAL_CARS];
+let inMemoryReservations: Reservation[] = [...INITIAL_RESERVATIONS];
+let inMemoryTrash: DeletedReservationItem[] = [];
+let inMemoryDeletedReservationIds: Set<string> = new Set();
+let inMemoryDeletedCarIds: Set<string> = new Set();
+let inMemoryCommercials: CommercialUser[] = [...INITIAL_COMMERCIALS];
+let inMemorySiteSettings: SiteSettings = { ...DEFAULT_SITE_SETTINGS };
+let inMemoryKnowledgeBase: KnowledgeBaseItem[] = [...INITIAL_KNOWLEDGE_BASE];
+let inMemoryDocTemplate: DocumentTemplateConfig = { ...DEFAULT_DOCUMENT_TEMPLATE };
+let inMemoryAccessories: CarAccessory[] = [...INITIAL_ACCESSORIES];
+let inMemoryQuotes: CustomQuote[] = [];
+let inMemoryAdminDocs: AdministrativeDocument[] = [...INITIAL_ADMIN_DOCUMENTS];
+let inMemoryTestDrives: TestDriveAppointment[] = [];
+let inMemoryStockRequests: StockRequest[] = [];
+let inMemoryAuditLogs: AuditLogEntry[] = [];
 
 export function getStoredAdminDocuments(): AdministrativeDocument[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.ADMIN_DOCS);
-    if (data) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading admin documents from storage', e);
-  }
-  return INITIAL_ADMIN_DOCUMENTS;
+  return inMemoryAdminDocs;
 }
 
 export function saveStoredAdminDocuments(docs: AdministrativeDocument[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.ADMIN_DOCS, JSON.stringify(docs));
+  inMemoryAdminDocs = docs || [];
 }
 
 export function getStoredKnowledgeBase(): KnowledgeBaseItem[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.KNOWLEDGE_BASE);
-    if (data) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading knowledge base from storage', e);
-  }
-  return INITIAL_KNOWLEDGE_BASE;
+  return inMemoryKnowledgeBase;
 }
 
 export function saveStoredKnowledgeBase(items: KnowledgeBaseItem[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.KNOWLEDGE_BASE, JSON.stringify(items));
+  inMemoryKnowledgeBase = items || [];
 }
 
 export function getStoredDocumentTemplate(): DocumentTemplateConfig {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.DOC_TEMPLATE);
-    if (data) return { ...DEFAULT_DOCUMENT_TEMPLATE, ...JSON.parse(data) };
-  } catch (e) {
-    console.error('Error loading document template from storage', e);
-  }
-  return DEFAULT_DOCUMENT_TEMPLATE;
+  return inMemoryDocTemplate;
 }
 
 export function saveStoredDocumentTemplate(config: DocumentTemplateConfig): void {
-  safeLocalStorageSet(STORAGE_KEYS.DOC_TEMPLATE, JSON.stringify(config));
+  inMemoryDocTemplate = config;
 }
 
 export function getStoredAccessories(): CarAccessory[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.ACCESSORIES);
-    if (data) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading accessories from storage', e);
-  }
-  return INITIAL_ACCESSORIES;
+  return inMemoryAccessories;
 }
 
 export function saveStoredAccessories(accessories: CarAccessory[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.ACCESSORIES, JSON.stringify(accessories));
+  inMemoryAccessories = accessories || [];
 }
 
 export function getStoredQuotes(): CustomQuote[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.QUOTES);
-    if (data) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading quotes from storage', e);
-  }
-  return [];
+  return inMemoryQuotes;
 }
 
 export function saveStoredQuotes(quotes: CustomQuote[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
+  inMemoryQuotes = quotes || [];
 }
 
 export function getStoredSiteSettings(): SiteSettings {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SITE_SETTINGS);
-    if (data) {
-      return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(data) };
-    }
-  } catch (e) {
-    console.error('Error loading site settings from storage', e);
-  }
-  return DEFAULT_SITE_SETTINGS;
-}
-
-export function getDeletedCarIds(): Set<string> {
-  try {
-    if (typeof localStorage === 'undefined') return new Set();
-    const data = localStorage.getItem('chery_tn_deleted_car_ids_v1');
-    if (data) {
-      const arr = JSON.parse(data);
-      if (Array.isArray(arr)) return new Set(arr);
-    }
-  } catch {}
-  return new Set();
-}
-
-export function saveDeletedCarIds(set: Set<string>): void {
-  try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem('chery_tn_deleted_car_ids_v1', JSON.stringify(Array.from(set)));
-  } catch {}
+  return inMemorySiteSettings;
 }
 
 export function saveStoredSiteSettings(settings: SiteSettings): void {
-  safeLocalStorageSet(STORAGE_KEYS.SITE_SETTINGS, JSON.stringify(settings));
+  inMemorySiteSettings = settings;
+}
+
+export function getDeletedCarIds(): Set<string> {
+  return inMemoryDeletedCarIds;
+}
+
+export function saveDeletedCarIds(set: Set<string>): void {
+  inMemoryDeletedCarIds = set;
 }
 
 export function getStoredCars(): CarModel[] {
   const deletedIds = getDeletedCarIds();
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.CARS);
-    if (data) {
-      const parsed: CarModel[] = JSON.parse(data);
-      // Filter out any virtual mock cars and deleted cars from localStorage
-      const filtered = parsed.filter((car) => !isVirtualCar(car) && !deletedIds.has(car.id));
-      if (filtered.length > 0) {
-        return filtered.map((car) => ({
-          ...car,
-          colors: (car.colors || []).map((c) => ({
-            ...c,
-            interiorColor: c.interiorColor === 'Noir Cuir' ? 'Noir' : c.interiorColor,
-          })),
-        }));
-      }
-    }
-  } catch (e) {
-    console.error('Error loading cars from storage', e);
-  }
-  return INITIAL_CARS.filter((c) => !deletedIds.has(c.id));
+  return inMemoryCars.filter((car) => !isVirtualCar(car) && !deletedIds.has(car.id));
 }
 
 export function saveStoredCars(cars: CarModel[]): void {
-  // Ensure we never persist virtual cars to local storage
-  const cleanCars = (cars || []).filter((car) => !isVirtualCar(car));
-  safeLocalStorageSet(STORAGE_KEYS.CARS, JSON.stringify(cleanCars));
+  inMemoryCars = (cars || []).filter((car) => !isVirtualCar(car));
 }
 
 export function getDeletedReservationIds(): Set<string> {
-  try {
-    if (typeof localStorage === 'undefined') return new Set();
-    const data = localStorage.getItem('chery_tn_deleted_reservation_ids_v1');
-    if (data) {
-      const arr = JSON.parse(data);
-      if (Array.isArray(arr)) return new Set(arr);
-    }
-  } catch {}
-  return new Set();
+  return inMemoryDeletedReservationIds;
 }
 
 export function saveDeletedReservationIds(set: Set<string>): void {
-  try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem('chery_tn_deleted_reservation_ids_v1', JSON.stringify(Array.from(set)));
-  } catch {}
+  inMemoryDeletedReservationIds = set;
 }
 
 export function getTrashReservations(): DeletedReservationItem[] {
-  try {
-    if (typeof localStorage === 'undefined') return [];
-    const data = localStorage.getItem(STORAGE_KEYS.TRASH_RESERVATIONS);
-    if (data) {
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.error('Error loading trash reservations', e);
-  }
-  return [];
+  return inMemoryTrash;
 }
 
 export function saveTrashReservations(items: DeletedReservationItem[]): void {
-  const cleanItems = (items || []).map((t) => {
-    if (!t) return t;
-    if (t.reservation) {
-      return {
-        ...t,
-        reservation: {
-          ...t.reservation,
-          documents: (t.reservation.documents || []).map((doc) => ({
-            ...doc,
-            dataUrl: typeof doc.dataUrl === 'string' && doc.dataUrl.startsWith('data:') && doc.dataUrl.length > 500 ? '' : doc.dataUrl,
-          })),
-        },
-      };
-    }
-    return t;
-  });
-  safeLocalStorageSet(STORAGE_KEYS.TRASH_RESERVATIONS, JSON.stringify(cleanItems));
+  inMemoryTrash = items || [];
 }
 
 export function getStoredReservations(): Reservation[] {
   const deletedIds = getDeletedReservationIds();
-  const map = new Map<string, Reservation>();
-  INITIAL_RESERVATIONS.forEach((r) => {
-    if (r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase())) {
-      map.set(r.id, r);
-    }
-  });
-
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
-    if (data !== null) {
-      const parsed: Reservation[] = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((r) => {
-          if (r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase())) {
-            const existing = map.get(r.id);
-            map.set(r.id, { ...existing, ...r });
-          }
-        });
-      }
-    }
-  } catch (e) {
-    console.error('Error loading reservations from storage', e);
-  }
-
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  );
+  return inMemoryReservations
+    .filter((r) => r && r.id && !deletedIds.has(String(r.id).trim().toUpperCase()))
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
 export function saveStoredReservations(reservations: Reservation[]): void {
-  const cleanReservations = (reservations || []).map((r) => {
-    if (!r) return r;
-    return {
-      ...r,
-      documents: (r.documents || []).map((doc) => ({
-        ...doc,
-        dataUrl: typeof doc.dataUrl === 'string' && doc.dataUrl.startsWith('data:') && doc.dataUrl.length > 500 ? '' : doc.dataUrl,
-      })),
-    };
-  });
-  safeLocalStorageSet(STORAGE_KEYS.RESERVATIONS, JSON.stringify(cleanReservations));
+  inMemoryReservations = reservations || [];
 }
 
 export function isDeprecatedCommercialUser(u: { id?: string; name?: string; email?: string }): boolean {
   if (!u) return false;
-  // Never automatically delete or filter user profiles
   return false;
 }
 
 export function getStoredCommercials(): CommercialUser[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.COMMERCIALS);
-    if (data !== null) {
-      const parsed: CommercialUser[] = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((u) => !isDeprecatedCommercialUser(u));
-      }
-    }
-  } catch (e) {
-    console.error('Error loading commercials from storage', e);
-  }
-  return INITIAL_COMMERCIALS;
+  return inMemoryCommercials.filter((u) => !isDeprecatedCommercialUser(u));
 }
 
 export function saveStoredCommercials(commercials: CommercialUser[]): void {
-  safeLocalStorageSet(STORAGE_KEYS.COMMERCIALS, JSON.stringify(commercials));
+  inMemoryCommercials = commercials || [];
 }
 
 export function getStoredTestDrives(): TestDriveAppointment[] {
-  try {
-    const data = localStorage.getItem('chery_tn_test_drives_v1');
-    if (data !== null) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading test drives from storage', e);
-  }
-  return [];
+  return inMemoryTestDrives;
 }
 
 export function saveStoredTestDrives(testDrives: TestDriveAppointment[]): void {
-  safeLocalStorageSet('chery_tn_test_drives_v1', JSON.stringify(testDrives));
+  inMemoryTestDrives = testDrives || [];
 }
 
 export function getStoredStockRequests(): StockRequest[] {
-  try {
-    const data = localStorage.getItem('chery_tn_stock_requests_v1');
-    if (data !== null) return JSON.parse(data);
-  } catch (e) {
-    console.error('Error loading stock requests from storage', e);
-  }
-  return [];
+  return inMemoryStockRequests;
 }
 
 export function saveStoredStockRequests(requests: StockRequest[]): void {
-  safeLocalStorageSet('chery_tn_stock_requests_v1', JSON.stringify(requests));
+  inMemoryStockRequests = requests || [];
 }
 
 export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [];
 
 export function getStoredAuditLogs(): AuditLogEntry[] {
-  try {
-    const data = localStorage.getItem('chery_tn_audit_logs_v1');
-    if (data !== null) {
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        // Exclure automatiquement les anciens faux exemples STA (audit-log-1 à audit-log-10)
-        return parsed.filter((l: any) => l && l.id && !l.id.startsWith('audit-log-'));
-      }
-    }
-  } catch (e) {
-    console.error('Error loading audit logs from storage', e);
-  }
-  return [];
+  return inMemoryAuditLogs.filter((l) => l && l.id && !l.id.startsWith('audit-log-'));
 }
 
 export function saveStoredAuditLogs(logs: AuditLogEntry[]): void {
-  safeLocalStorageSet('chery_tn_audit_logs_v1', JSON.stringify(logs));
+  inMemoryAuditLogs = logs || [];
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {

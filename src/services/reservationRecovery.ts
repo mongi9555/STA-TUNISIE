@@ -2,6 +2,7 @@ import { db, reservationsCollection, auditLogsCollection, carsCollection, commer
 import { getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Reservation, CarModel, CommercialUser, AuditLogEntry, ClientInfo } from '../types';
 import { getDeletedReservationIds, getRequiredDepositForCar } from '../data/cheryData';
+import { isForbiddenClientName } from '../utils/clientValidation';
 
 export interface RecoveryResult {
   totalAuditEntriesScanned: number;
@@ -27,9 +28,10 @@ function cleanClientName(rawName: string): string {
 }
 
 /**
- * Vérifie si un nom correspond à une fausse saisie de test
+ * Vérifie si un nom correspond à une fausse saisie de test ou profil générique interdit
  */
 function isDummyTestName(name: string, phone: string): boolean {
+  if (isForbiddenClientName(name)) return true;
   const lower = name.toLowerCase();
   const dummies = [
     'aaaaaaa',

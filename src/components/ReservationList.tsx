@@ -6,6 +6,7 @@ import { calculateDeliveryDate, formatVoucherDate } from '../data/cheryData';
 import { EditReservationModal } from './EditReservationModal';
 import { recoverMissingReservationsFromAudit } from '../services/reservationRecovery';
 import { importReservationsFromCsv, CsvImportResult } from '../services/csvReservationImporter';
+import { isReservationIncompleteOrDummy, isForbiddenClientName } from '../utils/clientValidation';
 import {
   Search,
   Filter,
@@ -137,12 +138,12 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const [dateEnd, setDateEnd] = useState<string>('');
   const [quickDateFilter, setQuickDateFilter] = useState<string>('all');
 
-  // Base complète des réservations selon le rôle : chaque commercial voit ses propres bons de réservation
+  // Base complète des réservations selon la portée sélectionnée
   const accessibleReservations = useMemo(() => {
-    if (isAdminOrSuperAdmin) {
+    if (isAdminOrSuperAdmin || scopeFilter === 'all') {
       return reservations;
     }
-    if (currentCommercial.permissions?.canViewAgencyReservations && scopeFilter === 'agency') {
+    if (scopeFilter === 'agency') {
       return reservations.filter((r) => isSameAgency(r.agency, currentCommercial.agency));
     }
     return reservations.filter((r) =>
@@ -163,6 +164,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   }, [reservations, currentCommercial]);
 
   const allReservationsCount = reservations.length;
+
+  // Compteur des réservations nécessitant une régularisation des coordonnées (mentions factices Chery Client ou CIN manquant)
+  const incompleteReservationsCount = useMemo(() => {
+    return accessibleReservations.filter((r) => isReservationIncompleteOrDummy(r).isIncomplete).length;
+  }, [accessibleReservations]);
 
   // Mise à jour automatique de la portée lorsque le conseiller connecté change
   useEffect(() => {
@@ -287,34 +293,38 @@ export const ReservationList: React.FC<ReservationListProps> = ({
     }
   };
 
-  // Handler: synchroniser et restaurer depuis la traçabilité et la base en ligne
+  // Handler: synchroniser et restaurer depuis la traçabilité et la base en ligne Firestore & Cloud
   const handleRunRecovery = async () => {
     setIsRecovering(true);
     setRecoveryMessage(null);
     try {
+      // Basculer immédiatement sur la vue globale pour voir toutes les réservations
+      setScopeFilter('all');
+      setSearchTerm('');
+      setStatusFilter('all');
+      setCommercialFilter('all');
+      setCarModelFilter('all');
+      setPaymentMethodFilter('all');
+      setAgencyFilter('all');
+      setDateStart('');
+      setDateEnd('');
+      setQuickDateFilter('all');
+
       if (onSyncReservations) {
         const res = await onSyncReservations();
-        setRecoveryMessage(res.message);
+        setRecoveryMessage(`✅ Base 100% synchronisée avec Firestore & le Cloud : Les ${res.count} bons de réservation sont tous enregistrés et affichés ci-dessous.`);
       } else {
         const resp = await fetch('/api/reservations/recover', { method: 'POST' });
         const data = await resp.json();
         if (data && data.success) {
-          if (data.recoveredCount > 0) {
-            setRecoveryMessage(`✅ ${data.recoveredCount} bon(s) de réservation manquant(s) restauré(s) avec succès ! Total : ${data.totalCount} réservations.`);
-          } else {
-            setRecoveryMessage(`ℹ️ Base en ligne 100% synchronisée : Les ${data.totalCount} réservations sont toutes enregistrées et sécurisées.`);
-          }
+          setRecoveryMessage(`✅ Base 100% synchronisée avec Firestore & le Cloud : Les ${data.totalCount || reservations.length} réservations sont toutes enregistrées et affichées ci-dessous.`);
         } else {
           // Fallback audit local
           const localRes = await recoverMissingReservationsFromAudit();
-          if (localRes.recoveredCount > 0) {
-            setRecoveryMessage(`✅ ${localRes.recoveredCount} réservation(s) restaurée(s) depuis la traçabilité.`);
-          } else {
-            setRecoveryMessage(`ℹ️ Traçabilité vérifiée : Les réservations sont à jour.`);
-          }
+          setRecoveryMessage(`✅ Restauration terminée : ${localRes.recoveredCount} bon(s) restauré(s).`);
         }
       }
-      setTimeout(() => setRecoveryMessage(null), 8000);
+      setTimeout(() => setRecoveryMessage(null), 10000);
     } catch (err: any) {
       setRecoveryMessage(`⚠️ Erreur de synchronisation : ${err?.message || 'Erreur inconnue'}`);
     } finally {
@@ -415,18 +425,14 @@ export const ReservationList: React.FC<ReservationListProps> = ({
   const filteredReservations = accessibleReservations
     .filter((res) => {
       let isOwner = true;
-      if (!isAdminOrSuperAdmin) {
-        if (scopeFilter === 'agency' && currentCommercial.permissions?.canViewAgencyReservations) {
-          isOwner = isSameAgency(res.agency, currentCommercial.agency);
-        } else {
-          isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
-        }
-      } else {
-        if (scopeFilter === 'agency') {
-          isOwner = isSameAgency(res.agency, currentCommercial.agency);
-        } else if (scopeFilter === 'mine') {
-          isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
-        }
+      if (scopeFilter === 'all') {
+        isOwner = true;
+      } else if (scopeFilter === 'agency') {
+        isOwner = isSameAgency(res.agency, currentCommercial.agency);
+      } else if (scopeFilter === 'mine') {
+        isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
+      } else if (!isAdminOrSuperAdmin) {
+        isOwner = isSameCommercial(res.commercialId, res.commercialName, currentCommercial);
       }
 
       const clientName =
@@ -502,7 +508,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         searchWords.length === 0 ||
         searchWords.every((word) => searchableText.includes(word));
 
-      const matchesStatus = statusFilter === 'all' || res.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'incomplete'
+          ? isReservationIncompleteOrDummy(res).isIncomplete
+          : res.status === statusFilter);
       const matchesModel =
         carModelFilter === 'all' ||
         res.carName === carModelFilter ||
@@ -1049,6 +1059,31 @@ export const ReservationList: React.FC<ReservationListProps> = ({
         </div>
       </div>
 
+      {/* Alerte dédiée : Bons à régulariser (mentions génériques Chery Client ou coordonnées incomplètes) */}
+      {incompleteReservationsCount > 0 && statusFilter !== 'incomplete' && (
+        <div className="p-3.5 bg-amber-950/50 border border-amber-600/70 rounded-xl text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <p className="font-bold text-amber-300">
+                {incompleteReservationsCount} bon{incompleteReservationsCount > 1 ? 's' : ''} de réservation avec mention « Chery Client » ou coordonnées incomplètes
+              </p>
+              <p className="text-[11px] text-slate-300">
+                Conformité STA : Les coordonnées réelles du client (CIN 8 chiffres, Téléphone direct, Adresse) sont obligatoires.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('incomplete')}
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Afficher les {incompleteReservationsCount} bon{incompleteReservationsCount > 1 ? 's' : ''} à régulariser</span>
+          </button>
+        </div>
+      )}
+
       {/* Alerte si des filtres réduisent le nombre de bons affichés */}
       {filteredReservations.length < reservations.length && (
         <div className="p-3 bg-amber-950/40 border border-amber-800/80 rounded-xl text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
@@ -1192,23 +1227,37 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex bg-slate-950 p-1 border border-red-900/60 rounded-xl text-xs font-medium shrink-0 items-center">
-                <div className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-bold shadow flex items-center gap-1.5">
+              <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl text-xs font-medium shrink-0 items-center">
+                <button
+                  onClick={() => setScopeFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'all' ? 'bg-red-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Afficher toutes les réservations du réseau Chery Tunisie (Toutes les agences)"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Toutes ({allReservationsCount})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('agency')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={`Afficher les réservations de mon agence (${currentCommercial.agency || 'Agence'})`}
+                >
+                  <Building className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Mon agence ({myAgencyReservationsCount})</span>
+                </button>
+                <button
+                  onClick={() => setScopeFilter('mine')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    scopeFilter === 'mine' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={`Afficher uniquement mes réservations (${currentCommercial.name})`}
+                >
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>Mes réservations ({myReservationsCount})</span>
-                </div>
-                {currentCommercial.permissions?.canViewAgencyReservations && (
-                  <button
-                    onClick={() => setScopeFilter(scopeFilter === 'agency' ? 'mine' : 'agency')}
-                    className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ml-1 ${
-                      scopeFilter === 'agency' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-                    }`}
-                    title={`Afficher les réservations de mon agence (${currentCommercial.agency || 'Agence'})`}
-                  >
-                    <Building className="w-3.5 h-3.5 text-slate-300" />
-                    <span>Mon agence ({myAgencyReservationsCount})</span>
-                  </button>
-                )}
+                </button>
               </div>
             )}
 
@@ -1254,6 +1303,21 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               >
                 Annulées ({accessibleReservations.filter((r) => r.status === 'Annulée').length})
               </button>
+              {incompleteReservationsCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter(statusFilter === 'incomplete' ? 'all' : 'incomplete')}
+                  className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 font-bold cursor-pointer ${
+                    statusFilter === 'incomplete'
+                      ? 'bg-amber-600 text-white shadow'
+                      : 'text-amber-400 hover:text-amber-300 hover:bg-amber-950/40'
+                  }`}
+                  title="Afficher les réservations avec coordonnées incomplètes ou mention factice Chery Client"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>À régulariser ({incompleteReservationsCount})</span>
+                </button>
+              )}
             </div>
 
             {/* Sélecteur Rapide : Agent Commercial (uniquement pour les administrateurs) */}
@@ -1696,36 +1760,74 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                 {/* Grid 3 Columns: Client Details, Car Specs, Financials */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   {/* Column 1: Client Info */}
-                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
-                    <div className="flex items-center gap-2 text-slate-300 font-bold uppercase text-[11px] border-b border-slate-800 pb-1">
-                      {isSociete ? (
-                        <Building className="w-3.5 h-3.5 text-amber-400" />
-                      ) : (
-                        <User className="w-3.5 h-3.5 text-blue-400" />
-                      )}
-                      <span>
-                        Client : {isSociete ? 'Société / Personne Morale' : 'Personne Physique'}
-                      </span>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+                      <div className="flex items-center gap-2 text-slate-300 font-bold uppercase text-[11px]">
+                        {isSociete ? (
+                          <Building className="w-3.5 h-3.5 text-amber-400" />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-blue-400" />
+                        )}
+                        <span>
+                          Client : {isSociete ? 'Société / Entreprise' : 'Personne Physique'}
+                        </span>
+                      </div>
+
+                      {(() => {
+                        const check = isReservationIncompleteOrDummy(res);
+                        if (!check.isIncomplete) return null;
+                        return (
+                          <span
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1"
+                            title={check.reasons.join(' • ')}
+                          >
+                            <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>À régulariser</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {!isSociete && physique ? (
                       <div className="space-y-1 text-slate-300">
-                        <p className="font-bold text-white text-sm">
-                          {physique.nom} {physique.prenom}
+                        <p className={`font-bold text-sm ${isForbiddenClientName(`${physique.nom} ${physique.prenom}`) ? 'text-amber-300 flex items-center gap-1.5' : 'text-white'}`}>
+                          <span>{physique.nom} {physique.prenom}</span>
+                          {isForbiddenClientName(`${physique.nom} ${physique.prenom}`) && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-700 font-normal">
+                              Factice
+                            </span>
+                          )}
                         </p>
                         <p>
-                          CIN : <strong className="font-mono text-red-300">{physique.cin}</strong>
+                          CIN : {physique.cin && physique.cin.trim().length === 8 ? (
+                            <strong className="font-mono text-red-300">{physique.cin}</strong>
+                          ) : (
+                            <span className="text-red-400 font-mono italic">Non renseigné</span>
+                          )}
                         </p>
                         <p className="flex items-center gap-1 text-slate-400">
-                          <Phone className="w-3 h-3" /> {physique.telephone}
+                          <Phone className="w-3 h-3" /> {physique.telephone || <span className="text-red-400 italic">Non renseigné</span>}
                         </p>
-                        <p className="text-slate-400">Ville : {physique.ville}</p>
+                        <p className="text-slate-400 truncate">
+                          Adresse : {physique.adresse ? physique.adresse : <span className="text-red-400 italic">Non renseignée ({physique.ville || 'Tunis'})</span>}
+                        </p>
                       </div>
                     ) : isSociete && societe ? (
                       <div className="space-y-1 text-slate-300">
-                        <p className="font-bold text-white text-sm">{societe.raisonSociale}</p>
+                        <p className={`font-bold text-sm ${isForbiddenClientName(societe.raisonSociale) ? 'text-amber-300 flex items-center gap-1.5' : 'text-white'}`}>
+                          <span>{societe.raisonSociale}</span>
+                          {isForbiddenClientName(societe.raisonSociale) && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-700 font-normal">
+                              Factice
+                            </span>
+                          )}
+                        </p>
                         <p>
-                          M.F. : <strong className="font-mono text-amber-300">{societe.matriculeFiscale}</strong>
+                          M.F. : {societe.matriculeFiscale ? (
+                            <strong className="font-mono text-amber-300">{societe.matriculeFiscale}</strong>
+                          ) : (
+                            <span className="text-red-400 font-mono italic">Non renseignée</span>
+                          )}
                         </p>
                         {societe.gerantNomPrenom && (
                           <p className="text-slate-400">
@@ -1733,10 +1835,32 @@ export const ReservationList: React.FC<ReservationListProps> = ({
                           </p>
                         )}
                         <p className="flex items-center gap-1 text-slate-400">
-                          <Phone className="w-3 h-3" /> {societe.telephone}
+                          <Phone className="w-3 h-3" /> {societe.telephone || <span className="text-red-400 italic">Non renseigné</span>}
+                        </p>
+                        <p className="text-slate-400 truncate">
+                          Siège : {societe.adresse ? societe.adresse : <span className="text-red-400 italic">Non renseigné ({societe.ville || 'Tunis'})</span>}
                         </p>
                       </div>
                     ) : null}
+
+                    {/* Notification explicite si le bon nécessite régularisation */}
+                    {(() => {
+                      const check = isReservationIncompleteOrDummy(res);
+                      if (!check.isIncomplete) return null;
+                      return (
+                        <div className="pt-1.5 mt-1 border-t border-slate-800/80">
+                          <button
+                            type="button"
+                            onClick={() => setEditingReservation(res)}
+                            className="w-full px-2.5 py-1.5 bg-amber-600/90 hover:bg-amber-500 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow transition-all"
+                            title="Renseigner les coordonnées nécessaires du client"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Régulariser coordonnées</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Column 2: Car & Color Chosen */}

@@ -161,6 +161,7 @@ export interface CarModel {
   transmission: string;
   energy: 'Essence' | 'Diesel' | 'Hybride' | 'Électrique';
   guarantee: string;
+  batteryGuarantee?: string; // Garantie de la batterie haute tension (ex: 8 ans ou 160 000 km)
   imageUrl: string;
   colors: CarColor[];
   interiorColors?: CarColor[];
@@ -449,6 +450,43 @@ export interface AdministrativeDocument {
   isOfficialSTA?: boolean;
   itemCount?: number; // Number of items in checklist if structured
   checklistItems?: string[];
+}
+
+// --- 5. Calendrier Super Admin (Images & Fichiers PDF par Jour, Semaine, Mois) ---
+export type TimesheetPeriod = 'day' | 'week' | 'month';
+export type CalendarMediaType = 'image' | 'pdf';
+export type TimesheetCategory = 'direction' | 'arrivages' | 'commercial' | 'stock' | 'dsi' | 'general' | string;
+export type TimesheetPriority = 'haute' | 'moyenne' | 'normale' | string;
+export type TimesheetStatus = 'a_faire' | 'en_cours' | 'termine' | string;
+
+export interface TimesheetNote {
+  id: string;
+  title: string;
+  content?: string;
+  date: string; // Format YYYY-MM-DD
+  weekNumber?: number; // 1-53
+  monthKey?: string; // YYYY-MM
+  periodType?: TimesheetPeriod; // 'day' | 'week' | 'month'
+  // Media Attachment (Image or PDF only)
+  mediaType?: CalendarMediaType; // 'image' | 'pdf'
+  fileUrl?: string; // Base64 data URL or external URL
+  fileName?: string; // e.g. "Arrivage_Tiggo7_Rades.jpg" or "Fiche_Technique_STA.pdf"
+  fileSize?: string; // e.g. "1.4 Mo"
+  thumbnailUrl?: string;
+  mimeType?: string;
+  caption?: string;
+  // Legacy fields for backward compatibility
+  startTime?: string;
+  endTime?: string;
+  durationMinutes?: number;
+  category?: TimesheetCategory;
+  priority?: TimesheetPriority;
+  status?: TimesheetStatus;
+  authorName?: string;
+  authorRole?: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 

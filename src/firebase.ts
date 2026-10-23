@@ -90,7 +90,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 3500): Promise<
   ]);
 }
 
-// Gestion globale et proactive du quota Firestore (Spark free tier)
+// Gestion du statut Firestore
 const QUOTA_STORAGE_KEY = 'chery_firestore_quota_exhausted_date';
 
 function getTodayDateStr(): string {
@@ -102,14 +102,6 @@ function getTodayDateStr(): string {
 }
 
 let isQuotaExhaustedGlobal = false;
-if (typeof window !== 'undefined') {
-  try {
-    const storedDate = localStorage.getItem(QUOTA_STORAGE_KEY);
-    if (storedDate && storedDate === getTodayDateStr()) {
-      isQuotaExhaustedGlobal = true;
-    }
-  } catch {}
-}
 
 const quotaListeners = new Set<(exhausted: boolean) => void>();
 
@@ -127,18 +119,28 @@ export function isFirestoreQuotaExceeded(): boolean {
   return isQuotaExhaustedGlobal;
 }
 
-export function markFirestoreQuotaExhausted() {
-  if (!isQuotaExhaustedGlobal) {
-    isQuotaExhaustedGlobal = true;
+export function resetFirestoreQuota() {
+  isQuotaExhaustedGlobal = false;
+  if (typeof window !== 'undefined') {
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(QUOTA_STORAGE_KEY, getTodayDateStr());
-      }
+      localStorage.removeItem(QUOTA_STORAGE_KEY);
     } catch {}
-    quotaListeners.forEach((fn) => {
-      try { fn(true); } catch (_) {}
-    });
   }
+  quotaListeners.forEach((fn) => {
+    try { fn(false); } catch (_) {}
+  });
+}
+
+export function markFirestoreQuotaExhausted() {
+  isQuotaExhaustedGlobal = true;
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(QUOTA_STORAGE_KEY, getTodayDateStr());
+    } catch {}
+  }
+  quotaListeners.forEach((fn) => {
+    try { fn(true); } catch (_) {}
+  });
 }
 
 /**
@@ -462,19 +464,11 @@ function prepareReservationForFirestore(res: Reservation): Reservation {
  */
 export async function saveReservationToFirestore(res: Reservation): Promise<string> {
   const targetId = res.id;
-  if (isFirestoreQuotaExceeded()) {
-    return targetId;
-  }
   try {
     const payload = prepareReservationForFirestore(res);
-    await setDoc(doc(db, 'reservations', targetId), payload);
+    await setDoc(doc(db, 'reservations', targetId), payload, { merge: true });
     return targetId;
   } catch (primaryError: any) {
-    if (isFirestoreQuotaError(primaryError)) {
-      console.warn(`[Firestore Quota] Quota journalier Firestore atteint lors de la sauvegarde de ${targetId}. La réservation reste sauvegardée en base locale.`);
-      return targetId;
-    }
-
     console.warn(`[Firestore Save Warning] Échec initial de sauvegarde pour ${targetId}:`, primaryError?.message || primaryError);
 
     // Si l'erreur est liée à la taille de document ou sérialisation, réessayer en allégeant les pièces jointes
@@ -486,17 +480,65 @@ export async function saveReservationToFirestore(res: Reservation): Promise<stri
           dataUrl: '', // Supprimer les gros fichiers base64 pour garantir que la réservation ne soit JAMAIS perdue
         })),
       };
-      await setDoc(doc(db, 'reservations', targetId), sanitizeForFirestore(lightweightRes));
+      await setDoc(doc(db, 'reservations', targetId), sanitizeForFirestore(lightweightRes), { merge: true });
       console.log(`[Firestore Save Success] Réservation ${targetId} sauvegardée en mode sécurité (métadonnées préservées).`);
       return targetId;
     } catch (fallbackError: any) {
-      if (isFirestoreQuotaError(fallbackError)) {
-        console.warn(`[Firestore Quota] Quota atteint lors du repli de sauvegarde pour ${targetId}. Données persistées localement.`);
-      } else {
-        console.warn(`[Firestore Save Fallback Warning] Échec pour ${targetId}:`, fallbackError?.message || fallbackError);
-      }
+      console.warn(`[Firestore Save Fallback Warning] Échec pour ${targetId}:`, fallbackError?.message || fallbackError);
       return targetId;
     }
+  }
+}
+
+/**
+ * Synchroniser en masse une liste complète de réservations vers Firestore (par lots optimisés)
+ */
+export async function syncAllReservationsToFirestore(
+  reservations: Reservation[]
+): Promise<{ success: boolean; synced: number; failed: number }> {
+  resetFirestoreQuota();
+  let synced = 0;
+  let failed = 0;
+  const chunkSize = 80;
+
+  for (let i = 0; i < reservations.length; i += chunkSize) {
+    const chunk = reservations.slice(i, i + chunkSize);
+    try {
+      const batch = writeBatch(db);
+      chunk.forEach((res) => {
+        const payload = prepareReservationForFirestore(res);
+        const docRef = doc(db, 'reservations', res.id);
+        batch.set(docRef, payload, { merge: true });
+      });
+      await withTimeout(batch.commit(), 10000);
+      synced += chunk.length;
+    } catch (batchErr) {
+      console.warn(`[Firestore Batch Sync] Échec lot ${i}-${i + chunk.length}, repli unitaire:`, batchErr);
+      for (const res of chunk) {
+        try {
+          const payload = prepareReservationForFirestore(res);
+          await setDoc(doc(db, 'reservations', res.id), payload, { merge: true });
+          synced++;
+        } catch (singleErr) {
+          console.warn(`[Firestore Sync Single] Échec ${res.id}:`, singleErr);
+          failed++;
+        }
+      }
+    }
+  }
+  return { success: synced > 0, synced, failed };
+}
+
+/**
+ * Récupère l'intégralité des réservations stockées dans Firestore
+ */
+export async function fetchAllReservationsFromFirestore(): Promise<Reservation[]> {
+  try {
+    const snap = await withTimeout(getDocs(reservationsCollection), 8000);
+    return snap.docs.map((d) => ({ ...d.data(), id: d.data().id || d.id } as Reservation));
+  } catch (err) {
+    console.warn('[Firestore] Erreur récupération réservations:', err);
+    return [];
   }
 }
 
@@ -504,11 +546,9 @@ export async function saveReservationToFirestore(res: Reservation): Promise<stri
  * Delete reservation from Firestore
  */
 export async function deleteReservationFromFirestore(resId: string) {
-  if (isFirestoreQuotaExceeded()) return;
   try {
     await deleteDoc(doc(db, 'reservations', resId));
   } catch (e) {
-    if (isFirestoreQuotaError(e)) return;
     console.error('Error deleting reservation from Firestore:', e);
   }
 }

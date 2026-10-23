@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { CarModel, CarColor, Reservation, CommercialUser, StockRequest } from '../types';
 import { getFullCarPrice } from '../data/cheryData';
 import { getCarDimensions, sortCarList, CarSortOption, CAR_SORT_OPTIONS } from '../utils/carDimensions';
+import { hasBatteryWarranty } from '../utils/warrantyUtils';
 import {
   Search,
   CheckCircle2,
@@ -482,7 +483,14 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
                       <span>Nomenclature des Teintes & Disponibilité</span>
                       <span className="text-[10px] text-slate-500 font-normal">({car.colors.length} teintes constructeur)</span>
                     </h4>
-                    <span className="text-[11px] text-slate-400 italic">Garantie {car.guarantee}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <span className="text-[11px] text-slate-400 italic">Garantie {car.guarantee}</span>
+                      {hasBatteryWarranty(car.name) && (
+                        <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                          Batterie 8 ans / 160 000 km
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Color Cards Grid with full nomenclature */}

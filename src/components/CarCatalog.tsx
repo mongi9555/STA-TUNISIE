@@ -133,7 +133,7 @@ export const CarCatalog: React.FC<CarCatalogProps> = ({
             <span className="px-2.5 py-0.5 bg-red-600/30 text-red-300 text-xs font-bold rounded-full border border-red-500/30">
               Gamme Officielle Chery Tunisie 2026
             </span>
-            <span className="text-xs text-slate-400">Garantie Constructeur 7 ans / 200 000 km</span>
+            <span className="text-xs text-slate-400">Garantie Constructeur 7 ans / 200 000 km (Batterie 8 ans / 160 000 km)</span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight mt-1">
             Catalogue Officiel & Teintes Disponibles

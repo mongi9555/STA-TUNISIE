@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CarModel, CommercialUser, TestDriveAppointment } from '../types';
 import { X, Calendar, Clock, Car, User, Phone, Mail, MapPin, FileText, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { hasBatteryWarranty, OFFICIAL_BATTERY_WARRANTY } from '../utils/warrantyUtils';
 
 interface TestDriveModalProps {
   isOpen: boolean;
@@ -210,6 +211,11 @@ export const TestDriveModal: React.FC<TestDriveModalProps> = ({
                   <p className="text-[10px] text-red-400 font-bold">
                     Garantie Constructeur : {selectedCar.guarantee}
                   </p>
+                  {hasBatteryWarranty(selectedCar.name) && (
+                    <p className="text-[10px] text-emerald-400 font-bold">
+                      Garantie de la batterie : {OFFICIAL_BATTERY_WARRANTY}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
