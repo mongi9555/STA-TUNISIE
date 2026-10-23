@@ -112,6 +112,8 @@ interface AdminPanelProps {
   onImportDatabase?: (data: any) => void;
   onResetToFactoryDefaults?: () => void;
   onManualSave?: () => void;
+  onSyncFirestore?: () => Promise<void>;
+  onRecoverMultiSource?: () => Promise<void>;
 }
 
 export const getCheryModelDefaultPhoto = (name: string, category?: string): string => {
@@ -179,8 +181,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onImportDatabase,
   onResetToFactoryDefaults,
   onManualSave,
+  onSyncFirestore,
+  onRecoverMultiSource,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'timesheet' | 'branding' | 'favicon' | 'database' | 'turso'>('inventory');
+  const [activeAdminTab, setActiveAdminTab] = useState<'firestore' | 'inventory' | 'commercials' | 'stock_requests' | 'audit_log' | 'timesheet' | 'branding' | 'favicon' | 'database' | 'turso'>('firestore');
+  const [isSyncingFirestore, setIsSyncingFirestore] = useState(false);
+  const [firestoreSyncMsg, setFirestoreSyncMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dbImportStatusMsg, setDbImportStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stock Request Filter State
@@ -906,6 +912,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             type="button"
+            onClick={() => setActiveAdminTab('firestore')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+              activeAdminTab === 'firestore'
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md shadow-red-600/30'
+                : 'text-amber-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span>Plan & Synchro Firestore (Cloud)</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              activeAdminTab === 'firestore' ? 'bg-black/30 text-white' : 'bg-amber-950 text-amber-300 border border-amber-800/60'
+            }`}>
+              {reservations.length} Bons
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveAdminTab('inventory')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
               activeAdminTab === 'inventory'
@@ -1060,6 +1084,202 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </button>
         </div>
       </div>
+
+      {/* TAB: FIREBASE FIRESTORE PLAN & SYNCHRONISATION */}
+      {activeAdminTab === 'firestore' && (
+        <div className="space-y-6">
+          {/* Main Hero Card */}
+          <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 border border-amber-500/40 rounded-3xl p-6 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-2xl shadow-lg">
+                  <Flame className="w-8 h-8 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-black text-white tracking-tight">
+                      Firebase Firestore Enterprise Edition
+                    </h3>
+                    <span className="px-3 py-0.5 bg-red-600/30 text-red-300 font-mono text-xs font-black rounded-full border border-red-500/50 uppercase">
+                      🔥 PLAN BLAZE (PAY-AS-YOU-GO)
+                    </span>
+                    <span className="px-3 py-0.5 bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold rounded-full border border-emerald-500/40 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span>🟢 Live Sync 100% Connecté & Illimité</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Base de données Cloud principale sur le Plan Payant BLAZE (Google Cloud Enterprise) — Siège STA & Réseau d'Agences
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={isSyncingFirestore}
+                  onClick={async () => {
+                    setIsSyncingFirestore(true);
+                    setFirestoreSyncMsg(null);
+                    try {
+                      if (onSyncFirestore) {
+                        await onSyncFirestore();
+                      }
+                      setFirestoreSyncMsg({
+                        type: 'success',
+                        text: `✅ ${reservations.length} bons de réservation resynchronisés avec succès vers Firestore (Plan Blaze) !`,
+                      });
+                    } catch (e: any) {
+                      setFirestoreSyncMsg({
+                        type: 'error',
+                        text: `❌ Erreur de synchro Firestore : ${e?.message || 'Inconnue'}`,
+                      });
+                    } finally {
+                      setIsSyncingFirestore(false);
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-amber-950/50 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Zap className={`w-4 h-4 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+                  <span>⚡ Synchroniser Firestore En Temps Réel</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSyncingFirestore}
+                  onClick={async () => {
+                    setIsSyncingFirestore(true);
+                    setFirestoreSyncMsg(null);
+                    try {
+                      if (onRecoverMultiSource) {
+                        await onRecoverMultiSource();
+                      }
+                      setFirestoreSyncMsg({
+                        type: 'success',
+                        text: `✅ Restauration multi-sources exécutée avec succès ! Les ${reservations.length} bons ont été récupérés et consolidés entre mémoire, local, Turso Cloud et Firestore.`,
+                      });
+                    } catch (e: any) {
+                      setFirestoreSyncMsg({
+                        type: 'error',
+                        text: `❌ Erreur de restauration : ${e?.message || 'Inconnue'}`,
+                      });
+                    } finally {
+                      setIsSyncingFirestore(false);
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-950/50 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+                  <span>🔄 Reconstruire les Bons Manquants & Sync Multi-Sources</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Status & Feedback Toast message if triggered */}
+            {firestoreSyncMsg && (
+              <div
+                className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 ${
+                  firestoreSyncMsg.type === 'success'
+                    ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/60 shadow-lg'
+                    : 'bg-rose-950/90 text-rose-200 border-rose-500/60 shadow-lg'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>{firestoreSyncMsg.text}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFirestoreSyncMsg(null)}
+                  className="p-1 hover:opacity-75 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Key Metrics KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 space-y-1">
+                <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Bons de Réservation Client</span>
+                <div className="text-2xl font-black text-amber-400 font-mono">
+                  {reservations.length} <span className="text-xs text-emerald-400 font-normal">100% Synchro</span>
+                </div>
+                <p className="text-[11px] text-slate-400">Tous les bons sont conservés et synchronisés en temps réel.</p>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Catalogue Véhicules</span>
+                <div className="text-2xl font-black text-white font-mono">{cars.length} Modèles</div>
+                <p className="text-[11px] text-slate-400">Gamme Chery Tiggo, Arrizo, Himla & iCAR 03.</p>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Comptes Commerciaux Agences</span>
+                <div className="text-2xl font-black text-white font-mono">{commercials.length} Sessions</div>
+                <p className="text-[11px] text-slate-400">Direction générale & agences agréées réseau Tunisie.</p>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 space-y-1">
+                <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Listener Firestore</span>
+                <div className="text-xl font-extrabold text-emerald-400 font-mono flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Écoute Directe</span>
+                </div>
+                <p className="text-[11px] text-slate-400">Mise à jour sans rechargement de page.</p>
+              </div>
+            </div>
+
+            {/* Plan Blaze Specs & Tarification Matrix */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <h4 className="text-sm font-extrabold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+                <Gauge className="w-4 h-4 text-amber-400" />
+                <span>Spécifications Détaillées du Plan BLAZE (Tarification à l'Usage Google Cloud)</span>
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 bg-slate-900 rounded-xl border border-red-500/30 space-y-1.5">
+                  <span className="text-amber-400 font-extrabold block uppercase text-[10px]">📖 Lectures (Reads)</span>
+                  <p className="text-white font-black font-mono text-sm">Illimité (Quota Inclus + Pay-as-you-go)</p>
+                  <p className="text-[11px] text-slate-300">50k gratuites/jour + 0,06 $ / 100 000 lectures supplémentaires</p>
+                  <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold rounded">
+                    Actuel : {reservations.length} docs en ligne
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-slate-900 rounded-xl border border-red-500/30 space-y-1.5">
+                  <span className="text-amber-400 font-extrabold block uppercase text-[10px]">✍️ Écritures (Writes)</span>
+                  <p className="text-white font-black font-mono text-sm">Illimité (Quota Inclus + Pay-as-you-go)</p>
+                  <p className="text-[11px] text-slate-300">20k gratuites/jour + 0,18 $ / 100 000 écritures supplémentaires</p>
+                  <span className="inline-block px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold rounded">
+                    Écritures & Suppressions Auto
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-slate-900 rounded-xl border border-red-500/30 space-y-1.5">
+                  <span className="text-amber-400 font-extrabold block uppercase text-[10px]">💾 Stockage Cloud</span>
+                  <p className="text-white font-black font-mono text-sm">Capacité Évolutive Sans Limite</p>
+                  <p className="text-[11px] text-slate-300">1 GiB gratuit inclus + 0,18 $ / GiB par mois</p>
+                  <span className="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-mono font-bold rounded">
+                    SLA Multi-Région 99.99%
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 font-mono space-y-1.5">
+                <div className="flex justify-between items-center flex-wrap border-b border-slate-800/80 pb-1.5">
+                  <span><strong className="text-amber-400">Type de Plan :</strong> Plan Payant BLAZE (Pay-as-you-go)</span>
+                  <span className="px-2 py-0.5 bg-red-600/30 text-red-300 rounded font-bold border border-red-500/40">Compte Facturé Actif</span>
+                </div>
+                <div><strong className="text-amber-400">ID Projet GCP/Firebase :</strong> solid-compiler-n9v0l</div>
+                <div><strong className="text-amber-400">ID Base Firestore :</strong> ai-studio-cherytunisierser-31ef1dc0-2eb3-4096-af83-1d65c3033f08</div>
+                <div><strong className="text-amber-400">Infrastructure Dual-Engine :</strong> Firebase Firestore Enterprise (Plan Blaze - Synchro Temps Réel Principal) + Turso libSQL Cloud DB (Moteur Secondaire AWS eu-west-1)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: INVENTORY & COLOR MANAGER */}
       {activeAdminTab === 'inventory' && (

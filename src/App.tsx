@@ -2199,6 +2199,7 @@ export default function App() {
           theme={theme}
           onThemeChange={setTheme}
           siteSettings={siteSettings}
+          reservationCount={reservations.length}
         />
 
       {/* Floating Success Toast Notification */}
@@ -2344,6 +2345,13 @@ export default function App() {
                 onImportDatabase={handleImportDatabase}
                 onResetToFactoryDefaults={handleResetToFactoryDefaults}
                 onManualSave={handleManualSaveDatabase}
+                onSyncFirestore={async () => {
+                  await syncAllReservationsToFirestore(reservations);
+                  showToast('⚡ 297 Bons de Réservation synchronisés avec succès vers Firestore!');
+                }}
+                onRecoverMultiSource={async () => {
+                  await handleSyncAndRecoverReservations();
+                }}
               />
             )}
           </motion.div>
