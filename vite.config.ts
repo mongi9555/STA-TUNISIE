@@ -18,8 +18,23 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
-      target: ['es2015', 'chrome60', 'firefox60', 'safari11', 'edge18'],
-      cssTarget: 'chrome61',
+      target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+      chunkSizeWarningLimit: 2000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/pdfjs-dist') || id.includes('node_modules/react-pdf')) {
+              return 'pdf-viewer';
+            }
+            if (id.includes('node_modules/firebase')) {
+              return 'firebase';
+            }
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/motion')) {
+              return 'ui-icons';
+            }
+          },
+        },
+      },
     },
   };
 });
