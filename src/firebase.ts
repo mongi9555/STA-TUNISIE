@@ -151,11 +151,14 @@ export function isFirestoreQuotaError(error: any): boolean {
   const msg = typeof error === 'string' ? error : error.message || error.code || '';
   const isQuota =
     error.code === 'resource-exhausted' ||
+    error.code === 'RESOURCE_EXHAUSTED' ||
+    msg.includes('Resource has been exhausted') ||
     msg.includes('Quota limit exceeded') ||
     msg.includes('Quota exceeded') ||
     msg.includes('Free daily read units') ||
     msg.includes('Free daily write units') ||
     msg.includes('resource-exhausted') ||
+    msg.includes('RESOURCE_EXHAUSTED') ||
     msg.includes('free tier database');
   if (isQuota) {
     markFirestoreQuotaExhausted();

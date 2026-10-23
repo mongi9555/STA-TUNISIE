@@ -832,7 +832,7 @@ export default function App() {
       } catch (_) {}
     };
 
-    const intervalId = setInterval(syncServerDatabase, 7000);
+    const intervalId = setInterval(syncServerDatabase, 30000);
     window.addEventListener('focus', syncServerDatabase);
     return () => {
       clearInterval(intervalId);
@@ -2201,6 +2201,26 @@ export default function App() {
           siteSettings={siteSettings}
           reservationCount={reservations.length}
         />
+
+      {/* Quota Exceeded / Resource Exhausted Warning Banner */}
+      {firestoreQuotaExceeded && (
+        <div className="bg-amber-950/95 border-b border-amber-500/50 text-amber-200 px-4 py-2.5 text-xs font-medium flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg z-30">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+            <span>
+              <strong>Information Quota / Limite d'utilisation :</strong> La limite de requêtes Firestore a été temporairement atteinte (Resource exhausted). L'application continue de fonctionner en toute sécurité grâce à la base locale et Turso Cloud DB.
+            </span>
+          </div>
+          <a
+            href="https://console.firebase.google.com/project/solid-compiler-n9v0l/firestore/databases/ai-studio-cherytunisierser-31ef1dc0-2eb3-4096-af83-1d65c3033f08/data?openUpgradeDialog=true"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-[11px] shrink-0 transition-colors shadow flex items-center gap-1"
+          >
+            <span>Accéder à la Console Firestore / Mettre à niveau</span>
+          </a>
+        </div>
+      )}
 
       {/* Floating Success Toast Notification */}
       <AnimatePresence>

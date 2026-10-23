@@ -14,7 +14,7 @@ import {
   exploreTursoTable,
   calculateNextWeeklySync,
   calculateNextDailySync,
-} from "./src/server/tursoClient";
+} from "./src/server/tursoClient.ts";
 
 const app = express();
 const PORT = 3000;

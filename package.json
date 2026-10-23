@@ -10,7 +10,7 @@
     "build:exe": "vite build && electron-builder --win nsis portable",
     "build:dir": "vite build && electron-builder --win dir",
     "dist": "vite build && electron-builder",
-    "start": "node dist/server.cjs",
+    "start": "node server.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js server.cjs release",
     "lint": "tsc --noEmit"
